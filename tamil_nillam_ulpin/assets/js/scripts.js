@@ -1,0 +1,1001 @@
+// View
+var view = new ol.View({
+    zoom: 7,
+    center: [8681480.570496075, 1224732.6162325153],
+    // center: [8781480.570496075, 1224732.6162325153],
+    // extent: [885626.451712506, 892078.6691354283, 9167334.689279644, 1557386.5633296024],
+    enableRotation: false
+});
+/* MAP */
+/*******/
+const map = new ol.Map({
+    target: 'map',
+    attribution: false,
+    view,
+});
+const zoomControl = map.getControls().getArray().filter(control => control instanceof ol.control.Zoom)[0];
+if (zoomControl) {
+    map.removeControl(zoomControl);
+}
+
+// Function to remove basemaps by 'type'
+function removeBasemapByType(type) {
+    map.getLayers().forEach(layer => {
+        if (layer && layer.get('type') === type) {
+            map.removeLayer(layer); // Remove all layers with the specified type
+        }
+    });
+}
+
+// Function to change basemap based on the selected type
+function changeBasemap(type, basemap) {
+    if (type == 'basemap') {
+        // Remove existing base maps of the same type
+        removeBasemapByType(type);
+    }
+
+    let basemapLayer;
+    // Define basemaps based on the type
+    switch (basemap) {
+        case 'osm':
+            basemapLayer = new ol.layer.Tile({
+                source: new ol.source.OSM({
+                    attributions: [
+                        '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    ],
+                }),
+                baseLayer: true,
+                zIndex: -1,
+                type: 'basemap', // This is a basemap type
+                id: 'osm-basemap',
+            });
+            break;
+        case 'satellite':
+            basemapLayer = new ol.layer.Tile({
+                source: new ol.source.XYZ({
+                    url: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', // Replace with your satellite tile URL
+                    attributions: [
+                        '© Google'
+                    ],
+                }),
+                baseLayer: true,
+                zIndex: -1,
+                type: 'basemap', // This is a basemap type
+                id: 'satellite-basemap',
+            });
+            break;
+        case 'terrain':
+            basemapLayer = new ol.layer.Tile({
+                source: new ol.source.XYZ({
+                    url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png', // Terrain layer URL
+                    attributions: [
+                        '© OpenTopoMap contributors'
+                    ],
+                }),
+                baseLayer: true,
+                zIndex: -1,
+                type: 'basemap', // This is a basemap type
+                id: 'terrain-basemap',
+            });
+            break;
+        case 'cadastral_xyz':
+            basemapLayer = new ol.layer.Tile({
+                source: new ol.source.XYZ({
+                    url: 'https://tngis.tn.gov.in/data/xyz_tiles/cadastral_xyz/{z}/{x}/{y}.png', // Terrain layer URL
+                    attributions: [
+                        '© TNGIS'
+                    ],
+                }),
+                baseLayer: false,
+                zIndex: 1,
+                type: type, // This is a basemap type
+                id: 'cadastral-xyz',
+            });
+            break;
+        default:
+            return;
+    }
+
+    // Add the new basemap layer
+    map.addLayer(basemapLayer);
+    if (type == 'basemap') {
+        highlightSelectedButton(basemap);
+    }
+}
+
+
+var geojsonSource = new ol.source.Vector();
+var geojsonFormat = new ol.format.GeoJSON();
+var geojsonLayer = new ol.layer.Vector({
+    name: "Buffer Circle",
+    source: geojsonSource,
+    type: 'vector',
+    zIndex: 10,
+    visible: false, // Initially hidden
+    style: new ol.style.Style({
+        fill: new ol.style.Fill({
+            color: 'rgba(0, 0, 255, 0.1)'
+        }),
+        stroke: new ol.style.Stroke({
+            color: "CYAN",
+            width: 6
+        }),
+    }),
+});
+
+// UnMatched with Spatial
+var cadastral_with_ulpin_source = new ol.source.TileWMS({
+    url: `${GEOSERVER_URL}`,
+    params: {
+        'LAYERS': ' cadastral_information_new' + ':' + 'fmb_ulpin',
+        'STYLES': '',
+    },
+    serverType: 'geoserver'
+});
+const cadastral_with_ulpin = new ol.layer.Tile({
+    title: 'ULPIN',
+    type: 'wms',
+    source: cadastral_with_ulpin_source,
+    name: "ULPIN",
+    visible: true,
+    zIndex: 9,
+    displayInLayerSwitcher: false,
+});
+
+// Function to check zoom level and add WMS layer
+function updateWMSLayerVisibility() {
+    const currentZoom = map.getView().getZoom();
+    if (currentZoom >= 13 && !map.getLayers().getArray().includes(cadastral_with_ulpin)) {
+        map.addLayer(cadastral_with_ulpin); // Add WMS layer if zoom level is 16 or higher
+    } else if (currentZoom < 16 && map.getLayers().getArray().includes(cadastral_with_ulpin)) {
+        map.removeLayer(cadastral_with_ulpin); // Remove WMS layer if zoom level is less than 16
+    }
+}
+
+// Listen to the moveend event to detect when zoom changes
+map.on('moveend', updateWMSLayerVisibility);
+
+// Function to highlight the selected button
+function highlightSelectedButton(selectedBasemap) {
+    // Remove the 'selected' class from all buttons
+    const buttons = document.querySelectorAll('.basemap-btn');
+    buttons.forEach(button => {
+        button.classList.remove('selected');
+    });
+
+    // Add the 'selected' class to the clicked button
+    const selectedButton = document.getElementById(`${selectedBasemap}-btn`);
+    selectedButton.classList.add('selected');
+}
+
+// Add interactivity for navigation buttons
+document.getElementById('zoom-in-btn').addEventListener('click', () => {
+    const view = map.getView();
+    view.setZoom(view.getZoom() + 1);
+});
+
+document.getElementById('zoom-out-btn').addEventListener('click', () => {
+    const view = map.getView();
+    view.setZoom(view.getZoom() - 1);
+});
+
+document.getElementById('zoom-to-extent-btn').addEventListener('click', () => {
+    var zoomtoExtentValue = [8395626.451712506, 892078.6691354283, 9167334.689279644, 1557386.5633296024];
+    const view = map.getView();
+    view.fit(zoomtoExtentValue, { size: map.getSize() });
+});
+
+document.addEventListener('click', function (event) {
+    const menu = document.getElementById('menu');
+    const navbar = document.getElementById('navbar');
+
+    // Check if the click is outside the navbar and menu
+    if (!navbar.contains(event.target) && !menu.contains(event.target)) {
+        menu.classList.remove('show');
+        menu.classList.add('hidden');
+    }
+});
+
+// Function to toggle the menu visibility
+function toggleMenu() {
+    const menu = document.getElementById('menu');
+    menu.classList.toggle('show');
+    menu.classList.toggle('hidden');
+}
+
+// // Update the info panel content
+// function updatePanelContent(content) {
+//     const panelContent = document.getElementById('panel-content');
+//     panelContent.innerHTML = content;
+
+//     const panel = document.getElementById('info-panel');
+//     panel.classList.add('show'); // Show the panel
+// }
+
+// Hide the info panel
+function hidePanel() {
+    const panel = document.getElementById('info-panel');
+    panel.classList.remove('show');
+    panel.style.display = 'none';
+}
+
+function displayInfo(data) {
+    const panel = document.getElementById('info-panel');
+    const content = document.getElementById('panel-content');
+
+    // Clear previous content
+    content.innerHTML = '';
+
+    // Title Section
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'info-title';
+    titleDiv.textContent = 'Land Parcel Information';
+    content.appendChild(titleDiv);
+
+    // ULPIN and Centroid
+    const subTitleDiv = document.createElement('div');
+    subTitleDiv.className = 'info-subtitle';
+    subTitleDiv.innerHTML = `
+        <div><strong>ULPIN:</strong> ${data.ulpin}</div>
+        <div><strong>Centroid:</strong> ${data.centroid}</div>
+    `;
+    content.appendChild(subTitleDiv);
+
+    // Group Data into Sections
+    const sections = [
+        {
+            heading: 'District',
+            values: {
+                'District Name': data.district_name,
+                'Tamil Name': data.district_tamil_name,
+                'District Code': data.district_code,
+                'LGD Code': data.lgd_district_code,
+            },
+        },
+        {
+            heading: 'Taluk',
+            values: {
+                'Taluk Name': data.taluk_name,
+                'Tamil Name': data.taluk_tamil_name,
+                'Taluk Code': data.taluk_code,
+                'LGD Code': data.lgd_taluk_code,
+            },
+        },
+        {
+            heading: 'Village',
+            values: {
+                'Village Name': data.village_name,
+                'Tamil Name': data.village_tamil_name,
+                'Village Code': data.village_code,
+                'LGD Code': data.lgd_village_code,
+            },
+        },
+        {
+            heading: 'Survey Detail',
+            values: {
+                'Survey Number': data.is_fmb ? `${data.survey_number}/${data.sub_division}` : data.survey_number,
+            },
+        },
+    ];
+
+    sections.forEach((section) => {
+        const sectionDiv = document.createElement('div');
+        sectionDiv.className = 'info-section';
+
+        const sectionHeading = document.createElement('h3');
+        sectionHeading.textContent = section.heading;
+        sectionDiv.appendChild(sectionHeading);
+
+        const sectionContent = document.createElement('div');
+        sectionContent.className = 'section-content';
+        for (const [key, value] of Object.entries(section.values)) {
+            const valueRow = document.createElement('div');
+            valueRow.className = 'value-row';
+            valueRow.innerHTML = `
+                <strong>${key}:</strong> ${value ?? 'N/A'}
+            `;
+            sectionContent.appendChild(valueRow);
+        }
+        sectionDiv.appendChild(sectionContent);
+        content.appendChild(sectionDiv);
+    });
+
+    // Show the panel
+    panel.style.display = 'block';
+    panel.classList.add('show');
+}
+
+// Click event listener on the map
+map.on('singleclick', function (evt) {
+    // Add click listener to map to close the panel when clicking on the map
+    clearVertexLabels();
+    simplifiedHidePanel();
+    closeAregPanel();
+    closeFMBSketchPanel();
+    const coordinates = ol.proj.toLonLat(evt.coordinate);
+    const lon = coordinates[0].toFixed(6);
+    const lat = coordinates[1].toFixed(6);
+
+    $.ajax({
+        url: `${BASE_URL}/v1/land_detail`,
+        method: 'POST',
+        headers: {
+            'X-APP-NAME': 'demo'
+        },
+        data: {
+            latitude: lat,
+            longitude: lon,
+        },
+        success: function (response) {
+            if (response.success) {
+                var response_data = response.data;
+                console.log(response_data)
+                // displayInfo(response_data)
+                addGeoJsonLayer(response_data.geojson_geom)
+                displaySimplifiedInfo(response_data, lat, lon)
+            } else {
+                console.error(response.message);
+            }
+        },
+        error: function (xhr, status, error) {
+            console.error('Error fetching geometry data:', error);
+        }
+    });
+
+});
+
+// Close button event listener
+document.getElementById('close-btn').addEventListener('click', hidePanel);
+
+function displaySimplifiedInfo(data, lat, long) {
+    const panel = document.getElementById('simplified-info-panel');
+    const content = document.getElementById('simplified-panel-content');
+
+    // Clear previous content
+    content.innerHTML = '';
+
+    // Title Section
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'info-title';
+    titleDiv.innerHTML = `
+                            Land Parcel Information
+                        `;
+    content.appendChild(titleDiv);
+
+    // Survey Number and Sub Division at the top
+    const surveySection = document.createElement('div');
+    surveySection.className = 'info-survey-section';
+    // survey_number = data.is_fmb ? `${data.survey_number}/${data.sub_division}` : data.survey_number
+    survey_number = data.is_fmb == 1 ? (data.sub_division != null ? `${data.survey_number}/${data.sub_division}` : data.survey_number) : data.survey_number;
+    surveySection.innerHTML = `
+        <div><strong>ULPIN:</strong> ${data.ulpin} - <strong>Centroid:</strong> ${data.centroid}</div></div><br>
+        <div><strong>Survey Number:</strong> ${survey_number}</div>
+        <br>
+        <div class="info-icons">
+                                <i class="bi bi-bank text-white district-icon" title="Patta / Chitta - A-Reg" onclick='openAregInfo(${JSON.stringify(data)})'></i>
+        <i class="bi bi-rulers text-white taluk-icon" title="FMB Sketch" onclick='openFMBSketchInfo(${JSON.stringify(data)})'></i>
+        <i class="fas fa-globe text-white village-icon" title="Vertex / Plot Corner List" onclick='highlightVertices(${JSON.stringify(data.geojson_geom)})'></i>
+        <i class="fas fa-inr text-white village-icon" title="Guideline Value" onclick='openIGRInfo(${JSON.stringify(data)},${lat},${long})'></i>
+                            </div>
+        
+    `;
+    // <i class="fas fa-leaf text-white village-icon" title="Guideline Value" onclick='openIGRInfo(${JSON.stringify(data)},${lat},${long})'></i>
+    content.appendChild(surveySection);
+
+    // Group Data into Sections
+    const infoDiv = document.createElement('div');
+    infoDiv.className = 'info-section';
+
+    // District, Taluk, and Village in a single line
+    const districtTalukVillage = document.createElement('div');
+    districtTalukVillage.className = 'district-taluk-village';
+    districtTalukVillage.innerHTML = `
+        <div><strong>District:</strong> <br />${data.district_name} / ${data.district_tamil_name}</div>
+        <div><strong>Taluk:</strong> <br /> ${data.taluk_name} / ${data.taluk_tamil_name}</div>
+        <div><strong>Village:</strong> <br /> ${data.village_name} / ${data.village_tamil_name}</div>
+    `;
+    infoDiv.appendChild(districtTalukVillage);
+
+    // LGD Codes and Village LGD Code
+    const lgdCodes = document.createElement('div');
+    lgdCodes.className = 'lgd-codes';
+    lgdCodes.innerHTML = `
+        <div><strong>Village LGD Code:</strong> ${data.lgd_village_code}(${data.rural_urban})</div>
+    `;
+    infoDiv.appendChild(lgdCodes);
+
+    content.appendChild(infoDiv);
+
+    // Show the panel
+    panel.style.display = 'block';
+    panel.classList.add('show');
+}
+
+// Hide the info panel
+function simplifiedHidePanel() {
+    const panel = document.getElementById('simplified-info-panel');
+    panel.classList.remove('show');
+    panel.style.display = 'none';
+}
+
+// Close button event listener
+document.getElementById('simplified-close-btn').addEventListener('click', simplifiedHidePanel);
+
+
+function addGeoJsonLayer(geojson) {
+    var features = geojsonFormat.readFeatures(geojson, {
+        dataProjection: 'EPSG:4326',
+        featureProjection: 'EPSG:3857'
+    });
+    geojsonSource.clear();
+    geojsonSource.addFeatures(features);
+
+    var extent = geojsonSource.getExtent();
+
+    map.getView().fit(extent, {
+        duration: 4000,
+        maxZoom: 18,
+        padding: [20, 20, 20, 20]
+    });
+    geojsonLayer.setVisible(true);
+}
+
+
+// Global variable to hold reference to the vertex layer
+let vertexLayer = null;
+
+// Function to handle vertex extraction, highlighting, and coordinate display
+function highlightVertices(sgeojsonGeom) {
+    const geojsonGeom = JSON.parse(sgeojsonGeom);
+    const vertices = extractVertices(geojsonGeom);
+    console.log(vertices);
+
+    const vertexFeatures = vertices.map((vertex, index) => {
+        const feature = new ol.Feature({
+            geometry: new ol.geom.Point(ol.proj.fromLonLat(vertex)), // Convert to map projection (default EPSG:3857)
+            coordinates: vertex
+        });
+
+        feature.setStyle(
+            new ol.style.Style({
+                image: new ol.style.Circle({
+                    radius: 5,
+                    fill: new ol.style.Fill({ color: 'blue' }),
+                    stroke: new ol.style.Stroke({ color: 'white', width: 1 })
+                }),
+                text: new ol.style.Text({
+                    text: `${index + 1}`, // Display serial number
+                    font: '12px Arial',
+                    fill: new ol.style.Fill({ color: 'black' }),
+                    backgroundFill: new ol.style.Fill({ color: 'white' }),
+                    padding: [2, 2, 2, 2],
+                    offsetY: -15
+                })
+            })
+        );
+
+        return feature;
+    });
+
+    const vertexSource = new ol.source.Vector({
+        features: vertexFeatures
+    });
+
+    vertexLayer = new ol.layer.Vector({
+        source: vertexSource,
+        zIndex: 1007
+    });
+
+    map.addLayer(vertexLayer);
+
+    // Update the info panel with vertex details
+    const infoContent = document.getElementById('vertex-info-content');
+    infoContent.innerHTML = '';
+
+    const panelTitle = document.getElementById('vertex-info-title');
+    panelTitle.innerHTML = `Vertex Information (${vertices.length} Vertices) <button id="close-panel-btn" onclick="closeInfoPanel()">X</button>`;
+
+    let vertexTablecontent = `
+        <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Vertex Number</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Latitude</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Longitude</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    vertices.forEach((vertex, index) => {
+        // const coordLonLat = ol.proj.toLonLat(vertex); // Convert to lat/lon (WGS84)
+
+        vertexTablecontent += `
+                    <tr onclick="zoomToVertex(${vertex[0]}, ${vertex[1]})" style="cursor: pointer;">
+                        <td style="border: 1px solid #ddd; padding: 8px;">${index + 1}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${vertex[1].toFixed(6)}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${vertex[0].toFixed(6)}</td>
+                    </tr>
+        `;
+    });
+
+    vertexTablecontent += `
+                </tbody>
+            </table>
+    `;
+
+    infoContent.innerHTML = vertexTablecontent;
+    const panel = document.getElementById('vertex-info-panel');
+    panel.style.display = 'block';
+
+    // Zoom to fit the extent of vertices
+    const extent = vertexSource.getExtent();
+    map.getView().fit(extent, {
+        duration: 4000,
+        maxZoom: 18,
+        padding: [20, 20, 20, 20]
+    });
+}
+
+// Utility function to extract vertices and remove the last point if it's a duplicate (Polygon/MultiPolygon)
+function extractVertices(geojsonGeom) {
+    const vertices = [];
+    const coordinates = geojsonGeom.coordinates;
+
+    if (geojsonGeom.type === 'Polygon' || geojsonGeom.type === 'MultiPolygon') {
+        const flattenedCoords = geojsonGeom.type === 'Polygon' ? [coordinates] : coordinates;
+
+        flattenedCoords.forEach((polygon) => {
+            polygon.forEach((ring) => {
+                ring.forEach((coord, index) => {
+                    if (index !== ring.length - 1) { // Skip last point to avoid redundancy
+                        vertices.push(coord);
+                    }
+                });
+            });
+        });
+    } else if (geojsonGeom.type === 'LineString' || geojsonGeom.type === 'MultiLineString') {
+        const lines = geojsonGeom.type === 'LineString' ? [coordinates] : coordinates;
+        lines.forEach((line) => {
+            line.forEach((coord) => {
+                vertices.push(coord);
+            });
+        });
+    } else if (geojsonGeom.type === 'Point') {
+        vertices.push(coordinates);
+    }
+
+    return vertices;
+}
+
+// Function to clear the labels and remove the vertex layer from the map
+function clearVertexLabels() {
+    if (vertexLayer) {
+        map.removeLayer(vertexLayer); // Remove the layer containing the vertex features
+        vertexLayer = null; // Clear the reference to the layer
+    }
+
+    // Clear the info panel content
+    const panel = document.getElementById('vertex-info-panel');
+    panel.style.display = 'none';
+    const infoContent = document.getElementById('vertex-info-content');
+    infoContent.innerHTML = '';
+    const panelTitle = document.getElementById('vertex-info-title');
+    panelTitle.innerHTML = 'Vertex Information';
+}
+
+// Function to close the info panel when the close button is clicked
+function closeInfoPanel() {
+    const panel = document.getElementById('vertex-info-panel');
+    panel.style.display = 'none';  // Hide the panel
+    clearVertexLabels();  // Remove the vertex labels (optional)
+}
+
+// Function to zoom to the vertex with dynamic zoom level
+function zoomToVertex(longitude, latitude) {
+    const currentCenter = ol.proj.toLonLat(map.getView().getCenter());
+    const distance = getDistance(currentCenter, [longitude, latitude]); // Get distance between current center and target vertex
+
+    // Set a dynamic zoom level based on distance
+    let zoomLevel;
+    if (distance < 500) {
+        zoomLevel = 18; // Very close, high zoom
+    } else if (distance < 1000) {
+        zoomLevel = 16; // Close
+    } else if (distance < 5000) {
+        zoomLevel = 14; // Medium
+    } else {
+        zoomLevel = 12; // Far away, low zoom
+    }
+
+    // Convert the target vertex to map projection
+    const coordinate = ol.proj.fromLonLat([longitude, latitude]);
+
+    // Animate the zoom and center to the target vertex
+    map.getView().animate({
+        center: coordinate,
+        zoom: zoomLevel,
+        duration: 1000 // Zoom duration
+    });
+
+    // Highlight the vertex on the map
+    highlightVertex(coordinate);
+}
+
+// Function to calculate the distance (in meters) between two points
+function getDistance(coord1, coord2) {
+    const from = ol.proj.fromLonLat(coord1); // Convert to map projection
+    const to = ol.proj.fromLonLat(coord2);
+    const line = new ol.geom.LineString([from, to]);
+    return line.getLength(); // Returns the distance in meters
+}
+
+// Function to highlight the vertex with a distinct style
+function highlightVertex(coordinate) {
+    // Create a feature for the vertex
+    const vertexFeature = new ol.Feature({
+        geometry: new ol.geom.Point(coordinate)
+    });
+
+    // Apply a distinct style to highlight the vertex
+    vertexFeature.setStyle(
+        new ol.style.Style({
+            image: new ol.style.Circle({
+                radius: 8,
+                fill: new ol.style.Fill({ color: 'yellow' }), // Highlight color
+                stroke: new ol.style.Stroke({ color: 'black', width: 2 })
+            })
+        })
+    );
+
+    // Create a source and layer for the highlighted vertex
+    const highlightSource = new ol.source.Vector({
+        features: [vertexFeature]
+    });
+
+    const highlightLayer = new ol.layer.Vector({
+        source: highlightSource,
+        zIndex: 1008 // Higher layer for visibility
+    });
+
+    // Add the highlight layer to the map
+    map.addLayer(highlightLayer);
+
+    // Remove the highlight after 1.5 seconds (adjust as needed)
+    setTimeout(() => {
+        map.removeLayer(highlightLayer);
+    }, 1500);
+}
+
+/** Areg Info Panel Creation Start*/
+
+function openAregInfo(data) {
+    console.log(data);
+    if (data.rural_urban === "rural") {
+        const params = {
+            district_code: data.district_code,
+            taluk_code: data.taluk_code,
+            village_code: data.village_code,
+            survey_number: data.survey_number,
+            sub_division_number: data.is_fmb == 1 ? (data.sub_division != null ? data.sub_division : '-') : '-',
+            land_type: data.rural_urban,
+            code_type: ADMIN_CODE_TYPE,
+            search_type: AREG_SEARCH_TYPE
+        };
+
+        $.ajax({
+            url: `${AREG_SEARCH_URL}`,
+            method: 'POST',
+            headers: { 'X-APP-NAME': 'demo' },
+            data: params,
+            success: function (response) {
+                if (response.success) {
+                    const responseData = response;
+                    populateInfoPanel(responseData);
+                } else {
+                    console.error(response.message);
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error('Error in fetching AREG - ', error);
+            }
+        });
+    } else {
+        alert("Urban in Progress");
+    }
+}
+
+function populateInfoPanel(response) {
+    console.log(response);
+    if (response.success == 1) {
+        const landDetail = response.data.land_detail;
+        const ownershipDetails = response.data.ownership_detail;
+
+        // Populate Land Details
+        const landDetailsTable = document.getElementById("land-details-table");
+        landDetailsTable.innerHTML = ''; // Clear previous data
+        for (const [key, value] of Object.entries(landDetail)) {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${key}</td>
+                <td>${value !== null && value !== "" ? value : "-"}</td>
+            `;
+            landDetailsTable.appendChild(row);
+        }
+
+        // Populate Ownership Details
+        const ownershipDetailsTable = document.getElementById("ownership-details-table");
+        ownershipDetailsTable.innerHTML = ''; // Clear previous data
+        if (ownershipDetails.length === 0) {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td colspan="4" style="text-align: center;">No owners found</td>
+            `;
+            ownershipDetailsTable.appendChild(row);
+        } else {
+            ownershipDetails.forEach((owner, index) => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${owner.Owner.trim()}</td>
+                    <td>${owner.Relation.trim()}</td>
+                    <td>${owner.Relative.trim()}</td>
+                `;
+                ownershipDetailsTable.appendChild(row);
+            });
+        }
+
+        // Show the Info Panel
+        const infoPanel = document.getElementById("areg-info-panel");
+        infoPanel.style.display = "block";
+    } else {
+        closeAregPanel();
+        alert("No Ownership Details Found for the Selected Land Parcel");
+    }
+}
+
+function showTabContent(tabId) {
+    const tabs = document.querySelectorAll("#areg-info-panel .tab-content");
+    tabs.forEach((tab) => {
+        tab.style.display = tab.id === tabId ? "block" : "none";
+    });
+
+    const tabButtons = document.querySelectorAll("#areg-info-panel .tabs button");
+    tabButtons.forEach((button) => {
+        button.classList.toggle("active", button.textContent === tabId.replace('-', ' '));
+    });
+}
+
+
+// Function to Close the Info Panel
+function closeAregPanel() {
+    const infoPanel = document.getElementById("areg-info-panel");
+    if (infoPanel) {
+        infoPanel.style.display = "none";
+    }
+}
+
+/** Areg Info Panel Creation End */
+
+/** FMB Sketch Info Panel Creation Start*/
+
+function openFMBSketchInfo(data) {
+    console.log(data);
+    if (data.rural_urban === "rural") {
+        const params = {
+            districtCode: data.district_code,
+            talukCode: data.taluk_code,
+            villageCode: data.village_code,
+            surveyNumber: data.survey_number,
+            subdivisionNumber: data.is_fmb == 1 ? (data.sub_division != null ? data.sub_division : '') : '',
+            type: data.rural_urban,
+        };
+
+        $.ajax({
+            url: `${FMB_SKETCH_URL}`,
+            method: 'POST',
+            data: params,
+            success: function (response) {
+                if (response.success == 1) {
+                    // Decode base64 data
+                    try {
+                        const fileContent = atob(response.data);
+                        const byteArray = new Uint8Array(fileContent.length);
+
+                        // Convert the base64 string back to a binary file
+                        for (let i = 0; i < fileContent.length; i++) {
+                            byteArray[i] = fileContent.charCodeAt(i);
+                        }
+                        // Create a Blob from the binary data
+                        const blob = new Blob([byteArray], { type: 'application/pdf' });
+
+                        // Check if the Blob is a valid PDF
+                        const fileReader = new FileReader();
+                        fileReader.onloadend = function () {
+                            try {
+                                // Check the file type by reading the first few bytes (PDF signature)
+                                const byteArray = new Uint8Array(fileReader.result);
+                                const pdfSignature = '%PDF-';
+
+                                if (String.fromCharCode.apply(null, byteArray.slice(0, 5)) !== pdfSignature) {
+                                    throw new Error('Invalid PDF');
+                                }
+
+                                // Create PDF URL
+                                const pdfURL = URL.createObjectURL(blob);
+
+                                // Show the info panel
+                                const infoPanel = document.getElementById("fmb-sketch-info-panel");
+                                const iframe = document.getElementById("fmb-sketch-viewer");
+                                iframe.src = pdfURL;
+                                infoPanel.style.display = "block";
+
+                            } catch (error) {
+                                console.error("Caught error in onloadend:", error);
+                                alert('FMB Sketch could not be downloaded for visualization. Please contact the Revenue Surveyor in taluk office.');
+                            }
+                        };
+
+                        // Read the blob content as ArrayBuffer to check for PDF signature
+                        fileReader.readAsArrayBuffer(blob);
+                    } catch (error) {
+                        // Handle invalid base64 or PDF error
+                        alert('FMB Sketch could not be downloaded for visualization. Please contact the Revenue Surveyor in taluk office.');
+                        console.error('Error while loading PDF:', error);
+                        // You can display a custom message here, e.g., "Invalid PDF data."
+                    }
+
+                    // Add event listeners for fullscreen and close
+                    document.getElementById("fmb-fullscreen-btn").onclick = () => {
+                        const infoPanel = document.getElementById("fmb-sketch-info-panel");
+                        if (infoPanel.requestFullscreen) {
+                            infoPanel.requestFullscreen();
+                        } else if (infoPanel.webkitRequestFullscreen) {
+                            infoPanel.webkitRequestFullscreen();
+                        } else if (infoPanel.mozRequestFullScreen) {
+                            infoPanel.mozRequestFullScreen();
+                        } else if (infoPanel.msRequestFullscreen) {
+                            infoPanel.msRequestFullscreen();
+                        }
+                    };
+                } else {
+                    alert(response.message);
+                }
+            },
+            error: function (xhr, status, error) {
+                alert('Unable to fetch data from NIC. ', error);
+            }
+        });
+    } else {
+        alert("Urban in Progress");
+    }
+}
+
+function closeFMBSketchPanel() {
+    const infoPanel = document.getElementById("fmb-sketch-info-panel");
+    if (infoPanel) {
+        const iframe = document.getElementById("fmb-sketch-viewer");
+        infoPanel.style.display = "none";
+        iframe.src = ""; // Clear the iframe content
+    }
+
+}
+
+
+/** FMB Sketch Info Panel Creation End*/
+
+/** IGR Info Panel */
+function openIGRInfo(data, lat, long) {
+    if (data.rural_urban === "rural") {
+        const params = {
+            latitude: lat,
+            longitude: long,
+            layer_name: IGR_SERVICE_LAYER_NAME,
+        };
+
+        $.ajax({
+            url: `${IGR_URL}`,
+            method: 'POST',
+            headers: { 'X-APP-ID': 'te$t' },
+            data: params,
+            success: function (response) {
+                if (response.success) {
+                    const infoPanel = document.getElementById("igr-info-panel");
+                    const contentDiv = document.getElementById("igr-card-content");
+
+                    // Clear any existing cards
+                    contentDiv.innerHTML = "";
+
+                    let hasValidData = false; // Flag to check if there's valid data
+
+                     // Function to format rupee values with commas
+                     const formatRupees = (amount) =>
+                        `₹${new Intl.NumberFormat('en-IN').format(amount)}`;
+
+                    // Loop through the response data to create cards for each field
+                    response.data.forEach(item => {
+                        const fields = [
+                            { label: "Land Type", value: item.land_name },
+                            { label: "Classification of Land Type", value: item.land_name_type },
+                            { label: "Metric Rate", value: item.metric_rate ? formatRupees(item.metric_rate) : null },
+                            { label: "Price per Hectare", value: item.price_per_hect ? formatRupees(item.price_per_hect) : null },
+                        ];
+
+                        fields.forEach(field => {
+                            if (field.value) {
+                                hasValidData = true; // At least one field has a value
+                                const card = document.createElement("div");
+                                card.classList.add("igr-card");
+
+                                card.innerHTML = `
+                                    <div>
+                                        <strong>${field.label}:</strong>
+                                    </div>
+                                    <div>${field.value}</div>
+                                `;
+
+                                // Append the card to the content div
+                                contentDiv.appendChild(card);
+                            }
+                        });
+                    });
+
+                    // Show the info panel only if there is valid data
+                    if (hasValidData) {
+                        infoPanel.style.display = "block";
+                    }else{
+                        alert("Guideline Value not found for the selected Land")
+                    }
+                } else {
+                    console.error(response.message);
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error("Error in fetching IGR Land Value - ", error);
+            }
+        });
+    } else {
+        alert("Urban in Progress");
+    }
+}
+
+function closeIGRInfoPanel(){
+    const infoPanel = document.getElementById("igr-info-panel");
+    if (infoPanel) {
+        infoPanel.style.display = "none";
+    }
+    
+}
+
+
+
+
+// // Utility function to extract vertices from a GeoJSON geometry
+// function extractVertices(geojsonGeom) {
+//     const vertices = [];
+//     const coordinates = geojsonGeom.coordinates;
+
+//     if (geojsonGeom.type === 'Polygon' || geojsonGeom.type === 'MultiPolygon') {
+//         // Flatten coordinates for MultiPolygon
+//         const flattenedCoords = geojsonGeom.type === 'Polygon' ? [coordinates] : coordinates;
+
+//         // Loop through each ring of the polygon
+//         flattenedCoords.forEach((polygon) => {
+//             polygon.forEach((ring) => {
+//                 ring.forEach((coord) => {
+//                     vertices.push(coord); // Push each vertex
+//                 });
+//             });
+//         });
+//     } else if (geojsonGeom.type === 'LineString' || geojsonGeom.type === 'MultiLineString') {
+//         const lines = geojsonGeom.type === 'LineString' ? [coordinates] : coordinates;
+//         lines.forEach((line) => {
+//             line.forEach((coord) => {
+//                 vertices.push(coord);
+//             });
+//         });
+//     } else if (geojsonGeom.type === 'Point') {
+//         vertices.push(coordinates);
+//     }
+
+//     return vertices;
+// }

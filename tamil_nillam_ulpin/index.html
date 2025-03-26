@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tamil Nilam</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="vendor/openlayer/ol.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link href="https://viglino.github.io/font-gis/css/font-gis.css" rel="stylesheet" />
+
+    <style>
+        /* HTML: <div class="loader"></div> */
+        .loader {
+            width: 40px;
+            aspect-ratio: 1;
+            color: #f03355;
+            position: fixed;
+            background: radial-gradient(10px, currentColor 94%, #0000);
+            z-index: 1005;
+            top: 10px;
+            /* Distance from the top */
+            right: 10px;
+            /* Distance from the right */
+        }
+
+        .loader:before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background:
+                radial-gradient(9px at bottom right, #0000 94%, currentColor) top left,
+                radial-gradient(9px at bottom left, #0000 94%, currentColor) top right,
+                radial-gradient(9px at top right, #0000 94%, currentColor) bottom left,
+                radial-gradient(9px at top left, #0000 94%, currentColor) bottom right;
+            background-size: 20px 20px;
+            background-repeat: no-repeat;
+            animation: l18 1.5s infinite cubic-bezier(0.3, 1, 0, 1);
+        }
+
+        @keyframes l18 {
+            33% {
+                inset: -10px;
+                transform: rotate(0deg)
+            }
+
+            66% {
+                inset: -10px;
+                transform: rotate(90deg)
+            }
+
+            100% {
+                inset: 0;
+                transform: rotate(90deg)
+            }
+        }
+    </style>
+</head>
+
+<body>
+   
+    <!-- <div id="navbar">
+        <div id="title">Tamil Nilam - GIS Viewer</div>
+        <div id="nav-buttons">
+            <button id="menu-btn" onclick="toggleMenu()" title="Basemap"><i class="bi bi-layers"></i></button>
+            <div class="navbar-dropdowns">
+                <select id="district" title="district">
+                    <option value="">Select District</option>
+                </select>
+                <select id="taluk" title="Taluk Dropdown">
+                    <option value="">Select Taluk</option>
+                </select>
+                <select id="village" title="Village Dropdown">
+                    <option value="">Select Village</option>
+                </select>
+            </div>
+        </div>
+    </div> -->
+    <header>
+        <div class="row">
+            <div class="col-sm-6 d-flex align-items-center">
+                <img src="assets/logo/tn-logo.png" alt="" style="width: 50px;">
+                <div id="title" class="mx-4">Tamil Nilam - GI Viewer</div>
+            </div>
+            <div class="col-sm-6 d-flex justify-content-end">
+                <button class="toggle-menu" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasScrolling" aria-controls="offcanvasScrolling"><i class="bi bi-list"></i></button>
+                <!-- <button class="toggle-menu" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasScrolling" aria-controls="offcanvasScrolling"><i class="bi bi-list"></i></button> -->
+                <button class="filter-menu" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasScrolling-right" aria-controls="offcanvasScrolling"><i class="bi bi-funnel-fill"></i></button>
+            </div>
+        </div>
+          </header>
+
+    
+<div class="offcanvas offcanvas-start menu" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="offcanvasScrolling" aria-labelledby="offcanvasScrollingLabel">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title" id="offcanvasScrollingLabel">Layers and Tools</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+  <div class="offcanvas-body">
+    <div class="basemap-control my-3">
+        <h3>Basemaps</h3>
+        <label class="maptype">
+          <input type="radio" name="basemap" value="osm">Street Map
+        </label>
+        <label class="maptype">
+          <input type="radio" name="basemap" value="satellite" checked=""> Satellite
+        </label>
+      </div>
+
+      <div id="layer-control" class="my-3">
+        <h3>Layers</h3>
+        <!-- Layers will be dynamically added here -->
+        <div class="accordion" id="accordionPanelsStayOpenExample">
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseOne" aria-expanded="true" aria-controls="panelsStayOpen-collapseOne">
+                    Administrative Boundary
+                </button>
+              </h2>
+              <div id="panelsStayOpen-collapseOne" class="accordion-collapse collapse show">
+                <div class="accordion-body">
+                    <div class="listings">
+                        <label for=""><input type="checkbox" id="#">one</label> 
+                        <label for=""><input type="checkbox" id="#">one</label> 
+                        <label for=""><input type="checkbox" id="#">one</label> 
+                        <label for=""><input type="checkbox" id="#">one</label> 
+                        <label for=""><input type="checkbox" id="#">one</label> 
+                        <label for=""><input type="checkbox" id="#">one</label> 
+                        <label for=""><input type="checkbox" id="#">one</label> 
+                    </div>  
+                </div>
+              </div>
+            </div>
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseTwo" aria-expanded="false" aria-controls="panelsStayOpen-collapseTwo">
+                    Layers
+                </button>
+              </h2>
+              <div id="panelsStayOpen-collapseTwo" class="accordion-collapse collapse">
+                <div class="accordion-body">
+                    <div class="listings">
+                    <label for=""><input type="checkbox" id="#">one</label> 
+                    <label for=""><input type="checkbox" id="#">one</label> 
+                    <label for=""><input type="checkbox" id="#">one</label> 
+                    <label for=""><input type="checkbox" id="#">one</label> 
+                    <label for=""><input type="checkbox" id="#">one</label> 
+                    <label for=""><input type="checkbox" id="#">one</label> 
+                    <label for=""><input type="checkbox" id="#">one</label> 
+                </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+
+
+    
+
+    </div>
+
+
+
+  </div>
+</div>
+
+<div class="gears">
+    <!-- Reset to Default Rotation Button -->
+    <div class="rotation layer-btns">
+      <a id="resetRotation">
+        <img src="assets/logo/north-arrow-svg.svg" class="north" alt="North Arrow">
+      </a>
+      <div class="sub-rotate-btns">
+      <button class="rotation-right" aria-label="Rotate Right" type="button">
+
+         <img src="assets/icons/Arrow 1.svg" alt="" id="arrows-inside">
+      </button>
+      <button class="rotation-left" aria-label="Rotate Left" type="button">
+
+        <img src="assets/icons/Arrow 2.svg" alt="" id="arrows-inside">
+      </button>
+    </div>
+    
+  </div>
+    <style>
+      /* Tooltip container */
+      .tooltip {
+        position: relative;
+      }
+      
+      /* Tooltip text */
+      .tooltip .tooltiptext {
+        visibility: hidden;
+        width: max-content;
+        text-wrap: nowrap;
+        background-color: rgba(119, 119, 119, 0.623);
+        color: #fff;
+        text-align: center;
+        border-radius: 10px;
+        padding: 1px 10px;
+        /* Position the tooltip text - see examples below! */
+        position: absolute;
+        top:-3rem;
+        z-index: 1;
+      }
+      
+      /* Show the tooltip text when you mouse over the tooltip container */
+      .tooltip:hover .tooltiptext {
+        visibility: visible;
+      }
+      </style>
+    <button id="fullscreenBtn" class="layer-btns"><i class="bi bi-arrows-fullscreen"></i></button>
+    <button id="zoom-to-extent-btn" class="layer-btns"><i class="bi bi-arrow-counterclockwise"></i></button>
+    <button id="currentLocationBtn" class="layer-btns"><i class="bi bi-crosshair"></i></button>
+    <button id="zoom-in-btn" class="layer-btns" ><i class="bi bi-plus-circle-fill"></i></button>
+    <button id="zoom-out-btn" class="layer-btns" ><i class="bi bi-dash-circle-fill"></i></button>
+    <!-- Button trigger modal -->
+<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
+    1
+  </button>
+    
+      
+      <div class="tooltip">Hover over me
+        <span class="tooltiptext">Tooltip text</span>
+      </div>
+    <div class="map-footer">
+        <p class="mousePosition"><i class="bi bi-geo-alt-fill"></i><span id="lat">7.325413164844948</span> , <span id="lon">76.133061568552585282</span></p>
+        <button class="scaling px-2"><label id="dist">500 m</label><div id="paaa" style="width:106px"></div></button></div>
+  </div>
+
+
+<div class="offcanvas offcanvas-end menu" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="offcanvasScrolling-right" aria-labelledby="offcanvasScrollingLabel">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title" id="offcanvasScrollingLabel">Filter</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div class="dropdowns">
+            <select id="district-dropdown"><option value="" disabled="" selected="">Select District</option><option value="17">Ariyalur</option><option value="35">Chengalpattu</option><option value="02">Chennai</option><option value="12">Coimbatore</option><option value="18">Cuddalore</option><option value="05">Dharmapuri</option><option value="13">Dindigul</option><option value="10">Erode</option><option value="33">Kallakurichi</option><option value="03">Kancheepuram</option><option value="30">Kanniyakumari</option><option value="14">Karur</option><option value="31">Krishnagiri</option><option value="24">Madurai</option><option value="38">Mayiladuthurai</option><option value="19">Nagapattinam</option><option value="09">Namakkal</option><option value="16">Perambalur</option><option value="22">Pudukkottai</option><option value="27">Ramanathapuram</option><option value="37">Ranipet</option><option value="08">Salem</option><option value="23">Sivagangai</option><option value="34">Tenkasi</option><option value="21">Thanjavur</option><option value="11">The Nilgiris</option><option value="25">Theni</option><option value="20">Thiruvarur</option><option value="28">Thoothukkudi</option><option value="15">Tiruchirappalli</option><option value="29">Tirunelveli</option><option value="36">Tirupathur</option><option value="32">Tiruppur</option><option value="01">Tiruvallur</option><option value="06">Tiruvannamalai</option><option value="04">Vellore</option><option value="07">Viluppuram</option><option value="26">Virudhunagar</option></select>
+            <select id="taluk-dropdown"><option value="" disabled="" selected="">Select Taluk</option></select>
+            <div class="radio-group mt-4">
+              <label class="radio-label maptype">
+                <input type="radio" name="area-type" value="rural" checked="">
+                Rural
+              </label>
+              <label class="radio-label maptype">
+                <input type="radio" name="area-type" value="urban">
+                Urban
+              </label>
+
+            </div>
+            <!-- Rural Fields -->
+            <div id="rural-fields">
+              <select id="village-dropdown"><option value="" disabled="" selected="">Select Village</option></select>
+    
+              <select id="survey-number-dropdown"><option value="" disabled="" selected="">Select Survey Number</option></select>
+    
+              <select id="sub-division-dropdown"><option value="" disabled="" selected="">Select Sub Division</option></select>
+            </div>
+    
+            <!-- Urban Fields -->
+            <div id="urban-fields" class="hidden">
+              <select id="town-dropdown">
+                <option value="">Select Town</option>
+              </select>
+    
+              <select id="ward-dropdown">
+                <option value="">Select Ward</option>
+              </select>
+    
+              <select id="block-dropdown">
+                <option value="">Select Block</option>
+              </select>
+    
+              <select id="urban-survey-number-dropdown">
+                <option value="">Select Survey Number</option>
+              </select>
+    
+              <select id="urban-sub-division-dropdown">
+                <option value="">Select Sub Division</option>
+              </select>
+            </div>
+          </div>
+    </div>
+  </div>
+<script>
+    // script for urban and rural switching
+    document.addEventListener("DOMContentLoaded", function () {
+    const ruralFields = document.getElementById("rural-fields");
+    const urbanFields = document.getElementById("urban-fields");
+    const areaTypeRadios = document.querySelectorAll("input[name='area-type']");
+
+    function toggleFields() {
+        if (document.querySelector("input[name='area-type']:checked").value === "urban") {
+            urbanFields.style.display = "block";
+            ruralFields.style.display = "none";
+        } else {
+            ruralFields.style.display = "block";
+            urbanFields.style.display = "none";
+        }
+    }
+
+    areaTypeRadios.forEach(radio => {
+        radio.addEventListener("change", toggleFields);
+    });
+
+    toggleFields();
+});
+</script>
+
+  
+  <!-- Modal -->
+  <div class="modal fade" id="staticBackdrop" data-bs-backdrop="false" data-bs-keyboard="false" focus="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="staticBackdropLabel"> Land Parcel Information</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+            <div class="info-survey-section">
+                <div><strong>ULPIN:</strong> 73D3Q4DCYYZ4H0 - <strong>Centroid:</strong> 11.419836,79.594772</div><br>
+                <div><strong>Survey Number:</strong> 85/2</div>
+                <br>
+               
+            </div>
+            <div class="info-section">
+                <div class="district-taluk-village">
+                <div><strong>District:</strong> <br>Cuddalore / கடலூர்</div>
+                <div><strong>Taluk:</strong> <br> Chidambaram / சிதம்பரம்</div>
+                <div><strong>Village:</strong> <br> Kiliyanur / கிளியனூர்</div>
+            </div>
+            <div class="lgd-codes">
+                <div><strong>Village LGD Code:</strong> 636822(rural)</div>
+            </div>
+            
+            <div class="info-icons">
+                <!-- uldabba buttons -->
+                <ul class="nav nav-tabs mb-3 d-flex flex-column" id="myTab" role="tablist">
+                    <li class="nav-item mx-1" role="presentation">
+                        <button class="nav-link district-icon" id="profile-tab" type="button" data-target="#profile-tab-pane" aria-controls="profile-tab-pane" aria-selected="false">
+                            <i class="bi bi-bank2"></i>
+                        </button>
+                    </li>
+                    <li class="nav-item mx-1" role="presentation">
+                        <button class="nav-link" id="next-tab" type="button" data-target="#next-tab-pane" aria-controls="next-tab-pane" aria-selected="false">
+                            <i class="bi bi-rulers"></i>
+                        </button>
+                    </li>
+                    <li class="nav-item mx-1" role="presentation">
+                        <button class="nav-link district-icon" id="pro-tab" type="button" data-target="#pro-tab-pane" aria-controls="pro-tab-pane" aria-selected="false">
+                            <i class="bi bi-globe"></i>
+                        </button>
+                    </li>
+                    <li class="nav-item mx-1" role="presentation">
+                        <button class="nav-link" id="nex-tab" type="button" data-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false">
+                            <i class="bi bi-currency-rupee"></i>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="tab-content py-2">
+                <!-- uldabba -->
+                <div class="tab-pane fade" id="profile-tab-pane" role="tabpanel" aria-labelledby="profile-tab">
+                    <p>11111111111111111111111Lorem ipsum dolor sit, amet consectetur adipisicing elit. Ipsa consequatur, consectetur aspernatur, voluptatibus iusto eligendi quas ullam facere ducimus magnam iure veniam natus saepe modi pariatur adipisci perferendis eius animi!</p>
+                </div>
+                <div class="tab-pane fade" id="next-tab-pane" role="tabpanel" aria-labelledby="next-tab">
+                    <p>222222222222222222222Lorem ipsum dolor, sit amet consectetur adipisicing elit. Amet suscipit, aspernatur in, dignissimos ipsam necessitatibus sapiente eos vero at iusto atque itaque distinctio tempora aperiam veritatis aliquid recusandae earum! Tempore!</p>
+                </div>
+                <div class="tab-pane fade" id="pro-tab-pane" role="tabpanel" aria-labelledby="pro-tab">
+                    <p>3333333333333333333333Lorem ipsum dolor sit, amet consectetur adipisicing elit. Ipsa consequatur, consectetur aspernatur, voluptatibus iusto eligendi quas ullam facere ducimus magnam iure veniam natus saepe modi pariatur adipisci perferendis eius animi!</p>
+                </div>
+                <div class="tab-pane fade" id="nex-tab-pane" role="tabpanel" aria-labelledby="nex-tab">
+                    <p>444444444444444444444Lorem ipsum dolor, sit amet consectetur adipisicing elit. Amet suscipit, aspernatur in, dignissimos ipsam necessitatibus sapiente eos vero at iusto atque itaque distinctio tempora aperiam veritatis aliquid recusandae earum! Tempore!</p>
+                </div>
+                
+            </div>
+
+
+ 
+
+            
+
+        </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const tabs = document.querySelectorAll(".tab");
+    const contents = document.querySelectorAll(".tab-content");
+
+    tabs.forEach((tab, index) => {
+        tab.addEventListener("click", function () {
+            // Remove active class from all tabs and contents
+            tabs.forEach(t => t.classList.remove("active"));
+            contents.forEach(c => c.classList.add("d-none"));
+
+            // Add active class to the clicked tab and corresponding content
+            tab.classList.add("active");
+            contents[index].classList.remove("d-none");
+        });
+    });
+});
+</script>
+
+<div id="menu" class="hidden">
+        <!-- <h3>Change Layers</h3>
+        <ul>
+            <li><input type="checkbox"> dhm_terrain_shadow map</li>
+            <li><input type="checkbox"> dhm_surface_shadowmap</li>
+            <li><input type="checkbox"> dhm_point origin</li>
+            <li><input type="checkbox"> dhm_correction</li>
+        </ul> -->
+        <h3>Change Background Map</h3>
+        <div class="background-options">
+            <button class="basemap-btn" id="osm-btn" onclick="changeBasemap('basemap', 'osm')">OpenStreetMap</button>
+            <button class="basemap-btn" id="satellite-btn"
+                onclick="changeBasemap('basemap', 'satellite')">Satellite</button>
+            <button class="basemap-btn" id="terrain-btn" onclick="changeBasemap('basemap', 'terrain')">Terrain</button>
+        </div>
+    </div>
+
+    <div id="map" class="map"></div>
+    <!-- Map Icons -->
+    <div id="bottom-left-container">
+        <div id="company-logo">
+            <img src="assets/logo/tngis-logo.png" alt="TNGIS Logo" title="TNGIS Logo">
+        </div>
+        <div id="map-icons">
+            
+    <!-- <button id="fullscreenBtn" class="layer-btns tooltip"><i class="bi bi-arrows-fullscreen"></i>Full Screen</button>
+    <button id="zoomToExtentBtn" class="layer-btns tooltip"><i class="bi bi-arrow-counterclockwise"></i><span class="tooltiptext">Zoom To Extent</span></button>
+    <button id="currentLocationBtn" class="layer-btns tooltip"><i class="bi bi-crosshair"></i><span class="tooltiptext">Current Location</span></button>
+    <button id="zoomInBtn" class="layer-btns tooltip" id="zoom-in-btn"><i class="bi bi-plus-circle-fill" ></i><span class="tooltiptext">Zoom In</span></button>
+    <button id="zoomOutBtn" class="layer-btns tooltip" id="zoom-out-btn"><i class="bi bi-dash-circle-fill"></i><span class="tooltiptext">Zoom Out</span></button> -->
+    
+    <div class="tooltip">Hover over me
+        <span class="tooltiptext">Tooltip text</span>
+      </div>
+    <div class="map-footer">
+        <p class="mousePosition"><i class="bi bi-geo-alt-fill"></i><span id="lat">7.325413164844948</span> , <span id="lon">76.133061568552585282</span></p>
+        <button class="scaling px-2"><label id="dist">500 m</label><div id="paaa" style="width:106px"></div></button></div>
+
+            <!-- <i class="fg-map-extent map-icon" title="Map Extent" id="zoom-to-extent-btn"></i>
+            <i class="fg-zoom-out map-icon" title="Zoom Out" id="zoom-out-btn"></i>
+            <i class="fg-zoom-in map-icon" title="Zoom In" id="zoom-in-btn"></i> -->
+        </div>
+    </div>
+    <!-- Mao icons -->
+
+    <div id="info-panel" class="info-panel">
+        <button id="close-btn" class="close-btn">&times;</button>
+        <div id="panel-content">
+            <!-- Content dynamically inserted here -->
+        </div>
+    </div>
+
+    <div id="simplified-info-panel" class="info-panel">
+        <button id="simplified-close-btn" class="close-btn">&times;</button>
+        <div id="simplified-panel-content">
+            <!-- Content dynamically inserted here -->
+        </div>
+    </div>
+    <div id="vertex-info-panel">
+        <h3 id="vertex-info-title" style="margin-top: 0;">Vertex Information <button id="close-panel-btn"
+                onclick="closeInfoPanel()">&times;</button></h3>
+        <div id="vertex-info-content" style="overflow-y: auto; height: calc(100% - 50px);">
+            <!-- Content will be dynamically injected here -->
+        </div>
+    </div>
+
+    <!-- HTML Structure for Areg Info Panel -->
+    <div id="areg-info-panel" style="display: none;">
+        <div class="panel-header">
+            <span>Land and Ownership Details</span>
+            <button id="close-areg-panel" onclick="closeAregPanel()">&times;</button>
+        </div>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTabContent('land-detail')">Land Details</button>
+            <button class="tab-btn" onclick="showTabContent('ownership-detail')">Ownership Details</button>
+        </div>
+        <div class="tab-content" id="land-detail">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Field</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody id="land-details-table">
+                    <!-- Land details will be populated here -->
+                </tbody>
+            </table>
+        </div>
+        <div class="tab-content" id="ownership-detail" style="display: none;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Owner</th>
+                        <th>Relation</th>
+                        <th>Relative</th>
+                    </tr>
+                </thead>
+                <tbody id="ownership-details-table">
+                    <!-- Ownership details will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- FMB Sketch Panel -->
+    <div id="fmb-sketch-info-panel" style="display: none;">
+        <div class="panel-header">
+            <span>FMB Sketch</span>
+            <button id="fmb-fullscreen-btn"><i class="bi bi-arrows-fullscreen"></i></button>
+            <button id="fmb-close-btn" onclick="closeFMBSketchPanel()">&times;</button>
+        </div>
+        <div class="panel-content">
+            <iframe id="fmb-sketch-viewer" style="width: 100%; height: 100%; border: none;"></iframe>
+        </div>
+    </div>
+
+    <!-- IGR Info Panel -->
+    <div id="igr-info-panel">
+        <div id="igr-info-panel-header">
+            <span>Guideline Value</span>
+            <button id="igr-close-btn" onclick="closeIGRInfoPanel()">&times;</button>
+        </div>
+        <div id="igr-card-content" style="margin-top: 10px;">
+            <!-- Card content will be added dynamically -->
+        </div>
+    </div>
+
+    <!-- Crop Info Panel -->
+    <div id="crop-info-panel">
+        <div id="crop-info-panel-header">
+            <span>Crop Survey Info</span>
+            <button id="crop-close-btn" onclick="closeCropInfoPanel()">&times;</button>
+        </div>
+        <div id="crop-card-content" style="margin-top: 10px;">
+            <!-- Card content will be added dynamically -->
+        </div>
+    </div>
+
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+        crossorigin="anonymous"></script>
+    <script src="vendor/openlayer/dist/ol.js"></script>
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/scripts.js"></script>
+
+    <script>
+        $(document).on({
+            ajaxStart: function () {
+                // $("body").addClass("user_loading");
+                showSpinner();
+            },
+            ajaxStop: function () {
+                // $("body").removeClass("user_loading");
+                hideSpinner();
+            },
+        });
+
+        // Function to show spinner
+        function showSpinner() {
+            // Show spinner
+            $(".loader").show();
+            // $("#detailsSpinner").show();
+        }
+
+        // Function to hide spinner
+        function hideSpinner() {
+            // Hide spinner
+            $(".loader").hide();
+            // $("#detailsSpinner").hide();
+        }
+        $(document).ready(function () {
+            console.log("%cWARNING: ADVANCED USERS ONLY", "font-size: 21px; font-weight: bold; color: #FF0000; -webkit-text-stroke: 1px #660000;");
+            changeBasemap('basemap', 'osm');
+            changeBasemap('layer', 'cadastral_xyz');
+            map.addLayer(geojsonLayer);
+            districtDropDown();
+            // Initial check for visibility
+            updateWMSLayerVisibility();
+        })
+
+        function populateSelect(selector, data, codeField, nameField, label) {
+            var select = $(selector);
+            select.empty();
+            select.append(`<option value="">-- Select ${label}--</option>`);
+            $.each(data, function (index, value) {
+                select.append('<option value="' + value[codeField] + '">' + value[nameField] + '</option>');
+            });
+        }
+
+        function clearGeoJson() {
+            geojsonSource.clear();
+            geojsonLayer.setVisible(false);
+        }
+
+        function fetchGeometry(caseType, districtCode, talukCode, villageCode) {
+            $.ajax({
+                url: `${BASE_URL}/v1/get_geom`,
+                method: 'POST',
+                headers: {
+                    'X-APP-NAME': 'NOC'
+                },
+                data: {
+                    case: caseType,
+                    code_type: 'lgd',
+                    district_code: districtCode,
+                    taluk_code: talukCode,
+                    village_code: villageCode
+                },
+                success: function (response) {
+                    if (response.success) {
+                        var featureCollection = response.data;
+
+                        var features = geojsonFormat.readFeatures(featureCollection, {
+                            dataProjection: 'EPSG:4326',
+                            featureProjection: 'EPSG:3857'
+                        });
+                        geojsonSource.clear();
+                        geojsonSource.addFeatures(features);
+
+                        var extent = geojsonSource.getExtent();
+
+                        map.getView().fit(extent, {
+                            duration: 4000,
+                            maxZoom: 15,
+                            padding: [20, 20, 20, 20]
+                        });
+                        geojsonLayer.setVisible(true);
+
+                    } else {
+                        console.error(response.message);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error fetching geometry data:', error);
+                }
+            });
+        }
+
+        // District Loading
+        function districtDropDown() {
+            $('#taluk').empty();
+            $('#taluk').append('<option value="">Select Taluk</option>')
+            $('#village').empty();
+            $('#village').append('<option value="">Select Village</option>')
+
+            $.ajax({
+                url: `${BASE_URL}/v2/getAdminDropDown`,
+                method: 'POST',
+                headers: {
+                    'X-APP-NAME': 'NOC'
+                },
+                data: {
+                    case: 'district',
+                    code_type: 'lgd'
+                },
+                success: function (response) {
+                    if (response.success) {
+                        populateSelect('#district', response.data, 'district_code', 'district_name', 'District');
+                    } else {
+                        console.error(response.message);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error fetching district data:', error);
+                }
+            });
+        }
+        // Taluk Loading
+        $('#district').change(function () {
+            var districtCode = $(this).val();
+            $('#taluk').empty();
+            $('#taluk').append('<option value="">Select Taluk</option>')
+            $('#village').empty();
+            $('#village').append('<option value="">Select Village</option>')
+            if (districtCode) {
+                $.ajax({
+                    url: `${BASE_URL}/v2/getAdminDropDown`,
+                    method: 'POST',
+                    headers: {
+                        'X-APP-NAME': 'NOC'
+                    },
+                    data: {
+                        case: 'taluk',
+                        code_type: 'lgd',
+                        district_code: districtCode
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            populateSelect('#taluk', response.data, 'taluk_code', 'taluk_name', 'Taluk');
+                            $('#village').empty().append('<option value="">-- Select Village --</option>');
+                        } else {
+                            console.error(response.message);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error fetching taluk data:', error);
+                    }
+                });
+
+                fetchGeometry('district', districtCode, null, null);
+            } else {
+                $('#taluk').empty().append('<option value="">-- Select Taluk --</option>');
+                $('#village').empty().append('<option value="">-- Select Village --</option>');
+                clearGeoJson();
+            }
+        });
+        // Village Loading
+        $('#taluk').change(function () {
+            var districtCode = $('#district').val();
+            var talukCode = $(this).val();
+            $('#village').empty();
+            $('#village').append('<option value="">Select Village</option>')
+            if (districtCode && talukCode) {
+                $.ajax({
+                    url: `${BASE_URL}/v2/getAdminDropDown`,
+                    method: 'POST',
+                    headers: {
+                        'X-APP-NAME': 'NOC'
+                    },
+                    data: {
+                        case: 'revenue_village',
+                        code_type: 'lgd',
+                        district_code: districtCode,
+                        taluk_code: talukCode
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            populateSelect('#village', response.data, 'village_code', 'village_name', 'Village');
+                        } else {
+                            console.error(response.message);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error fetching village data:', error);
+                    }
+                });
+
+                fetchGeometry('taluk', districtCode, talukCode, null);
+            } else {
+                $('#village').empty().append('<option value="">-- Select Village --</option>');
+                clearGeoJson();
+            }
+        });
+
+
+        $('#village').change(function () {
+            var districtCode = $('#district').val();
+            var talukCode = $('#taluk').val();
+            var villageCode = $(this).val();
+            if (districtCode && talukCode && villageCode) {
+                fetchGeometry('revenue_village', districtCode, talukCode, villageCode);
+            } else {
+                clearGeoJson();
+            }
+        });
+
+
+        // Toggle the 'active' class when 'resetRotation' button is clicked
+        document.getElementById('resetRotation').addEventListener('click', function(event) {
+          // Select the element with the class 'sub-rotate-btns'
+          const rotateBtns = document.querySelector('.sub-rotate-btns');
+        
+          // Check if the element exists to avoid errors
+          if (rotateBtns) {
+            rotateBtns.classList.toggle('active'); // Toggle the 'active' class
+          } else {
+            console.error('Element with class "sub-rotate-btns" not found.');
+          }
+        
+          // Stop the click from propagating to the document (prevents it from being immediately removed)
+          event.stopPropagation();
+        });
+        
+        // Add a click event to the document to remove 'active' class if clicked outside
+        document.addEventListener('click', function(event) {
+          const rotateBtns = document.querySelector('.sub-rotate-btns');
+          
+          // If rotateBtns exists and the clicked target is not inside '.sub-rotate-btns' or '#resetRotation', remove 'active'
+          if (rotateBtns && !rotateBtns.contains(event.target) && !document.getElementById('resetRotation').contains(event.target)) {
+            rotateBtns.classList.remove('active');
+          }
+        });
+       
+    $(document).ready(function () {
+        const $dialog = $('.modal-dialog');
+
+        let isDragging = false;
+        let offsetX = 0;
+        let offsetY = 0;
+
+        $('.modal-header').on('mousedown', function (e) {
+            isDragging = true;
+            offsetX = e.clientX - $dialog.offset().left;
+            offsetY = e.clientY - $dialog.offset().top;
+            $dialog.css('cursor', 'grabbing');
+        });
+
+        $(document).on('mousemove', function (e) {
+            if (isDragging) {
+                const left = e.clientX - offsetX;
+                const top = e.clientY - offsetY;
+
+                $dialog.css({
+                    left: left + 'px',
+                    top: top + 'px'
+                });
+            }
+        });
+
+        $(document).on('mouseup', function () {
+            isDragging = false;
+            $dialog.css('cursor', 'grab');
+        });
+    });
+
+    $(document).ready(function () {
+        $('.nav-link').on('click', function () {
+            const target = $(this).data('target');
+            const content = $(target);
+
+            // If the clicked tab is already active, hide it
+            if ($(this).hasClass('active')) {
+                $(this).removeClass('active').attr('aria-selected', 'false');
+                content.removeClass('show active');
+            } else {
+                // Deactivate all tabs and content
+                $('.nav-link').removeClass('active').attr('aria-selected', 'false');
+                $('.tab-pane').removeClass('show active');
+
+                // Activate the clicked tab and content
+                $(this).addClass('active').attr('aria-selected', 'true');
+                content.addClass('show active');
+            }
+        });
+    });
+</script>
+</body>
+
+</html>
