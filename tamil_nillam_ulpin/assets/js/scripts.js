@@ -185,16 +185,16 @@ document.getElementById('zoom-to-extent-btn').addEventListener('click', () => {
     view.fit(zoomtoExtentValue, { size: map.getSize() });
 });
 
-document.addEventListener('click', function (event) {
-    const menu = document.getElementById('menu');
-    const navbar = document.getElementById('navbar');
+// document.addEventListener('click', function (event) {
+//     const menu = document.getElementById('menu');
+//     const navbar = document.getElementById('navbar');
 
-    // Check if the click is outside the navbar and menu
-    if (!navbar.contains(event.target) && !menu.contains(event.target)) {
-        menu.classList.remove('show');
-        menu.classList.add('hidden');
-    }
-});
+//     // Check if the click is outside the navbar and menu
+//     if (!navbar.contains(event.target) && !menu.contains(event.target)) {
+//         menu.classList.remove('show');
+//         menu.classList.add('hidden');
+//     }
+// });
 
 // Function to toggle the menu visibility
 function toggleMenu() {
@@ -327,12 +327,19 @@ map.on('singleclick', function (evt) {
             longitude: lon,
         },
         success: function (response) {
+            var responseMessage = '';
             if (response.success) {
-                var response_data = response.data;
-                console.log(response_data)
-                // displayInfo(response_data)
-                addGeoJsonLayer(response_data.geojson_geom)
-                displaySimplifiedInfo(response_data, lat, lon)
+                if(response.success == 1){
+                    var response_data = response.data;
+                    // console.log(response_data)
+                    // displayInfo(response_data)
+                    addGeoJsonLayer(response_data.geojson_geom)
+                    displaySimplifiedInfo(response_data, lat, lon)
+                }else{
+                    responseMessage = response.message;
+                    alert(responseMessage);
+                }
+                
             } else {
                 console.error(response.message);
             }
@@ -348,39 +355,13 @@ map.on('singleclick', function (evt) {
 document.getElementById('close-btn').addEventListener('click', hidePanel);
 
 function displaySimplifiedInfo(data, lat, long) {
-    const panel = document.getElementById('simplified-info-panel');
-    const content = document.getElementById('simplified-panel-content');
+    
+
+    const panel = document.getElementById('lpi-container');
+    const content = document.getElementById('lpi-content');
 
     // Clear previous content
     content.innerHTML = '';
-
-    // Title Section
-    const titleDiv = document.createElement('div');
-    titleDiv.className = 'info-title';
-    titleDiv.innerHTML = `
-                            Land Parcel Information
-                        `;
-    content.appendChild(titleDiv);
-
-    // Survey Number and Sub Division at the top
-    const surveySection = document.createElement('div');
-    surveySection.className = 'info-survey-section';
-    // survey_number = data.is_fmb ? `${data.survey_number}/${data.sub_division}` : data.survey_number
-    survey_number = data.is_fmb == 1 ? (data.sub_division != null ? `${data.survey_number}/${data.sub_division}` : data.survey_number) : data.survey_number;
-    surveySection.innerHTML = `
-        <div><strong>ULPIN:</strong> ${data.ulpin} - <strong>Centroid:</strong> ${data.centroid}</div></div><br>
-        <div><strong>Survey Number:</strong> ${survey_number}</div>
-        <br>
-        <div class="info-icons">
-                                <i class="bi bi-bank text-white district-icon" title="Patta / Chitta - A-Reg" onclick='openAregInfo(${JSON.stringify(data)})'></i>
-        <i class="bi bi-rulers text-white taluk-icon" title="FMB Sketch" onclick='openFMBSketchInfo(${JSON.stringify(data)})'></i>
-        <i class="fas fa-globe text-white village-icon" title="Vertex / Plot Corner List" onclick='highlightVertices(${JSON.stringify(data.geojson_geom)})'></i>
-        <i class="fas fa-inr text-white village-icon" title="Guideline Value" onclick='openIGRInfo(${JSON.stringify(data)},${lat},${long})'></i>
-                            </div>
-        
-    `;
-    // <i class="fas fa-leaf text-white village-icon" title="Guideline Value" onclick='openIGRInfo(${JSON.stringify(data)},${lat},${long})'></i>
-    content.appendChild(surveySection);
 
     // Group Data into Sections
     const infoDiv = document.createElement('div');
@@ -396,26 +377,86 @@ function displaySimplifiedInfo(data, lat, long) {
     `;
     infoDiv.appendChild(districtTalukVillage);
 
-    // LGD Codes and Village LGD Code
+    // LGD Codes
     const lgdCodes = document.createElement('div');
     lgdCodes.className = 'lgd-codes';
     lgdCodes.innerHTML = `
-        <div><strong>Village LGD Code:</strong> ${data.lgd_village_code}(${data.rural_urban})</div>
+        <div><strong>Village LGD Code:</strong> ${data.lgd_village_code} (${data.rural_urban})</div>
     `;
     infoDiv.appendChild(lgdCodes);
 
     content.appendChild(infoDiv);
 
+    // Survey Section
+    const surveySection = document.createElement('div');
+    surveySection.className = 'info-survey-section';
+
+    const surveyNumber = data.is_fmb == 1
+        ? (data.sub_division ? `${data.survey_number}/${data.sub_division}` : data.survey_number)
+        : data.survey_number;
+
+    surveySection.innerHTML = `
+        <div><strong>ULPIN:</strong> ${data.ulpin}</div> <div><strong>Centroid:</strong> ${data.centroid}</div><br>
+        <div><strong>Survey Number:</strong> ${surveyNumber}</div>
+        <br>
+    `;
+
+    // Icon Section
+    const iconSection = document.createElement('div');
+    iconSection.className = 'info-icons';
+
+    iconSection.innerHTML = `
+        <ul class="nav nav-tabs mb-3 d-flex flex-column" id="myTab" role="tablist">
+            <li class="nav-item mx-1" role="presentation">
+                <button class="nav-link district-icon" title="Patta / Chitta - A-Reg" id="profile-tab" type="button" 
+                    data-bs-target="#profile-tab-pane" aria-controls="profile-tab-pane" aria-selected="false" 
+                    onclick='openAregInfo(${JSON.stringify(data)})'>
+                    <i class="bi bi-bank2"></i>
+                </button>
+            </li>
+            <li class="nav-item mx-1" role="presentation">
+                <button class="nav-link district-icon" title="FMB Sketch" id="next-tab" type="button" 
+                    data-bs-target="#next-tab-pane" aria-controls="next-tab-pane" aria-selected="false" 
+                    onclick='openFMBSketchInfo(${JSON.stringify(data)})'>
+                    <i class="bi bi-rulers"></i>
+                </button>
+            </li>
+            <li class="nav-item mx-1" role="presentation">
+                <button class="nav-link district-icon" title="Vertex / Plot Corner List" id="pro-tab" type="button" 
+                    data-bs-target="#pro-tab-pane" aria-controls="pro-tab-pane" aria-selected="false" 
+                    onclick='highlightVertices(${JSON.stringify(data.geojson_geom)})'>
+                    <i class="bi bi-globe"></i>
+                </button>
+            </li>
+            <li class="nav-item mx-1" role="presentation">
+                <button class="nav-link district-icon" title="Guideline Value" id="nex-tab" type="button" 
+                    data-bs-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false" 
+                    onclick='openIGRInfo(${JSON.stringify(data)}, ${lat}, ${long})'>
+                    <img src="assets/icons/rubai.svg" id="rubai" alt="">
+                </button>
+            </li>
+        </ul>
+    `;
+
+    // Append sections to content
+    content.appendChild(surveySection);
+    content.appendChild(iconSection);
+
+
+    
+
     // Show the panel
-    panel.style.display = 'block';
-    panel.classList.add('show');
+    // panel.style.display = 'block';
+    // panel.classList.add('show');
+    $("#staticBackdrop").modal('show');
 }
 
 // Hide the info panel
 function simplifiedHidePanel() {
-    const panel = document.getElementById('simplified-info-panel');
-    panel.classList.remove('show');
-    panel.style.display = 'none';
+    // const panel = document.getElementById('staticBackdrop');
+    // panel.classList.remove('show');
+    // panel.style.display = 'none';
+    $("#staticBackdrop").modal('hide');
 }
 
 // Close button event listener
@@ -488,44 +529,7 @@ function highlightVertices(sgeojsonGeom) {
 
     map.addLayer(vertexLayer);
 
-    // Update the info panel with vertex details
-    const infoContent = document.getElementById('vertex-info-content');
-    infoContent.innerHTML = '';
-
-    const panelTitle = document.getElementById('vertex-info-title');
-    panelTitle.innerHTML = `Vertex Information (${vertices.length} Vertices) <button id="close-panel-btn" onclick="closeInfoPanel()">X</button>`;
-
-    let vertexTablecontent = `
-        <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr>
-                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Vertex Number</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Latitude</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Longitude</th>
-                    </tr>
-                </thead>
-                <tbody>
-    `;
-    vertices.forEach((vertex, index) => {
-        // const coordLonLat = ol.proj.toLonLat(vertex); // Convert to lat/lon (WGS84)
-
-        vertexTablecontent += `
-                    <tr onclick="zoomToVertex(${vertex[0]}, ${vertex[1]})" style="cursor: pointer;">
-                        <td style="border: 1px solid #ddd; padding: 8px;">${index + 1}</td>
-                        <td style="border: 1px solid #ddd; padding: 8px;">${vertex[1].toFixed(6)}</td>
-                        <td style="border: 1px solid #ddd; padding: 8px;">${vertex[0].toFixed(6)}</td>
-                    </tr>
-        `;
-    });
-
-    vertexTablecontent += `
-                </tbody>
-            </table>
-    `;
-
-    infoContent.innerHTML = vertexTablecontent;
-    const panel = document.getElementById('vertex-info-panel');
-    panel.style.display = 'block';
+    displayVertexDetails(vertices);
 
     // Zoom to fit the extent of vertices
     const extent = vertexSource.getExtent();
@@ -534,6 +538,74 @@ function highlightVertices(sgeojsonGeom) {
         maxZoom: 18,
         padding: [20, 20, 20, 20]
     });
+}
+function displayVertexDetails(vertices) {
+    
+    // document.getElementById('areg-tab-container').remove();
+    document.getElementById('areg-tab-container')?.remove();
+
+    // Select the .info-icons div
+    const iconSection = document.querySelector('.info-icons');
+
+    // Remove any existing vertex info container
+    const existingVertexContainer = document.getElementById('vertex-info-container');
+    if (existingVertexContainer) {
+        existingVertexContainer.remove();
+    }
+
+    // Create the container for the vertex info
+    const vertexContainer = document.createElement('div');
+    vertexContainer.id = 'vertex-info-container';
+    vertexContainer.className = 'mt-2 p-3 border rounded';
+    vertexContainer.style.maxHeight = '400px';   // Max height for scrollable content
+    vertexContainer.style.overflowY = 'auto';    // Vertical scroll bar
+    vertexContainer.style.background = '#f9f9f9';
+    vertexContainer.style.border = '1px solid #ddd';
+
+    // Add the title with a close button
+    const panelTitle = document.createElement('div');
+    panelTitle.className = 'd-flex justify-content-between align-items-center';
+    panelTitle.innerHTML = `
+        <h5 class="m-0">Vertex Information (${vertices.length} Vertices)</h5>
+    `;
+
+    // Create the table content
+    let vertexTableContent = `
+        <table class="table table-bordered table-striped mt-2">
+            <thead class="table-dark">
+                <tr>
+                    <th>Vertex Number</th>
+                    <th>Latitude</th>
+                    <th>Longitude</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    vertices.forEach((vertex, index) => {
+        vertexTableContent += `
+            <tr onclick="zoomToVertex(${vertex[0]}, ${vertex[1]})" style="cursor: pointer;">
+                <td>${index + 1}</td>
+                <td>${vertex[1].toFixed(6)}</td>
+                <td>${vertex[0].toFixed(6)}</td>
+            </tr>
+        `;
+    });
+
+    vertexTableContent += `
+            </tbody>
+        </table>
+    `;
+
+    // Append the title and table content
+    vertexContainer.appendChild(panelTitle);
+
+    const infoContent = document.createElement('div');
+    infoContent.innerHTML = vertexTableContent;
+    vertexContainer.appendChild(infoContent);
+
+    // Insert the vertex container below the .info-icons div
+    iconSection.insertAdjacentElement('afterend', vertexContainer);
 }
 
 // Utility function to extract vertices and remove the last point if it's a duplicate (Polygon/MultiPolygon)
@@ -704,13 +776,92 @@ function openAregInfo(data) {
     }
 }
 
+
 function populateInfoPanel(response) {
     console.log(response);
-    if (response.success == 1) {
+    document.getElementById('vertex-info-container')?.remove();
+    if (response.success === 1) {
         const landDetail = response.data.land_detail;
         const ownershipDetails = response.data.ownership_detail;
 
-        // Populate Land Details
+        // Select the .info-icons div
+        const iconSection = document.querySelector('.info-icons');
+
+        // Remove existing tab container if it exists
+        const existingTabContainer = document.getElementById('areg-tab-container');
+        if (existingTabContainer) {
+            existingTabContainer.remove();
+        }
+
+        // Create the tab container
+        const tabContainer = document.createElement('div');
+        tabContainer.id = 'areg-tab-container';
+        tabContainer.className = 'mt-1';
+
+        // Create tab navigation
+        const tabNav = document.createElement('ul');
+        tabNav.className = 'nav nav-tabs';
+        tabNav.innerHTML = `
+            <li class="nav-item">
+                <button class="nav-link active" id="land-tab" data-bs-toggle="tab" 
+                    data-bs-target="#land" type="button" role="tab" aria-controls="land" aria-selected="true">
+                    Land Details
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" id="ownership-tab" data-bs-toggle="tab" 
+                    data-bs-target="#ownership" type="button" role="tab" aria-controls="ownership" aria-selected="false">
+                    Ownership Details
+                </button>
+            </li>
+        `;
+
+        // Create the tab content container with scrollable area
+        const tabContent = document.createElement('div');
+        tabContent.className = 'tab-content mt-2';
+        tabContent.style.maxHeight = '300px';  // Set max height
+        tabContent.style.overflowY = 'auto';   // Add vertical scroll bar
+        tabContent.style.background = '#f9f9f9';
+        tabContent.style.border = '1px solid #ddd';
+
+        // Land Details Tab
+        const landTabPane = document.createElement('div');
+        landTabPane.className = 'tab-pane fade show active';
+        landTabPane.id = 'land';
+        landTabPane.role = 'tabpanel';
+        landTabPane.innerHTML = `
+            <table class="table table-bordered table-striped mt-2">
+                <thead class="table-dark">
+                    <tr><th>Field</th><th>Value</th></tr>
+                </thead>
+                <tbody id="land-details-table"></tbody>
+            </table>
+        `;
+
+        // Ownership Details Tab
+        const ownershipTabPane = document.createElement('div');
+        ownershipTabPane.className = 'tab-pane fade';
+        ownershipTabPane.id = 'ownership';
+        ownershipTabPane.role = 'tabpanel';
+        ownershipTabPane.innerHTML = `
+            <table class="table table-bordered table-striped mt-2">
+                <thead class="table-dark">
+                    <tr><th>#</th><th>Owner</th><th>Relation</th><th>Relative</th></tr>
+                </thead>
+                <tbody id="ownership-details-table"></tbody>
+            </table>
+        `;
+
+        // Append tabs and content
+        tabContent.appendChild(landTabPane);
+        tabContent.appendChild(ownershipTabPane);
+        tabContainer.appendChild(tabNav);
+        tabContainer.appendChild(tabContent);
+
+        // Insert the tab section below the .info-icons div
+        iconSection.insertAdjacentElement('afterend', tabContainer);
+
+        // Populate Land Details Table
         const landDetailsTable = document.getElementById("land-details-table");
         landDetailsTable.innerHTML = ''; // Clear previous data
         for (const [key, value] of Object.entries(landDetail)) {
@@ -722,7 +873,7 @@ function populateInfoPanel(response) {
             landDetailsTable.appendChild(row);
         }
 
-        // Populate Ownership Details
+        // Populate Ownership Details Table
         const ownershipDetailsTable = document.getElementById("ownership-details-table");
         ownershipDetailsTable.innerHTML = ''; // Clear previous data
         if (ownershipDetails.length === 0) {
@@ -747,11 +898,16 @@ function populateInfoPanel(response) {
         // Show the Info Panel
         const infoPanel = document.getElementById("areg-info-panel");
         infoPanel.style.display = "block";
+
     } else {
         closeAregPanel();
         alert("No Ownership Details Found for the Selected Land Parcel");
     }
 }
+
+
+
+
 
 function showTabContent(tabId) {
     const tabs = document.querySelectorAll("#areg-info-panel .tab-content");
@@ -966,6 +1122,57 @@ function closeIGRInfoPanel(){
     
 }
 
+document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.querySelector('.draggable-modal');
+    const header = document.getElementById('modal-header');
+    const resizer = document.getElementById('resizer');
+
+    let offsetX = 0, offsetY = 0, isDragging = false;
+    let isResizing = false, startX, startY, startWidth, startHeight;
+
+    // Draggable functionality
+    header.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        offsetX = e.clientX - modal.getBoundingClientRect().left;
+        offsetY = e.clientY - modal.getBoundingClientRect().top;
+        modal.style.transition = 'none';  // Disable transition while dragging
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (isDragging) {
+            const x = e.clientX - offsetX;
+            const y = e.clientY - offsetY;
+            
+            modal.style.left = `${x}px`;
+            modal.style.top = `${y}px`;
+        }
+
+        if (isResizing) {
+            const width = startWidth + (e.clientX - startX);
+            const height = startHeight + (e.clientY - startY);
+
+            // Apply new dimensions with boundaries
+            modal.style.width = `${Math.max(400, Math.min(width, window.innerWidth * 0.9))}px`;
+            modal.style.height = `${Math.max(300, Math.min(height, window.innerHeight * 0.9))}px`;
+        }
+    });
+
+    document.addEventListener('mouseup', () => {
+        isDragging = false;
+        isResizing = false;
+        modal.style.transition = '';
+    });
+
+    // Single resizer handle functionality
+    resizer.addEventListener('mousedown', (e) => {
+        isResizing = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        startWidth = modal.offsetWidth;
+        startHeight = modal.offsetHeight;
+        e.preventDefault();
+    });
+});
 
 
 
