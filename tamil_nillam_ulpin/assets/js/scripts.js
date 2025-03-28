@@ -78,6 +78,19 @@ function changeBasemap(type, basemap) {
                 id: 'terrain-basemap',
             });
             break;
+        case 'nomap':
+            basemapLayer = new ol.layer.Tile({
+                source: new ol.source.XYZ({
+                    url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png', // Terrain layer URL
+                    attributions: ['© OpenTopoMap contributors'],
+                }),
+                baseLayer: true,
+                zIndex: -1,
+                type: 'basemap',         // Basemap type
+                id: 'terrain-basemap',
+                visible: false           // Initially hidden
+            });
+            break;
         case 'cadastral_xyz':
             basemapLayer = new ol.layer.Tile({
                 source: new ol.source.XYZ({
@@ -1229,167 +1242,167 @@ const layerConfig = [
             },
         ],
     },
-    {
-        category: 'CRZ Layers',
-        layers: [
-            {
-                id: "CRZ_crz_boundary",
-                name: "CRZ Boundary",
-                title: "CRZ Boundary",
-                type: "wms",
-                defaultOpacity: 1,
-                defaultVisibility: true,
-                url: "https://tngis.tnega.org/geoserver/wms",
-                params: {
-                    LAYERS: "generic_viewer:crz_boundary",
-                    STYLES: "",
-                },
-            },
-            {
-                id: "CRZ_cvca_boundary",
-                name: "CVCA Boundary",
-                title: "CVCA Boundary",
-                type: "wms",
-                defaultOpacity: 1,
-                defaultVisibility: true,
-                url: "https://tngis.tnega.org/geoserver/wms",
-                params: {
-                    LAYERS: "generic_viewer:cvca_boundary",
-                    STYLES: "",
-                },
-            },
-            {
-                id: "CRZ_high_tide_line",
-                name: "High Tide Line",
-                title: "High Tide Line",
-                type: "wms",
-                defaultOpacity: 1,
-                defaultVisibility: true,
-                url: "https://tngis.tnega.org/geoserver/wms",
-                params: {
-                    LAYERS: "generic_viewer:high_tide_line",
-                    STYLES: "",
-                },
-            },
-            {
-                id: "CRZ_low_tide_line",
-                name: "Low Tide Line",
-                title: "Low Tide Line",
-                type: "wms",
-                defaultOpacity: 1,
-                defaultVisibility: true,
-                url: "https://tngis.tnega.org/geoserver/wms",
-                params: {
-                    LAYERS: "generic_viewer:low_tide_line",
-                    STYLES: "",
-                },
-            },
-            {
-                id: "CRZ_1a",
-                name: "CRZ 1A",
-                title: "CRZ 1A",
-                type: "wms",
-                defaultOpacity: 1,
-                defaultVisibility: true,
-                url: "https://tngis.tnega.org/geoserver/wms",
-                params: {
-                    LAYERS: "generic_viewer:crz1a",
-                    STYLES: "",
-                },
-            },
-            {
-                id: "CRZ_crza1_mangrove_buffer",
-                name: "CRZ 1A Mangrove Buffer",
-                title: "CRZ 1A Mangrove Buffer",
-                type: "wms",
-                defaultOpacity: 1,
-                defaultVisibility: true,
-                url: "https://tngis.tnega.org/geoserver/wms",
-                params: {
-                    LAYERS: "generic_viewer:crza1_mangrove_buffer",
-                    STYLES: "",
-                },
-            },
-            {
-                id: "CRZ_crz_ib",
-                name: "CRZ 1B",
-                title: "CRZ 1B",
-                type: "wms",
-                defaultOpacity: 1,
-                defaultVisibility: true,
-                url: "https://tngis.tnega.org/geoserver/wms",
-                params: {
-                    LAYERS: "generic_viewer:crz_ib",
-                    STYLES: "",
-                },
-            },
-            {
-                id: "CRZ_crz2",
-                name: "CRZ 2",
-                title: "CRZ 2",
-                type: "wms",
-                defaultOpacity: 1,
-                defaultVisibility: true,
-                url: "https://tngis.tnega.org/geoserver/wms",
-                params: {
-                    LAYERS: "generic_viewer:crz2",
-                    STYLES: "",
-                },
-            },
-            {
-                id: "CRZ_crz_3a",
-                name: "CRZ 3A",
-                title: "CRZ 3A",
-                type: "wms",
-                defaultOpacity: 1,
-                defaultVisibility: true,
-                url: "https://tngis.tnega.org/geoserver/wms",
-                params: {
-                    LAYERS: "generic_viewer:crz_3a",
-                    STYLES: "",
-                },
-            },
-            {
-                id: "CRZ_crz_3b",
-                name: "CRZ 3B",
-                title: "CRZ 3B",
-                type: "wms",
-                defaultOpacity: 1,
-                defaultVisibility: true,
-                url: "https://tngis.tnega.org/geoserver/wms",
-                params: {
-                    LAYERS: "generic_viewer:crz_3b",
-                    STYLES: "",
-                },
-            },
-            {
-                id: "CRZ_crz_iv_a",
-                name: "CRZ 4A",
-                title: "CRZ 4A",
-                type: "wms",
-                defaultOpacity: 1,
-                defaultVisibility: true,
-                url: "https://tngis.tnega.org/geoserver/wms",
-                params: {
-                    LAYERS: "generic_viewer:crz_iv_a",
-                    STYLES: "",
-                },
-            },
-            {
-                id: "CRZ_crz_4b_07_07_2022",
-                name: "CRZ 4B",
-                title: "CRZ 4B",
-                type: "wms",
-                defaultOpacity: 1,
-                defaultVisibility: true,
-                url: "https://tngis.tnega.org/geoserver/wms",
-                params: {
-                    LAYERS: "generic_viewer:crz_4b_07_07_2022",
-                    STYLES: "",
-                },
-            },
-        ]
-    },
+    // {
+    //     category: 'CRZ Layers',
+    //     layers: [
+    //         {
+    //             id: "CRZ_crz_boundary",
+    //             name: "CRZ Boundary",
+    //             title: "CRZ Boundary",
+    //             type: "wms",
+    //             defaultOpacity: 1,
+    //             defaultVisibility: true,
+    //             url: "https://tngis.tnega.org/geoserver/wms",
+    //             params: {
+    //                 LAYERS: "generic_viewer:crz_boundary",
+    //                 STYLES: "",
+    //             },
+    //         },
+    //         {
+    //             id: "CRZ_cvca_boundary",
+    //             name: "CVCA Boundary",
+    //             title: "CVCA Boundary",
+    //             type: "wms",
+    //             defaultOpacity: 1,
+    //             defaultVisibility: true,
+    //             url: "https://tngis.tnega.org/geoserver/wms",
+    //             params: {
+    //                 LAYERS: "generic_viewer:cvca_boundary",
+    //                 STYLES: "",
+    //             },
+    //         },
+    //         {
+    //             id: "CRZ_high_tide_line",
+    //             name: "High Tide Line",
+    //             title: "High Tide Line",
+    //             type: "wms",
+    //             defaultOpacity: 1,
+    //             defaultVisibility: true,
+    //             url: "https://tngis.tnega.org/geoserver/wms",
+    //             params: {
+    //                 LAYERS: "generic_viewer:high_tide_line",
+    //                 STYLES: "",
+    //             },
+    //         },
+    //         {
+    //             id: "CRZ_low_tide_line",
+    //             name: "Low Tide Line",
+    //             title: "Low Tide Line",
+    //             type: "wms",
+    //             defaultOpacity: 1,
+    //             defaultVisibility: true,
+    //             url: "https://tngis.tnega.org/geoserver/wms",
+    //             params: {
+    //                 LAYERS: "generic_viewer:low_tide_line",
+    //                 STYLES: "",
+    //             },
+    //         },
+    //         {
+    //             id: "CRZ_1a",
+    //             name: "CRZ 1A",
+    //             title: "CRZ 1A",
+    //             type: "wms",
+    //             defaultOpacity: 1,
+    //             defaultVisibility: true,
+    //             url: "https://tngis.tnega.org/geoserver/wms",
+    //             params: {
+    //                 LAYERS: "generic_viewer:crz1a",
+    //                 STYLES: "",
+    //             },
+    //         },
+    //         {
+    //             id: "CRZ_crza1_mangrove_buffer",
+    //             name: "CRZ 1A Mangrove Buffer",
+    //             title: "CRZ 1A Mangrove Buffer",
+    //             type: "wms",
+    //             defaultOpacity: 1,
+    //             defaultVisibility: true,
+    //             url: "https://tngis.tnega.org/geoserver/wms",
+    //             params: {
+    //                 LAYERS: "generic_viewer:crza1_mangrove_buffer",
+    //                 STYLES: "",
+    //             },
+    //         },
+    //         {
+    //             id: "CRZ_crz_ib",
+    //             name: "CRZ 1B",
+    //             title: "CRZ 1B",
+    //             type: "wms",
+    //             defaultOpacity: 1,
+    //             defaultVisibility: true,
+    //             url: "https://tngis.tnega.org/geoserver/wms",
+    //             params: {
+    //                 LAYERS: "generic_viewer:crz_ib",
+    //                 STYLES: "",
+    //             },
+    //         },
+    //         {
+    //             id: "CRZ_crz2",
+    //             name: "CRZ 2",
+    //             title: "CRZ 2",
+    //             type: "wms",
+    //             defaultOpacity: 1,
+    //             defaultVisibility: true,
+    //             url: "https://tngis.tnega.org/geoserver/wms",
+    //             params: {
+    //                 LAYERS: "generic_viewer:crz2",
+    //                 STYLES: "",
+    //             },
+    //         },
+    //         {
+    //             id: "CRZ_crz_3a",
+    //             name: "CRZ 3A",
+    //             title: "CRZ 3A",
+    //             type: "wms",
+    //             defaultOpacity: 1,
+    //             defaultVisibility: true,
+    //             url: "https://tngis.tnega.org/geoserver/wms",
+    //             params: {
+    //                 LAYERS: "generic_viewer:crz_3a",
+    //                 STYLES: "",
+    //             },
+    //         },
+    //         {
+    //             id: "CRZ_crz_3b",
+    //             name: "CRZ 3B",
+    //             title: "CRZ 3B",
+    //             type: "wms",
+    //             defaultOpacity: 1,
+    //             defaultVisibility: true,
+    //             url: "https://tngis.tnega.org/geoserver/wms",
+    //             params: {
+    //                 LAYERS: "generic_viewer:crz_3b",
+    //                 STYLES: "",
+    //             },
+    //         },
+    //         {
+    //             id: "CRZ_crz_iv_a",
+    //             name: "CRZ 4A",
+    //             title: "CRZ 4A",
+    //             type: "wms",
+    //             defaultOpacity: 1,
+    //             defaultVisibility: true,
+    //             url: "https://tngis.tnega.org/geoserver/wms",
+    //             params: {
+    //                 LAYERS: "generic_viewer:crz_iv_a",
+    //                 STYLES: "",
+    //             },
+    //         },
+    //         {
+    //             id: "CRZ_crz_4b_07_07_2022",
+    //             name: "CRZ 4B",
+    //             title: "CRZ 4B",
+    //             type: "wms",
+    //             defaultOpacity: 1,
+    //             defaultVisibility: true,
+    //             url: "https://tngis.tnega.org/geoserver/wms",
+    //             params: {
+    //                 LAYERS: "generic_viewer:crz_4b_07_07_2022",
+    //                 STYLES: "",
+    //             },
+    //         },
+    //     ]
+    // },
     {
         category: "CRZ Affected Area",
         layers: [
@@ -1478,7 +1491,7 @@ layerConfig.forEach((category, index) => {
 
         checkbox.addEventListener('change', (e) => {
             layer.setVisible(e.target.checked);
-            updateAllLegends();
+            // updateAllLegends();
         });
 
         label.appendChild(checkbox);
@@ -1489,7 +1502,7 @@ layerConfig.forEach((category, index) => {
 
     layerControl.appendChild(accordionItem);
 });
-updateAllLegends();
+// updateAllLegends();
 function updateAllLegends() {
     const legendContent = document.getElementById('legend-content');
     legendContent.innerHTML = ''; // Clear existing legends
@@ -1598,8 +1611,9 @@ $('#district-dropdown').change(async function () {
                 triggerChange: true
             });
             fetchGeometry('district', districtCode, null, null,null,null);
+            alert(1);
         } else {
-            resetDropdown('taluk-dropdown', 'Select Taluk');
+            // resetDropdown('taluk-dropdown', 'Select Taluk');
         }
     } catch (error) {
         console.error('Async Error:', error);
@@ -1619,6 +1633,7 @@ $('#taluk-dropdown').change(async function () {
             loadTown(district_code, taluk_code, area_type);
         }
         fetchGeometry('taluk', district_code, taluk_code, null,null);
+        alert(2);
     } catch (error) {
         console.error('Async Error:', error);
         showToast('error', `${error}`)
@@ -1692,6 +1707,7 @@ $('#village-dropdown').change(async function () {
             });
             // var villageCode = village_code.replace(/^0+/, '');
             fetchGeometry('revenue_village', district_code, taluk_code, village_code,null,null);
+            alert(3);
         } else {
             resetDropdown('survey-number-dropdown', 'Select Survey Number');
         }
@@ -1728,6 +1744,7 @@ $('#survey-number-dropdown').change(async function () {
             });
             // var villageCode = village_code.replace(/^0+/, '');
             fetchGeometry('survey_number', district_code, taluk_code, village_code,survey_number,null);
+            alert(4);
         } else {
             resetDropdown('sub-division-dropdown', 'Select Sub Division');
         }
@@ -1766,4 +1783,28 @@ navButtons.forEach(button => {
             infoIcons.classList.add('active');
         }
     });
+});
+
+
+// Select the UI elements
+const resetButton = document.getElementById('resetRotation');
+const rotateRightButton = document.querySelector('.rotation-right');
+const rotateLeftButton = document.querySelector('.rotation-left');
+
+// Function to rotate the map
+const rotationStep = Math.PI / 18;  // Rotate by 10 degrees (in radians)
+
+rotateRightButton.addEventListener('click', () => {
+    const currentRotation = map.getView().getRotation();
+    map.getView().setRotation(currentRotation + rotationStep);
+});
+
+rotateLeftButton.addEventListener('click', () => {
+    const currentRotation = map.getView().getRotation();
+    map.getView().setRotation(currentRotation - rotationStep);
+});
+
+// Reset rotation to North
+resetButton.addEventListener('click', () => {
+    map.getView().setRotation(0);
 });

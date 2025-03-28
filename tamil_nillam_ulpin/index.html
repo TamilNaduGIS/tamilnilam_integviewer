@@ -133,24 +133,30 @@
         </div>
         <div class="offcanvas-body">
             <div class="basemap-control my-1">
-                <h5>Basemaps</h5>
+                <h6>Basemaps</h6>
                 <label class="maptype">
-                    <input type="radio" name="basemap" value="osm" onclick="changeBasemap('basemap', 'osm')">Street Map
+                    <input type="radio" name="basemap" value="osm" checked onclick="changeBasemap('basemap', 'osm')">Street Map
                 </label>
                 <label class="maptype">
-                    <input type="radio" name="basemap" value="satellite" checked onclick="changeBasemap('basemap', 'satellite')"> Satellite
+                    <input type="radio" name="basemap" value="satellite"  onclick="changeBasemap('basemap', 'satellite')"> Satellite
+                </label>
+                <label class="maptype">
+                    <input type="radio" name="basemap" value="terrain"  onclick="changeBasemap('basemap', 'terrain')"> Terrain
+                </label>
+                <label class="maptype">
+                    <input type="radio" name="basemap" value="nomap"  onclick="changeBasemap('basemap', 'nomap')"> No Map
                 </label>
             </div>
 
             <div id="layer-control" class="my-1">
-                <h5>Layers</h5>
+                <h6>Layers</h6>
                 <!-- Layers will be dynamically added here -->
                 <div class="accordion" id="accordionPanelsStayOpenExample"></div>
             </div>
-            <div id="legend-container">
-                <h5>Legend</h5>
+            <!-- <div id="legend-container">
+                <h6>Legend</h6>
                 <div id="legend-content"></div>
-            </div>
+            </div> -->
         </div>
     </div>
 
@@ -171,9 +177,9 @@
 
         </div>
         
-        <button id="fullscreenBtn" class="layer-btns"><i class="bi bi-arrows-fullscreen"></i></button>
+        <!-- <button id="fullscreenBtn" class="layer-btns"><i class="bi bi-arrows-fullscreen"></i></button> -->
         <button id="zoom-to-extent-btn" class="layer-btns"><i class="bi bi-arrow-counterclockwise"></i></button>
-        <button id="currentLocationBtn" class="layer-btns"><i class="bi bi-crosshair"></i></button>
+        <!-- <button id="currentLocationBtn" class="layer-btns"><i class="bi bi-crosshair"></i></button> -->
         <button id="zoom-in-btn" class="layer-btns"><i class="bi bi-plus-circle-fill"></i></button>
         <button id="zoom-out-btn" class="layer-btns"><i class="bi bi-dash-circle-fill"></i></button>
         
@@ -352,7 +358,11 @@
             <button class="basemap-btn" id="terrain-btn" onclick="changeBasemap('basemap', 'terrain')">Terrain</button>
         </div>
     </div>
-
+    <div class="more_info">
+        <div class="more_info_content">
+            <span>Click on the map to know more details</span>
+        </div>
+    </div>
     <div id="map" class="map"></div>
     <!-- Map Icons -->
     <div id="bottom-left-container">
@@ -466,7 +476,7 @@
         }
         $(document).ready(function () {
             console.log("%cWARNING: ADVANCED USERS ONLY", "font-size: 21px; font-weight: bold; color: #FF0000; -webkit-text-stroke: 1px #660000;");
-            changeBasemap('basemap', 'satellite');
+            changeBasemap('basemap', 'osm');
             changeBasemap('layer', 'cadastral_xyz');
             map.addLayer(geojsonLayer);
             districtDropDown();
@@ -553,7 +563,7 @@
                 },
                 data: {
                     case: caseType,
-                    code_type: 'lgd',
+                    code_type: 'revenue',
                     district_code: districtCode,
                     taluk_code: talukCode,
                     village_code: villageCode
@@ -589,122 +599,122 @@
         }
 
         // District Loading
-        function districtDropDown() {
-            $('#taluk').empty();
-            $('#taluk').append('<option value="">Select Taluk</option>')
-            $('#village').empty();
-            $('#village').append('<option value="">Select Village</option>')
+        // function districtDropDown() {
+        //     $('#taluk').empty();
+        //     $('#taluk').append('<option value="">Select Taluk</option>')
+        //     $('#village').empty();
+        //     $('#village').append('<option value="">Select Village</option>')
 
-            $.ajax({
-                url: `${BASE_URL}/v2/getAdminDropDown`,
-                method: 'POST',
-                headers: {
-                    'X-APP-NAME': 'NOC'
-                },
-                data: {
-                    case: 'district',
-                    code_type: 'lgd'
-                },
-                success: function (response) {
-                    if (response.success) {
-                        populateSelect('#district', response.data, 'district_code', 'district_name', 'District');
-                    } else {
-                        console.error(response.message);
-                    }
-                },
-                error: function (xhr, status, error) {
-                    console.error('Error fetching district data:', error);
-                }
-            });
-        }
-        // Taluk Loading
-        $('#district').change(function () {
-            var districtCode = $(this).val();
-            $('#taluk').empty();
-            $('#taluk').append('<option value="">Select Taluk</option>')
-            $('#village').empty();
-            $('#village').append('<option value="">Select Village</option>')
-            if (districtCode) {
-                $.ajax({
-                    url: `${BASE_URL}/v2/getAdminDropDown`,
-                    method: 'POST',
-                    headers: {
-                        'X-APP-NAME': 'NOC'
-                    },
-                    data: {
-                        case: 'taluk',
-                        code_type: 'lgd',
-                        district_code: districtCode
-                    },
-                    success: function (response) {
-                        if (response.success) {
-                            populateSelect('#taluk', response.data, 'taluk_code', 'taluk_name', 'Taluk');
-                            $('#village').empty().append('<option value="">-- Select Village --</option>');
-                        } else {
-                            console.error(response.message);
-                        }
-                    },
-                    error: function (xhr, status, error) {
-                        console.error('Error fetching taluk data:', error);
-                    }
-                });
+        //     $.ajax({
+        //         url: `${BASE_URL}/v2/getAdminDropDown`,
+        //         method: 'POST',
+        //         headers: {
+        //             'X-APP-NAME': 'NOC'
+        //         },
+        //         data: {
+        //             case: 'district',
+        //             code_type: 'lgd'
+        //         },
+        //         success: function (response) {
+        //             if (response.success) {
+        //                 populateSelect('#district', response.data, 'district_code', 'district_name', 'District');
+        //             } else {
+        //                 console.error(response.message);
+        //             }
+        //         },
+        //         error: function (xhr, status, error) {
+        //             console.error('Error fetching district data:', error);
+        //         }
+        //     });
+        // }
+        // // Taluk Loading
+        // $('#district').change(function () {
+        //     var districtCode = $(this).val();
+        //     $('#taluk').empty();
+        //     $('#taluk').append('<option value="">Select Taluk</option>')
+        //     $('#village').empty();
+        //     $('#village').append('<option value="">Select Village</option>')
+        //     if (districtCode) {
+        //         $.ajax({
+        //             url: `${BASE_URL}/v2/getAdminDropDown`,
+        //             method: 'POST',
+        //             headers: {
+        //                 'X-APP-NAME': 'NOC'
+        //             },
+        //             data: {
+        //                 case: 'taluk',
+        //                 code_type: 'lgd',
+        //                 district_code: districtCode
+        //             },
+        //             success: function (response) {
+        //                 if (response.success) {
+        //                     populateSelect('#taluk', response.data, 'taluk_code', 'taluk_name', 'Taluk');
+        //                     $('#village').empty().append('<option value="">-- Select Village --</option>');
+        //                 } else {
+        //                     console.error(response.message);
+        //                 }
+        //             },
+        //             error: function (xhr, status, error) {
+        //                 console.error('Error fetching taluk data:', error);
+        //             }
+        //         });
 
-                fetchGeometry('district', districtCode, null, null);
-            } else {
-                $('#taluk').empty().append('<option value="">-- Select Taluk --</option>');
-                $('#village').empty().append('<option value="">-- Select Village --</option>');
-                clearGeoJson();
-            }
-        });
-        // Village Loading
-        $('#taluk').change(function () {
-            var districtCode = $('#district').val();
-            var talukCode = $(this).val();
-            $('#village').empty();
-            $('#village').append('<option value="">Select Village</option>')
-            if (districtCode && talukCode) {
-                $.ajax({
-                    url: `${BASE_URL}/v2/getAdminDropDown`,
-                    method: 'POST',
-                    headers: {
-                        'X-APP-NAME': 'NOC'
-                    },
-                    data: {
-                        case: 'revenue_village',
-                        code_type: 'lgd',
-                        district_code: districtCode,
-                        taluk_code: talukCode
-                    },
-                    success: function (response) {
-                        if (response.success) {
-                            populateSelect('#village', response.data, 'village_code', 'village_name', 'Village');
-                        } else {
-                            console.error(response.message);
-                        }
-                    },
-                    error: function (xhr, status, error) {
-                        console.error('Error fetching village data:', error);
-                    }
-                });
+        //         fetchGeometry('district', districtCode, null, null);
+        //     } else {
+        //         $('#taluk').empty().append('<option value="">-- Select Taluk --</option>');
+        //         $('#village').empty().append('<option value="">-- Select Village --</option>');
+        //         clearGeoJson();
+        //     }
+        // });
+        // // Village Loading
+        // $('#taluk').change(function () {
+        //     var districtCode = $('#district').val();
+        //     var talukCode = $(this).val();
+        //     $('#village').empty();
+        //     $('#village').append('<option value="">Select Village</option>')
+        //     if (districtCode && talukCode) {
+        //         $.ajax({
+        //             url: `${BASE_URL}/v2/getAdminDropDown`,
+        //             method: 'POST',
+        //             headers: {
+        //                 'X-APP-NAME': 'NOC'
+        //             },
+        //             data: {
+        //                 case: 'revenue_village',
+        //                 code_type: 'lgd',
+        //                 district_code: districtCode,
+        //                 taluk_code: talukCode
+        //             },
+        //             success: function (response) {
+        //                 if (response.success) {
+        //                     populateSelect('#village', response.data, 'village_code', 'village_name', 'Village');
+        //                 } else {
+        //                     console.error(response.message);
+        //                 }
+        //             },
+        //             error: function (xhr, status, error) {
+        //                 console.error('Error fetching village data:', error);
+        //             }
+        //         });
 
-                fetchGeometry('taluk', districtCode, talukCode, null);
-            } else {
-                $('#village').empty().append('<option value="">-- Select Village --</option>');
-                clearGeoJson();
-            }
-        });
+        //         fetchGeometry('taluk', districtCode, talukCode, null);
+        //     } else {
+        //         $('#village').empty().append('<option value="">-- Select Village --</option>');
+        //         clearGeoJson();
+        //     }
+        // });
 
 
-        $('#village').change(function () {
-            var districtCode = $('#district').val();
-            var talukCode = $('#taluk').val();
-            var villageCode = $(this).val();
-            if (districtCode && talukCode && villageCode) {
-                fetchGeometry('revenue_village', districtCode, talukCode, villageCode);
-            } else {
-                clearGeoJson();
-            }
-        });
+        // $('#village').change(function () {
+        //     var districtCode = $('#district').val();
+        //     var talukCode = $('#taluk').val();
+        //     var villageCode = $(this).val();
+        //     if (districtCode && talukCode && villageCode) {
+        //         fetchGeometry('revenue_village', districtCode, talukCode, villageCode);
+        //     } else {
+        //         clearGeoJson();
+        //     }
+        // });
 
         // script for urban and rural switching
         document.addEventListener("DOMContentLoaded", function () {
