@@ -305,6 +305,7 @@ function displayInfo(data) {
     panel.classList.add('show');
 }
 
+loadDistrict();
 // Click event listener on the map
 map.on('singleclick', function (evt) {
     // Add click listener to map to close the panel when clicking on the map
@@ -543,7 +544,7 @@ function displayVertexDetails(vertices) {
     
     // document.getElementById('areg-tab-container').remove();
     document.getElementById('areg-tab-container')?.remove();
-
+    document.getElementById('igr-info-container')?.remove();
     // Select the .info-icons div
     const iconSection = document.querySelector('.info-icons');
 
@@ -566,7 +567,7 @@ function displayVertexDetails(vertices) {
     const panelTitle = document.createElement('div');
     panelTitle.className = 'd-flex justify-content-between align-items-center';
     panelTitle.innerHTML = `
-        <h5 class="m-0">Vertex Information (${vertices.length} Vertices)</h5>
+        <h6 class="m-0">Vertex Information (${vertices.length} Vertices)</h6>
     `;
 
     // Create the table content
@@ -780,6 +781,8 @@ function openAregInfo(data) {
 function populateInfoPanel(response) {
     console.log(response);
     document.getElementById('vertex-info-container')?.remove();
+    
+    document.getElementById('igr-info-container')?.remove();
     if (response.success === 1) {
         const landDetail = response.data.land_detail;
         const ownershipDetails = response.data.ownership_detail;
@@ -896,8 +899,8 @@ function populateInfoPanel(response) {
         }
 
         // Show the Info Panel
-        const infoPanel = document.getElementById("areg-info-panel");
-        infoPanel.style.display = "block";
+        // const infoPanel = document.getElementById("areg-info-panel");
+        // infoPanel.style.display = "block";
 
     } else {
         closeAregPanel();
@@ -1041,6 +1044,9 @@ function closeFMBSketchPanel() {
 
 /** IGR Info Panel */
 function openIGRInfo(data, lat, long) {
+    document.getElementById('areg-tab-container')?.remove();
+    document.getElementById('vertex-info-container')?.remove();
+
     if (data.rural_urban === "rural") {
         const params = {
             latitude: lat,
@@ -1055,16 +1061,43 @@ function openIGRInfo(data, lat, long) {
             data: params,
             success: function (response) {
                 if (response.success) {
-                    const infoPanel = document.getElementById("igr-info-panel");
-                    const contentDiv = document.getElementById("igr-card-content");
+                    // Select the .info-icons div
+                    const iconSection = document.querySelector('.info-icons');
 
-                    // Clear any existing cards
-                    contentDiv.innerHTML = "";
+                    // Remove any existing IGR info container
+                    const existingIGRContainer = document.getElementById('igr-info-container');
+                    if (existingIGRContainer) {
+                        existingIGRContainer.remove();
+                    }
+
+                    // Create the container for IGR info
+                    const igrContainer = document.createElement('div');
+                    igrContainer.id = 'igr-info-container';
+                    igrContainer.className = 'mt-1 p-3 border rounded';
+                    igrContainer.style.maxHeight = '400px';   // Max height for scrollable content
+                    igrContainer.style.overflowY = 'auto';    // Vertical scroll bar
+                    igrContainer.style.background = '#f9f9f9';
+                    igrContainer.style.border = '1px solid #ddd';
+                    igrContainer.style.marginBottom = '8px';
+                    
+
+                    // Add the title with a close button
+                    const panelTitle = document.createElement('div');
+                    panelTitle.className = 'd-flex justify-content-between align-items-center';
+                    panelTitle.innerHTML = `
+                        <h6 class="m-0">IGR Land Value</h6>
+                    `;
+
+                    // Append the title
+                    igrContainer.appendChild(panelTitle);
+
+                    const contentDiv = document.createElement('div');
+                    contentDiv.className = 'igr-card-content mt-2';
 
                     let hasValidData = false; // Flag to check if there's valid data
 
-                     // Function to format rupee values with commas
-                     const formatRupees = (amount) =>
+                    // Function to format rupee values with commas
+                    const formatRupees = (amount) =>
                         `₹${new Intl.NumberFormat('en-IN').format(amount)}`;
 
                     // Loop through the response data to create cards for each field
@@ -1080,7 +1113,9 @@ function openIGRInfo(data, lat, long) {
                             if (field.value) {
                                 hasValidData = true; // At least one field has a value
                                 const card = document.createElement("div");
-                                card.classList.add("igr-card");
+                                card.classList.add("igr-card", "p-2", "mb-2", "border", "rounded");
+                                card.style.background = "#fff";
+                                card.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
 
                                 card.innerHTML = `
                                     <div>
@@ -1097,9 +1132,12 @@ function openIGRInfo(data, lat, long) {
 
                     // Show the info panel only if there is valid data
                     if (hasValidData) {
-                        infoPanel.style.display = "block";
-                    }else{
-                        alert("Guideline Value not found for the selected Land")
+                        igrContainer.appendChild(contentDiv);
+
+                        // Insert the IGR container below the .info-icons div
+                        iconSection.insertAdjacentElement('afterend', igrContainer);
+                    } else {
+                        alert("Guideline Value not found for the selected Land");
                     }
                 } else {
                     console.error(response.message);
@@ -1114,6 +1152,7 @@ function openIGRInfo(data, lat, long) {
     }
 }
 
+
 function closeIGRInfoPanel(){
     const infoPanel = document.getElementById("igr-info-panel");
     if (infoPanel) {
@@ -1122,58 +1161,363 @@ function closeIGRInfoPanel(){
     
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const modal = document.querySelector('.draggable-modal');
-    const header = document.getElementById('modal-header');
-    const resizer = document.getElementById('resizer');
+// Layer configuration from JSON
+const layerConfig = [
+    {
+        category: "Administrative Boundary",
+        layers: [
+            {
+                id: "state_boundary",
+                name: "State",
+                title: "State",
+                type: "wms",
+                defaultOpacity: 1,
+                defaultVisibility: true,
+                url: "https://tngis.tnega.org/geoserver/wms",
+                params: {
+                    LAYERS: "generic_viewer:state_boundary",
+                    STYLES: "",
+                },
+            },
+            {
+                id: "district_boundary",
+                name: "District",
+                title: "District",
+                type: "wms",
+                defaultOpacity: 0.7,
+                defaultVisibility: false,
+                url: "https://tngis.tnega.org/geoserver/wms",
+                params: {
+                    LAYERS: "generic_viewer:districts",
+                    STYLES: "",
+                },
+            },
+            {
+                id: "taluk_boundary",
+                name: "Taluk",
+                title: "Taluk",
+                type: "wms",
+                defaultOpacity: 0.7,
+                defaultVisibility: false,
+                url: "https://tngis.tnega.org/geoserver/wms",
+                params: {
+                    LAYERS: "generic_viewer:taluk_boundary",
+                    STYLES: "",
+                },
+            },
+            {
+                id: "revenue_villages",
+                name: "Revenue Village",
+                title: "Revenue Village",
+                type: "wms",
+                defaultOpacity: 0.7,
+                defaultVisibility: false,
+                url: "https://tngis.tnega.org/geoserver/wms",
+                params: {
+                    LAYERS: "generic_viewer:revenue_villages",
+                    STYLES: "",
+                },
+            },
+            {
+                id: "TNGIS_Basemap",
+                name: "TNGIS - Basemap",
+                title: "TNGIS - Basemap",
+                type: "xyz",
+                defaultOpacity: 1,
+                defaultVisibility: true,
+                url: "https://tngis.tn.gov.in/data/xyz_tiles/cadastral_xyz/{z}/{x}/{y}.png",
+            },
+        ],
+    },
+    {
+        category: 'CRZ Layers',
+        layers: [
+            {
+                id: "CRZ_crz_boundary",
+                name: "CRZ Boundary",
+                title: "CRZ Boundary",
+                type: "wms",
+                defaultOpacity: 1,
+                defaultVisibility: true,
+                url: "https://tngis.tnega.org/geoserver/wms",
+                params: {
+                    LAYERS: "generic_viewer:crz_boundary",
+                    STYLES: "",
+                },
+            },
+            {
+                id: "CRZ_cvca_boundary",
+                name: "CVCA Boundary",
+                title: "CVCA Boundary",
+                type: "wms",
+                defaultOpacity: 1,
+                defaultVisibility: true,
+                url: "https://tngis.tnega.org/geoserver/wms",
+                params: {
+                    LAYERS: "generic_viewer:cvca_boundary",
+                    STYLES: "",
+                },
+            },
+            {
+                id: "CRZ_high_tide_line",
+                name: "High Tide Line",
+                title: "High Tide Line",
+                type: "wms",
+                defaultOpacity: 1,
+                defaultVisibility: true,
+                url: "https://tngis.tnega.org/geoserver/wms",
+                params: {
+                    LAYERS: "generic_viewer:high_tide_line",
+                    STYLES: "",
+                },
+            },
+            {
+                id: "CRZ_low_tide_line",
+                name: "Low Tide Line",
+                title: "Low Tide Line",
+                type: "wms",
+                defaultOpacity: 1,
+                defaultVisibility: true,
+                url: "https://tngis.tnega.org/geoserver/wms",
+                params: {
+                    LAYERS: "generic_viewer:low_tide_line",
+                    STYLES: "",
+                },
+            },
+            {
+                id: "CRZ_1a",
+                name: "CRZ 1A",
+                title: "CRZ 1A",
+                type: "wms",
+                defaultOpacity: 1,
+                defaultVisibility: true,
+                url: "https://tngis.tnega.org/geoserver/wms",
+                params: {
+                    LAYERS: "generic_viewer:crz1a",
+                    STYLES: "",
+                },
+            },
+            {
+                id: "CRZ_crza1_mangrove_buffer",
+                name: "CRZ 1A Mangrove Buffer",
+                title: "CRZ 1A Mangrove Buffer",
+                type: "wms",
+                defaultOpacity: 1,
+                defaultVisibility: true,
+                url: "https://tngis.tnega.org/geoserver/wms",
+                params: {
+                    LAYERS: "generic_viewer:crza1_mangrove_buffer",
+                    STYLES: "",
+                },
+            },
+            {
+                id: "CRZ_crz_ib",
+                name: "CRZ 1B",
+                title: "CRZ 1B",
+                type: "wms",
+                defaultOpacity: 1,
+                defaultVisibility: true,
+                url: "https://tngis.tnega.org/geoserver/wms",
+                params: {
+                    LAYERS: "generic_viewer:crz_ib",
+                    STYLES: "",
+                },
+            },
+            {
+                id: "CRZ_crz2",
+                name: "CRZ 2",
+                title: "CRZ 2",
+                type: "wms",
+                defaultOpacity: 1,
+                defaultVisibility: true,
+                url: "https://tngis.tnega.org/geoserver/wms",
+                params: {
+                    LAYERS: "generic_viewer:crz2",
+                    STYLES: "",
+                },
+            },
+            {
+                id: "CRZ_crz_3a",
+                name: "CRZ 3A",
+                title: "CRZ 3A",
+                type: "wms",
+                defaultOpacity: 1,
+                defaultVisibility: true,
+                url: "https://tngis.tnega.org/geoserver/wms",
+                params: {
+                    LAYERS: "generic_viewer:crz_3a",
+                    STYLES: "",
+                },
+            },
+            {
+                id: "CRZ_crz_3b",
+                name: "CRZ 3B",
+                title: "CRZ 3B",
+                type: "wms",
+                defaultOpacity: 1,
+                defaultVisibility: true,
+                url: "https://tngis.tnega.org/geoserver/wms",
+                params: {
+                    LAYERS: "generic_viewer:crz_3b",
+                    STYLES: "",
+                },
+            },
+            {
+                id: "CRZ_crz_iv_a",
+                name: "CRZ 4A",
+                title: "CRZ 4A",
+                type: "wms",
+                defaultOpacity: 1,
+                defaultVisibility: true,
+                url: "https://tngis.tnega.org/geoserver/wms",
+                params: {
+                    LAYERS: "generic_viewer:crz_iv_a",
+                    STYLES: "",
+                },
+            },
+            {
+                id: "CRZ_crz_4b_07_07_2022",
+                name: "CRZ 4B",
+                title: "CRZ 4B",
+                type: "wms",
+                defaultOpacity: 1,
+                defaultVisibility: true,
+                url: "https://tngis.tnega.org/geoserver/wms",
+                params: {
+                    LAYERS: "generic_viewer:crz_4b_07_07_2022",
+                    STYLES: "",
+                },
+            },
+        ]
+    },
+    {
+        category: "CRZ Affected Area",
+        layers: [
+            {
+                // CRZ - Affected Land Parcel
+                id: "CRZ_Survey_Number",
+                name: "CRZ - Affected Land Parcel",
+                title: "CRZ - Affected Land Parcel",
+                type: "wms",
+                defaultOpacity: 1,
+                defaultVisibility: true,
+                url: "https://tngis.tnega.org/geoserver/wms",
+                params: {
+                    LAYERS: "generic_viewer:crz_cadastral",
+                    STYLES: "",
+                },
+            }
+        ]
+    }
+];
 
-    let offsetX = 0, offsetY = 0, isDragging = false;
-    let isResizing = false, startX, startY, startWidth, startHeight;
 
-    // Draggable functionality
-    header.addEventListener('mousedown', (e) => {
-        isDragging = true;
-        offsetX = e.clientX - modal.getBoundingClientRect().left;
-        offsetY = e.clientY - modal.getBoundingClientRect().top;
-        modal.style.transition = 'none';  // Disable transition while dragging
-    });
+const layerControl = document.getElementById('accordionPanelsStayOpenExample');
+const layers = {};
 
-    document.addEventListener('mousemove', (e) => {
-        if (isDragging) {
-            const x = e.clientX - offsetX;
-            const y = e.clientY - offsetY;
-            
-            modal.style.left = `${x}px`;
-            modal.style.top = `${y}px`;
+layerConfig.forEach((category, index) => {
+    // Create accordion item
+    const accordionItem = document.createElement('div');
+    accordionItem.className = 'accordion-item';
+
+    // Accordion Header
+    const headerId = `header-${index}`;
+    const collapseId = `collapse-${index}`;
+
+    accordionItem.innerHTML = `
+        <h2 class="accordion-header" id="${headerId}">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}" aria-expanded="false" aria-controls="${collapseId}">
+                ${category.category}
+            </button>
+        </h2>
+        <div id="${collapseId}" class="accordion-collapse collapse" aria-labelledby="${headerId}" data-bs-parent="#accordionPanelsStayOpenExample">
+            <div class="accordion-body">
+                <div class="listings"></div>
+            </div>
+        </div>
+    `;
+
+    const listings = accordionItem.querySelector('.listings');
+
+    // Add layers to the accordion content
+    category.layers.forEach((layerInfo) => {
+        let layer;
+
+        if (layerInfo.type === "wms") {
+            layer = new ol.layer.Tile({
+                source: new ol.source.TileWMS({
+                    url: layerInfo.url,
+                    params: layerInfo.params,
+                    serverType: 'geoserver',
+                }),
+                opacity: layerInfo.defaultOpacity,
+                visible: layerInfo.defaultVisibility,
+            });
+        } else if (layerInfo.type === "xyz") {
+            layer = new ol.layer.Tile({
+                source: new ol.source.XYZ({
+                    url: layerInfo.url,
+                }),
+                opacity: layerInfo.defaultOpacity,
+                visible: layerInfo.defaultVisibility,
+            });
         }
 
-        if (isResizing) {
-            const width = startWidth + (e.clientX - startX);
-            const height = startHeight + (e.clientY - startY);
+        // Add layer to the map and reference it
+        map.addLayer(layer);
+        layers[layerInfo.id] = layer;
 
-            // Apply new dimensions with boundaries
-            modal.style.width = `${Math.max(400, Math.min(width, window.innerWidth * 0.9))}px`;
-            modal.style.height = `${Math.max(300, Math.min(height, window.innerHeight * 0.9))}px`;
-        }
+        // Create checkbox with label
+        const label = document.createElement('label');
+        label.className = 'd-block my-1';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = layerInfo.id;
+        checkbox.checked = layerInfo.defaultVisibility;
+
+        checkbox.addEventListener('change', (e) => {
+            layer.setVisible(e.target.checked);
+            updateAllLegends();
+        });
+
+        label.appendChild(checkbox);
+        label.appendChild(document.createTextNode(` ${layerInfo.title}`));
+
+        listings.appendChild(label);
     });
 
-    document.addEventListener('mouseup', () => {
-        isDragging = false;
-        isResizing = false;
-        modal.style.transition = '';
-    });
-
-    // Single resizer handle functionality
-    resizer.addEventListener('mousedown', (e) => {
-        isResizing = true;
-        startX = e.clientX;
-        startY = e.clientY;
-        startWidth = modal.offsetWidth;
-        startHeight = modal.offsetHeight;
-        e.preventDefault();
-    });
+    layerControl.appendChild(accordionItem);
 });
+updateAllLegends();
+function updateAllLegends() {
+    const legendContent = document.getElementById('legend-content');
+    legendContent.innerHTML = ''; // Clear existing legends
 
+    layerConfig.forEach((category) => {
+        category.layers.forEach((layerInfo) => {
+            if (layerInfo.type === "wms" && layers[layerInfo.id].getVisible()) {
+                var resolution = map.getView().getResolution();
+
+                var legendUrl = `${layerInfo.url}?REQUEST=GetLegendGraphic&VERSION=1.3.0&FORMAT=image/png&LAYER=${layerInfo.params.LAYERS}`;
+                // Add custom LEGEND_OPTIONS if needed
+                legendUrl += '&LEGEND_OPTIONS=forceLabels:on;fontColor:0xfffff;fontAntiAliasing:true&transparent=true';
+                legendUrl += `&SCALE=${resolution}`;
+
+                const legendImage = document.createElement('img');
+                legendImage.src = legendUrl;
+                legendImage.alt = `${layerInfo.title} Legend`;
+                legendContent.appendChild(legendImage);
+            }
+        });
+    });
+}
+
+// Clear Legend
+function clearLegend() {
+    const legendContent = document.getElementById('legend-content');
+    legendContent.innerHTML = '';
+}
 
 
 // // Utility function to extract vertices from a GeoJSON geometry
@@ -1206,3 +1550,220 @@ document.addEventListener('DOMContentLoaded', () => {
 
 //     return vertices;
 // }
+
+
+// Populate District Dropdown
+async function loadDistrict() {
+    try {
+        const response = await ajaxPromise({
+            url: `${BASE_URL}/v2/admin_master_district`,
+            method: 'GET',
+            data: { 'request_type': 'district' },
+            headers: { 'X-APP-NAME': 'demo' },
+            dataType: 'json'
+        });
+        console.log('Async Response District:', response);
+
+        populateDropdown('district-dropdown', response, {
+            defaultText: 'Select District',
+            valueKey: 'district_code',
+            textKey: 'district_english_name',
+            errorCallback: (message) => showToast('error', message),
+            triggerChange: true
+        });
+    } catch (error) {
+        console.error('Async Error:', error);
+        showToast('error', response.message);
+    }
+}
+
+// Update Taluks based on District
+$('#district-dropdown').change(async function () {
+    try {
+        var districtCode = $(this).val();
+        if (districtCode) {
+            const response = await ajaxPromise({
+                url: `${BASE_URL}/v2/admin_master_taluk`,
+                method: 'GET',
+                data: { 'district_code': districtCode, 'request_type': 'taluk' },
+                headers: { 'X-APP-NAME': 'demo' },
+                dataType: 'json'
+            });
+            console.log('Async Taluk Response:', response);
+            populateDropdown('taluk-dropdown', response, {
+                defaultText: 'Select Taluk',
+                valueKey: 'taluk_code',
+                textKey: 'taluk_english_name',
+                errorCallback: (message) => showToast('error', message),
+                triggerChange: true
+            });
+            fetchGeometry('district', districtCode, null, null,null,null);
+        } else {
+            resetDropdown('taluk-dropdown', 'Select Taluk');
+        }
+    } catch (error) {
+        console.error('Async Error:', error);
+        showToast('error', error)
+    }
+})
+
+// Update Villages based on Taluk
+$('#taluk-dropdown').change(async function () {
+    try {
+        var district_code = $("#district-dropdown").val();
+        var taluk_code = $(this).val();
+        var area_type = getSelectedAreaType();
+        if (area_type == 'rural') {
+            loadRevenueVillage(district_code, taluk_code, area_type);
+        } else if (area_type == 'urban') {
+            loadTown(district_code, taluk_code, area_type);
+        }
+        fetchGeometry('taluk', district_code, taluk_code, null,null);
+    } catch (error) {
+        console.error('Async Error:', error);
+        showToast('error', `${error}`)
+    }
+});
+
+async function loadRevenueVillage(district_code, taluk_code, area_type) {
+    try {
+        if (district_code && taluk_code) {
+            const response = await ajaxPromise({
+                url: `${BASE_URL}/v2/admin_master_village`,
+                method: 'GET',
+                data: { 'district_code': district_code, 'taluk_code': taluk_code, 'request_type': 'revenue_village' },
+                headers: { 'X-APP-NAME': 'demo' },
+                dataType: 'json'
+            });
+            console.log('Async Revenue Village Response:', response);
+            populateDropdown('village-dropdown', response, {
+                defaultText: 'Select Village',
+                valueKey: 'village_code',
+                textKey: 'village_english_name',
+                errorCallback: (message) => showToast('error', message),
+                triggerChange: true
+            });
+        } else {
+            resetDropdown('village-dropdown', 'Select Village');
+            // showToast('warning', 'Select District & Taluk Dropdown')
+        }
+    } catch (error) {
+        console.error('Async Error:', error);
+        showToast('error', error)
+    }
+}
+
+function loadTown(district_code, taluk_code, area_type) {
+    try {
+        if (district_code && taluk_code) {
+            showToast('warning', "Urban in Progress");
+        } else {
+            // showToast('warning', 'Select District & Taluk Dropdown')
+        }
+    } catch (error) {
+        console.error('Async Error:', error);
+        showToast('error', error)
+    }
+}
+
+// Update Survey Numbers based on Village
+$('#village-dropdown').change(async function () {
+    try {
+        var district_code = $("#district-dropdown").val();
+        var taluk_code = $("#taluk-dropdown").val();
+        var village_code = $(this).val();
+        var area_type = getSelectedAreaType();
+        // var data_type = getDataFetchType();
+        if (district_code && taluk_code && village_code && area_type ) {
+            const response = await ajaxPromise({
+                url: `${BASE_URL}/v2/admin_master_survey_number`,
+                method: 'GET',
+                data: { 'district_code': district_code, 'taluk_code': taluk_code, 'revenue_village_code': village_code, 'area_type': area_type, 'data_type': 'cadastral', 'request_type': 'survey_number' },
+                headers: { 'X-APP-NAME': 'demo' },
+                dataType: 'json'
+            });
+            console.log('Async Survey Number Response:', response);
+            populateDropdown('survey-number-dropdown', response, {
+                defaultText: 'Select Survey Number',
+                valueKey: 'survey_number',
+                textKey: 'survey_number',
+                errorCallback: (message) => showToast('error', message),
+                triggerChange: true
+            });
+            // var villageCode = village_code.replace(/^0+/, '');
+            fetchGeometry('revenue_village', district_code, taluk_code, village_code,null,null);
+        } else {
+            resetDropdown('survey-number-dropdown', 'Select Survey Number');
+        }
+    } catch (error) {
+        console.error('Async Error:', error);
+        showToast('error', error)
+    }
+});
+
+// Update Sub Divisions based on Survey Number
+$('#survey-number-dropdown').change(async function () {
+    try {
+        var district_code = $("#district-dropdown").val();
+        var taluk_code = $("#taluk-dropdown").val();
+        var village_code = $("#village-dropdown").val();
+        var survey_number = $(this).val();
+        var area_type = getSelectedAreaType();
+        // var data_type = getDataFetchType();
+        if (district_code && taluk_code && village_code && survey_number && area_type ) {
+            const response = await ajaxPromise({
+                url: `${BASE_URL}/v2/admin_master_sub_division`,
+                method: 'GET',
+                data: { 'district_code': district_code, 'taluk_code': taluk_code, 'revenue_village_code': village_code, 'survey_number': survey_number, 'area_type': area_type, 'data_type': 'cadastral', 'request_type': 'sub_division_number' },
+                headers: { 'X-APP-NAME': 'demo' },
+                dataType: 'json'
+            });
+            console.log('Async Sub Division Response:', response);
+            populateDropdown('sub-division-dropdown', response, {
+                defaultText: 'Select Sub Division',
+                valueKey: 'sub_division',
+                textKey: 'sub_division',
+                errorCallback: (message) => showToast('error', message),
+                triggerChange: true
+            });
+            // var villageCode = village_code.replace(/^0+/, '');
+            fetchGeometry('survey_number', district_code, taluk_code, village_code,survey_number,null);
+        } else {
+            resetDropdown('sub-division-dropdown', 'Select Sub Division');
+        }
+    } catch (error) {
+        console.error('Async Error:', error);
+        showToast('error', error)
+    }
+});
+
+// Function to get current selected Area Type
+function getSelectedAreaType() {
+    const selectedRadio = document.querySelector('input[name="area-type"]:checked');
+    return selectedRadio.value;
+}
+
+// Select all buttons inside .nav-item
+const navButtons = document.querySelectorAll('.nav-item .nav-link');
+
+navButtons.forEach(button => {
+    button.addEventListener('click', () => {
+        // Remove 'active' class from all nav-links, nav-items, and info-icons
+        document.querySelectorAll('.nav-item, .nav-link, .info-icons').forEach(item => {
+            item.classList.remove('active');
+        });
+
+        // Add 'active' class to the clicked nav-link and its parent nav-item
+        button.classList.add('active');
+        const parentNavItem = button.closest('.nav-item');
+        if (parentNavItem) {
+            parentNavItem.classList.add('active');
+        }
+
+        // Add 'active' class to the .info-icons container
+        const infoIcons = button.closest('.info-icons');
+        if (infoIcons) {
+            infoIcons.classList.add('active');
+        }
+    });
+});

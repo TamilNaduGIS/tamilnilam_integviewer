@@ -701,13 +701,15 @@ body {
     align-items: center;
     z-index: 1000;
     /* Ensure it's above the map */
+    width: 100%;
 }
 
 #company-logo img {
-    width: 50px;
+    width: 30px;
     /* Adjust logo size */
     height: auto;
     margin-top: 10px;
+    text-align: center;
 }
 
 #map-icons {
@@ -847,7 +849,7 @@ body {
     border-radius: 8px;
     background-color: #f9f9f9;
     box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
-    font-size: 14px;
+    font-size: 12px;
     line-height: 1.6;
     text-align: center;
 }
@@ -943,7 +945,7 @@ header{
     z-index: 99;
     position: fixed;
     width: 100%;
-    padding: 10px;
+    padding: 5px;
     line-height: 50px;
 }
 
@@ -1136,10 +1138,11 @@ header{
   .map-footer{
     display: flex;
     position: fixed;
-    bottom: 20px;
-    right: 20px;
+    bottom: 0px;
+    left: 20px;
     flex-direction: column;
-    align-items: end;
+    align-items: unset;
+    text-align: left;
   }
   .scaling{
     display: flex;
@@ -1309,5 +1312,23 @@ filter: invert(100%);
     max-height: 400px;
 }
 #staticBackdrop #lpi-container{
+    font-size: 12px;
+}
+#legend-content {
+    max-height: 200px;
+    overflow-y: auto;
+    background: #003f7f;
+    padding: 10px;
+    border-radius: 5px;
+}
+#accordionPanelsStayOpenExample .accordion-item{
+    margin-bottom: 3px;
+}
+.copyrights{
+    color: #fff;
+    font-size: 10px;
+}
+.mousePosition{
+    color: #fff;
     font-size: 12px;
 }
