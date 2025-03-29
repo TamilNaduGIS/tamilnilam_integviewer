@@ -366,24 +366,30 @@
     <div id="map" class="map"></div>
     <!-- Map Icons -->
     <div id="bottom-left-container">
-        <div class="copyrights">Powered by TNeGA</div>
+
+
+        <div class="copyrights">
+
+            <a class="text-white font12 px-2 txt-aligns" data-bs-toggle="modal" data-bs-target=".disclaimer"><i class="bi bi-eye"></i> <span>Disclaimer</span></a> |
+
+            <span class="ps-2">Copyright ©</span> <span id="year"></span> Powered by <span><img src="assets/logo/tnega-logo.png" alt="TNGIS Logo" title="TNeGA Logo" class="logo_tnega"></span></div>
         <div id="company-logo">
-            <img src="assets/logo/tngis-logo.png" alt="TNGIS Logo" title="TNGIS Logo">
-            <img src="assets/logo/tnega-logo.png" alt="TNGIS Logo" title="TNeGA Logo">
+            <img src="assets/logo/gis-logo-white.png" alt="TNGIS Logo" title="TNGIS Logo">
+            <!-- <img src="assets/logo/tnega-logo.png" alt="TNGIS Logo" title="TNeGA Logo"> -->
             
         </div>
         
         <!-- <div>Powered by TNeGA</div> -->
         <div id="map-icons">
-            <div class="tooltip">Hover over me
-                <span class="tooltiptext">Tooltip text</span>
-            </div>
+            
             <div class="map-footer">
-                <p class="mousePosition"><i class="bi bi-geo-alt-fill"></i><span id="lat">7.325413164844948</span> ,
+                <p class="mousePosition mb-2"><i class="bi bi-geo-alt-fill"></i><span id="lat">7.325413164844948</span> ,
                     <span id="lon">76.133061568552585282</span></p>
                 
             </div>
         </div>
+
+
     </div>
     <!-- Mao icons -->
 
@@ -446,6 +452,24 @@
     </div>
 
 
+
+    <!-- disclamier -->
+    <div class="modal fade disclaimer" tabindex="-1" aria-labelledby="disclaimer" aria-modal="true" role="dialog">
+      <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header py-2">
+            <h1 id="disclaimer" class="modal-title fs-5 txt-blue"><i class="bi bi-exclamation-circle"></i><span class="ps-2">Disclaimer</span></h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">       
+              <p>Users of this information should review or consult the primary data and information sources to ascertain the usability of the information. All boundaries displayed are indicative boundaries. The map boundaries shall not be used for any legal purposes. The user are advised that all inherent limitations of the maps and data, including the fact that the maps and data are dynamic and in a constant state of maintenance, correction, updation and revision.Pl check for the latest update while using the data. Any errors, missing data or omissions should be reported to the TNGIS/TNeGA through proper channel only. TNGIS provides this portal as a public service. Unauthorized attempts to modify any information stored on this site or utilize this site for other than its intended purposes are prohibited.</p>
+              <p>TNGIS users are advised to read the metadata associated with the data for information related to its accuracy and its limitations.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- disclaimer -->
+
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
@@ -477,9 +501,9 @@
         $(document).ready(function () {
             console.log("%cWARNING: ADVANCED USERS ONLY", "font-size: 21px; font-weight: bold; color: #FF0000; -webkit-text-stroke: 1px #660000;");
             changeBasemap('basemap', 'osm');
-            changeBasemap('layer', 'cadastral_xyz');
+            // changeBasemap('layer', 'cadastral_xyz');
             map.addLayer(geojsonLayer);
-            districtDropDown();
+            // districtDropDown();
             // Initial check for visibility
             updateWMSLayerVisibility();
 
@@ -782,6 +806,11 @@
             });
         });
 
+    </script>
+    <script>
+    $(document).ready(function () {
+        $("#year").text(new Date().getFullYear());
+    }); 
     </script>
 </body>
 

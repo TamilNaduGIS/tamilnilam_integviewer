@@ -690,25 +690,38 @@ body {
 
 /* Map Icons on bottom left */
 #bottom-left-container {
-    position: absolute;
+    /*position: absolute;
     bottom: 10px;
-    /* Adjust as needed */
     left: 10px;
-    /* Adjust as needed */
     display: flex;
     flex-direction: column-reverse;
-    /* Stack logo below icons */
     align-items: center;
     z-index: 1000;
-    /* Ensure it's above the map */
+    width: 100%;*/
+
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    z-index: 1000;
     width: 100%;
+/*    background: #585858;*/
+    background: linear-gradient(45deg, rgb(3, 17, 61), rgb(61, 128, 137));
+    justify-content: center;
 }
 
 #company-logo img {
     width: 30px;
     /* Adjust logo size */
     height: auto;
-    margin-top: 10px;
+/*    margin-top: 10px;*/
+    text-align: center;
+} 
+
+.logo_tnega {
+    width: 30px;
+    height: auto;
     text-align: center;
 }
 
@@ -1354,4 +1367,22 @@ filter: invert(100%);
     padding: 6px;
     border-radius: 10px;
     width: 20%;
+}
+
+.disclaimer .modal-dialog {
+    position: initial !important;
+    max-width: auto;
+    cursor: auto;
+    transform: none !important;
+    margin: 0px auto !important;
+    transform: none !important;
+}
+.font12 {
+    font-size: 12px;
+    cursor: pointer;
+}
+.txt-aligns {
+    text-decoration: none;
+    position: relative;
+    top: 1.5px;
 }

@@ -150,7 +150,7 @@ const cadastral_with_ulpin = new ol.layer.Tile({
     type: 'wms',
     source: cadastral_with_ulpin_source,
     name: "ULPIN",
-    visible: true,
+    visible: false,
     zIndex: 9,
     displayInLayerSwitcher: false,
 });
@@ -794,8 +794,8 @@ function openAregInfo(data) {
 function populateInfoPanel(response) {
     console.log(response);
     document.getElementById('vertex-info-container')?.remove();
-    
     document.getElementById('igr-info-container')?.remove();
+
     if (response.success === 1) {
         const landDetail = response.data.land_detail;
         const ownershipDetails = response.data.ownership_detail;
@@ -819,15 +819,15 @@ function populateInfoPanel(response) {
         tabNav.className = 'nav nav-tabs';
         tabNav.innerHTML = `
             <li class="nav-item">
-                <button class="nav-link active" id="land-tab" data-bs-toggle="tab" 
-                    data-bs-target="#land" type="button" role="tab" aria-controls="land" aria-selected="true">
-                    Land Details
+                <button class="nav-link active" id="ownership-tab" data-bs-toggle="tab" 
+                    data-bs-target="#ownership" type="button" role="tab" aria-controls="ownership" aria-selected="true">
+                    Ownership Details
                 </button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" id="ownership-tab" data-bs-toggle="tab" 
-                    data-bs-target="#ownership" type="button" role="tab" aria-controls="ownership" aria-selected="false">
-                    Ownership Details
+                <button class="nav-link" id="land-tab" data-bs-toggle="tab" 
+                    data-bs-target="#land" type="button" role="tab" aria-controls="land" aria-selected="false">
+                    Land Details
                 </button>
             </li>
         `;
@@ -840,9 +840,23 @@ function populateInfoPanel(response) {
         tabContent.style.background = '#f9f9f9';
         tabContent.style.border = '1px solid #ddd';
 
-        // Land Details Tab
+        // Ownership Details Tab (first tab)
+        const ownershipTabPane = document.createElement('div');
+        ownershipTabPane.className = 'tab-pane fade show active';
+        ownershipTabPane.id = 'ownership';
+        ownershipTabPane.role = 'tabpanel';
+        ownershipTabPane.innerHTML = `
+            <table class="table table-bordered table-striped mt-2">
+                <thead class="table-dark">
+                    <tr><th>#</th><th>Owner</th><th>Relation</th></tr>
+                </thead>
+                <tbody id="ownership-details-table"></tbody>
+            </table>
+        `;
+
+        // Land Details Tab (second tab)
         const landTabPane = document.createElement('div');
-        landTabPane.className = 'tab-pane fade show active';
+        landTabPane.className = 'tab-pane fade';
         landTabPane.id = 'land';
         landTabPane.role = 'tabpanel';
         landTabPane.innerHTML = `
@@ -854,39 +868,34 @@ function populateInfoPanel(response) {
             </table>
         `;
 
-        // Ownership Details Tab
-        const ownershipTabPane = document.createElement('div');
-        ownershipTabPane.className = 'tab-pane fade';
-        ownershipTabPane.id = 'ownership';
-        ownershipTabPane.role = 'tabpanel';
-        ownershipTabPane.innerHTML = `
-            <table class="table table-bordered table-striped mt-2">
-                <thead class="table-dark">
-                    <tr><th>#</th><th>Owner</th><th>Relation</th><th>Relative</th></tr>
-                </thead>
-                <tbody id="ownership-details-table"></tbody>
-            </table>
-        `;
-
         // Append tabs and content
-        tabContent.appendChild(landTabPane);
         tabContent.appendChild(ownershipTabPane);
+        tabContent.appendChild(landTabPane);
         tabContainer.appendChild(tabNav);
         tabContainer.appendChild(tabContent);
 
         // Insert the tab section below the .info-icons div
         iconSection.insertAdjacentElement('afterend', tabContainer);
 
-        // Populate Land Details Table
+        // Fields to Exclude
+        const excludedFields = [
+            "districtCode", "talukCode", "villCode", 
+            "surveyNo", "subdivNo", "osurveyNo"
+        ];
+
+        // Populate Land Details Table excluding specified fields
         const landDetailsTable = document.getElementById("land-details-table");
         landDetailsTable.innerHTML = ''; // Clear previous data
+
         for (const [key, value] of Object.entries(landDetail)) {
-            const row = document.createElement("tr");
-            row.innerHTML = `
-                <td>${key}</td>
-                <td>${value !== null && value !== "" ? value : "-"}</td>
-            `;
-            landDetailsTable.appendChild(row);
+            if (!excludedFields.includes(key)) {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${key}</td>
+                    <td>${value !== null && value !== "" ? value : "-"}</td>
+                `;
+                landDetailsTable.appendChild(row);
+            }
         }
 
         // Populate Ownership Details Table
@@ -904,22 +913,19 @@ function populateInfoPanel(response) {
                 row.innerHTML = `
                     <td>${index + 1}</td>
                     <td>${owner.Owner.trim()}</td>
-                    <td>${owner.Relation.trim()}</td>
-                    <td>${owner.Relative.trim()}</td>
-                `;
+                    <td>${owner.Relative.trim()} அவர்களின் ${owner.Relation.trim()} </td>
+                    <!--<td>${owner.Relative.trim()}</td>-->
+                `; 
                 ownershipDetailsTable.appendChild(row);
             });
         }
-
-        // Show the Info Panel
-        // const infoPanel = document.getElementById("areg-info-panel");
-        // infoPanel.style.display = "block";
 
     } else {
         closeAregPanel();
         alert("No Ownership Details Found for the Selected Land Parcel");
     }
 }
+
 
 
 
@@ -1098,7 +1104,7 @@ function openIGRInfo(data, lat, long) {
                     const panelTitle = document.createElement('div');
                     panelTitle.className = 'd-flex justify-content-between align-items-center';
                     panelTitle.innerHTML = `
-                        <h6 class="m-0">IGR Land Value</h6>
+                        <h6 class="m-0">Guide line value from registration department</h6>
                     `;
 
                     // Append the title
@@ -1198,7 +1204,7 @@ const layerConfig = [
                 title: "District",
                 type: "wms",
                 defaultOpacity: 0.7,
-                defaultVisibility: false,
+                defaultVisibility: true,
                 url: "https://tngis.tnega.org/geoserver/wms",
                 params: {
                     LAYERS: "generic_viewer:districts",
@@ -1233,8 +1239,8 @@ const layerConfig = [
             },
             {
                 id: "TNGIS_Basemap",
-                name: "TNGIS - Basemap",
-                title: "TNGIS - Basemap",
+                name: "TNGIS - Cadastral Map",
+                title: "TNGIS - Cadastral Map",
                 type: "xyz",
                 defaultOpacity: 1,
                 defaultVisibility: true,
@@ -1413,13 +1419,158 @@ const layerConfig = [
                 title: "CRZ - Affected Land Parcel",
                 type: "wms",
                 defaultOpacity: 1,
-                defaultVisibility: true,
+                defaultVisibility: false,
                 url: "https://tngis.tnega.org/geoserver/wms",
                 params: {
                     LAYERS: "generic_viewer:crz_cadastral",
                     STYLES: "",
                 },
             }
+        ]
+    },
+    {
+        category: "Property-owning departments",
+        layers: [
+            {
+                // Reserve_Forest
+                id: "Reserve_Forest",
+                name: "Forest",
+                title: "Forest",
+                type: "wms",
+                defaultOpacity: 1,
+                defaultVisibility: false,
+                url: "https://tngis.tnega.org/geoserver/wms",
+                params: {
+                    LAYERS: "generic_viewer:reserve_forest",
+                    STYLES: "",
+                },
+            },
+            {
+                // Water_Bodies
+                id: "Water_Bodies",
+                name: "Waterbodies",
+                title: "Waterbodies",
+                type: "wms",
+                defaultOpacity: 1,
+                defaultVisibility: false,
+                url: "https://tngis.tnega.org/geoserver/wms",
+                params: {
+                    LAYERS: "waterbody:merged_distinct_waterbody_view",
+                    STYLES: "",
+                },
+            },
+            {
+                // ASI sites
+                id: "ASI_sites",
+                name: "ASI sites",
+                title: "ASI sites",
+                type: "wms",
+                defaultOpacity: 1,
+                defaultVisibility: false,
+                url: "https://tngis.tnega.org/geoserver/wms",
+                params: {
+                    LAYERS: "generic_viewer:asi_sites",
+                    STYLES: "",
+                },
+            },
+            {
+                // Mines
+                id: "Mines",
+                name: "Mines",
+                title: "Mines",
+                type: "wms",
+                defaultOpacity: 1,
+                defaultVisibility: false,
+                url: "https://tngis.tnega.org/geoserver/wms",
+                params: {
+                    LAYERS: "generic_viewer:mines",
+                    STYLES: "",
+                },
+            },
+            {
+                // Mines Lease
+                id: "Mines_Lease",
+                name: "Mines Lease",
+                title: "Mines Lease",
+                type: "wms",
+                defaultOpacity: 1,
+                defaultVisibility: false,
+                url: "https://tngis.tnega.org/geoserver/wms",
+                params: {
+                    LAYERS: "generic_viewer:mines_lease",
+                    STYLES: "",
+                },
+            },
+            {
+                // Monuments
+                id: "Monuments",
+                name: "Monuments",
+                title: "Monuments",
+                type: "wms",
+                defaultOpacity: 1,
+                defaultVisibility: false,
+                url: "https://tngis.tnega.org/geoserver/wms",
+                params: {
+                    LAYERS: "generic_viewer:Monuments",
+                    STYLES: "",
+                },
+            },
+            {
+                // SIPCOT Estate
+                id: "SIPCOT_Estate",
+                name: "SIPCOT Estate",
+                title: "SIPCOT Estate",
+                type: "wms",
+                defaultOpacity: 1,
+                defaultVisibility: false,
+                url: "https://tngis.tnega.org/geoserver/wms",
+                params: {
+                    LAYERS: "generic_viewer:sipcot_estate",
+                    STYLES: "",
+                },
+            },
+            {
+                // Slum Boundary
+                id: "Slum_Boundary",
+                name: "Slum Boundary",
+                title: "Slum Boundary",
+                type: "wms",
+                defaultOpacity: 1,
+                defaultVisibility: false,
+                url: "https://tngis.tnega.org/geoserver/wms",
+                params: {
+                    LAYERS: "generic_viewer:slum_boundary",
+                    STYLES: "",
+                },
+            },
+            {
+                // TNPCB Land Parcel(industries land parcel)
+                id: "TNPCB_Land_Parcel_industries_land_parcel)",
+                name: "TNPCB Land Parcel(industries land parcel)",
+                title: "TNPCB Land Parcel(industries land parcel)",
+                type: "wms",
+                defaultOpacity: 1,
+                defaultVisibility: false,
+                url: "https://tngis.tnega.org/geoserver/wms",
+                params: {
+                    LAYERS: "generic_viewer:industry_cad_matched",
+                    STYLES: "",
+                },
+            },
+            {
+                // ULP PIN Layers
+                id: "ULP_PIN_Layers",
+                name: "ULP PIN Layers",
+                title: "ULP PIN Layers",
+                type: "wms",
+                defaultOpacity: 1,
+                defaultVisibility: false,
+                url: "https://tngis.tnega.org/geoserver/wms",
+                params: {
+                    LAYERS: "cadastral_information_new:fmb_ulpin",
+                    STYLES: "",
+                },
+            },
         ]
     }
 ];
@@ -1608,10 +1759,10 @@ $('#district-dropdown').change(async function () {
                 valueKey: 'taluk_code',
                 textKey: 'taluk_english_name',
                 errorCallback: (message) => showToast('error', message),
-                triggerChange: true
+                triggerChange: false
             });
             fetchGeometry('district', districtCode, null, null,null,null);
-            alert(1);
+            // alert(1);
         } else {
             // resetDropdown('taluk-dropdown', 'Select Taluk');
         }
@@ -1627,18 +1778,177 @@ $('#taluk-dropdown').change(async function () {
         var district_code = $("#district-dropdown").val();
         var taluk_code = $(this).val();
         var area_type = getSelectedAreaType();
+        console.log(area_type);
         if (area_type == 'rural') {
             loadRevenueVillage(district_code, taluk_code, area_type);
         } else if (area_type == 'urban') {
             loadTown(district_code, taluk_code, area_type);
         }
         fetchGeometry('taluk', district_code, taluk_code, null,null);
-        alert(2);
+        // alert(2);
     } catch (error) {
         console.error('Async Error:', error);
         showToast('error', `${error}`)
     }
 });
+
+async function loadTown(district_code,taluk_code) {
+    try {
+        const response = await ajaxPromise({
+            url: `${BASE_URL}/v2/admin_master_revenue_town`,
+            method: 'GET',
+            data: { 'request_type': 'town','district_code':district_code,'taluk_code':taluk_code },
+            headers: { 'X-APP-NAME': 'demo' },
+            dataType: 'json'
+        });
+        console.log('Async Response District:', response);
+
+        populateDropdown('town-dropdown', response, {
+            defaultText: 'Select Town',
+            valueKey: 'town_code',
+            textKey: 'town_english_name',
+            errorCallback: (message) => showToast('error', message),
+            triggerChange: true
+        });
+    } catch (error) {
+        console.error('Async Error:', error);
+        showToast('error', response.message);
+    }
+}
+$('#town-dropdown').change(async function () {
+    try {
+        var district_code = $("#district-dropdown").val();
+        var taluk_code = $("#taluk-dropdown").val();
+        var town_code = $(this).val();
+        var area_type = getSelectedAreaType();
+        console.log(area_type);
+        if (area_type == 'rural') {
+            loadRevenueVillage(district_code, taluk_code, area_type);
+        } else if (area_type == 'urban') {
+            urbanWardRevenueCode(district_code, taluk_code,town_code,area_type);
+        }
+        fetchGeometry('taluk', district_code, taluk_code, null,null);
+        // alert(2);
+    } catch (error) {
+        console.error('Async Error:', error);
+        showToast('error', `${error}`)
+    }
+});
+
+async function urbanWardRevenueCode(district_code, taluk_code,town_code,area_type) {
+    try {
+        const response = await ajaxPromise({
+            url: `${BASE_URL}/v2/admin_master_revenue_ward`,
+            method: 'GET',
+            data: { 'request_type': 'ward','district_code':district_code,'taluk_code':taluk_code,'town_code':town_code },
+            headers: { 'X-APP-NAME': 'demo' },
+            dataType: 'json'
+        });
+        console.log('Async Response District:', response);
+
+        populateDropdown('ward-dropdown', response, {
+            defaultText: 'Select Ward',
+            valueKey: 'ward_code',
+            textKey: 'ward_english_name',
+            errorCallback: (message) => showToast('error', message),
+            triggerChange: true
+        });
+    } catch (error) {
+        console.error('Async Error:', error);
+        showToast('error', response.message);
+    }
+}
+
+$('#ward-dropdown').change(async function () {
+    try {
+        var district_code = $("#district-dropdown").val();
+        var taluk_code = $("#taluk-dropdown").val();
+        var town_code = $("#town-dropdown").val();
+        var ward_code = $(this).val();
+        var area_type = getSelectedAreaType();
+        console.log(area_type);
+        if (area_type == 'rural') {
+            loadRevenueVillage(district_code, taluk_code, area_type);
+        } else if (area_type == 'urban') {
+            urbanBlockRevenueCode(district_code, taluk_code,town_code,ward_code,area_type);
+        }
+        fetchGeometry('taluk', district_code, taluk_code, null,null);
+        // alert(2);
+    } catch (error) {
+        console.error('Async Error:', error);
+        showToast('error', `${error}`)
+    }
+});
+
+async function urbanBlockRevenueCode(district_code, taluk_code,town_code,ward_code) {
+    try {
+        const response = await ajaxPromise({
+            url: `${BASE_URL}/v2/admin_master_revenue_block`,
+            method: 'GET',
+            data: { 'request_type': 'ward','district_code':district_code,'taluk_code':taluk_code,'town_code':town_code,'ward_code':ward_code },
+            headers: { 'X-APP-NAME': 'demo' },
+            dataType: 'json'
+        });
+        console.log('Async Response District:', response);
+
+        populateDropdown('block-dropdown', response, {
+            defaultText: 'Select Block',
+            valueKey: 'block_code',
+            textKey: 'block_english_name',
+            errorCallback: (message) => showToast('error', message),
+            triggerChange: true
+        });
+    } catch (error) {
+        console.error('Async Error:', error);
+        showToast('error', response.message);
+    }
+}
+
+$('#block-dropdown').change(async function () {
+    try {
+        var district_code = $("#district-dropdown").val();
+        var taluk_code = $("#taluk-dropdown").val();
+        var town_code = $("#town-dropdown").val();
+        var ward_code = $("#ward-dropdown").val();
+        var block_code = $(this).val();
+        var area_type = getSelectedAreaType();
+        console.log(area_type);
+        if (area_type == 'rural') {
+            loadRevenueVillage(district_code, taluk_code, area_type);
+        } else if (area_type == 'urban') {
+            urbanSurveyNumberRevenueCode(district_code, taluk_code,town_code,ward_code,block_code,area_type);
+        }
+        fetchGeometry('taluk', district_code, taluk_code, null,null);
+        // alert(2);
+    } catch (error) {
+        console.error('Async Error:', error);
+        showToast('error', `${error}`)
+    }
+});
+
+async function urbanSurveyNumberRevenueCode(district_code, taluk_code,town_code,ward_code,block_code) {
+    try {
+        const response = await ajaxPromise({
+            url: `${BASE_URL}/v2/admin_master_revenue_block`,
+            method: 'GET',
+            data: { 'request_type': 'ward','district_code':district_code,'taluk_code':taluk_code,'town_code':town_code,'ward_code':ward_code,'block_code':block_code },
+            headers: { 'X-APP-NAME': 'demo' },
+            dataType: 'json'
+        });
+        console.log('Async Response District:', response);
+
+        populateDropdown('urban-survey-number-dropdown', response, {
+            defaultText: 'Select Survey Number',
+            valueKey: 'survey_number',
+            textKey: 'survey_number',
+            errorCallback: (message) => showToast('error', message),
+            triggerChange: true
+        });
+    } catch (error) {
+        console.error('Async Error:', error);
+        showToast('error', response.message);
+    }
+}
 
 async function loadRevenueVillage(district_code, taluk_code, area_type) {
     try {
@@ -1668,18 +1978,18 @@ async function loadRevenueVillage(district_code, taluk_code, area_type) {
     }
 }
 
-function loadTown(district_code, taluk_code, area_type) {
-    try {
-        if (district_code && taluk_code) {
-            showToast('warning', "Urban in Progress");
-        } else {
-            // showToast('warning', 'Select District & Taluk Dropdown')
-        }
-    } catch (error) {
-        console.error('Async Error:', error);
-        showToast('error', error)
-    }
-}
+// function loadTown(district_code, taluk_code, area_type) {
+//     try {
+//         if (district_code && taluk_code) {
+//             showToast('warning', "Urban in Progress");
+//         } else {
+//             // showToast('warning', 'Select District & Taluk Dropdown')
+//         }
+//     } catch (error) {
+//         console.error('Async Error:', error);
+//         showToast('error', error)
+//     }
+// }
 
 // Update Survey Numbers based on Village
 $('#village-dropdown').change(async function () {
@@ -1707,7 +2017,7 @@ $('#village-dropdown').change(async function () {
             });
             // var villageCode = village_code.replace(/^0+/, '');
             fetchGeometry('revenue_village', district_code, taluk_code, village_code,null,null);
-            alert(3);
+            // alert(3);
         } else {
             resetDropdown('survey-number-dropdown', 'Select Survey Number');
         }
@@ -1718,41 +2028,41 @@ $('#village-dropdown').change(async function () {
 });
 
 // Update Sub Divisions based on Survey Number
-$('#survey-number-dropdown').change(async function () {
-    try {
-        var district_code = $("#district-dropdown").val();
-        var taluk_code = $("#taluk-dropdown").val();
-        var village_code = $("#village-dropdown").val();
-        var survey_number = $(this).val();
-        var area_type = getSelectedAreaType();
-        // var data_type = getDataFetchType();
-        if (district_code && taluk_code && village_code && survey_number && area_type ) {
-            const response = await ajaxPromise({
-                url: `${BASE_URL}/v2/admin_master_sub_division`,
-                method: 'GET',
-                data: { 'district_code': district_code, 'taluk_code': taluk_code, 'revenue_village_code': village_code, 'survey_number': survey_number, 'area_type': area_type, 'data_type': 'cadastral', 'request_type': 'sub_division_number' },
-                headers: { 'X-APP-NAME': 'demo' },
-                dataType: 'json'
-            });
-            console.log('Async Sub Division Response:', response);
-            populateDropdown('sub-division-dropdown', response, {
-                defaultText: 'Select Sub Division',
-                valueKey: 'sub_division',
-                textKey: 'sub_division',
-                errorCallback: (message) => showToast('error', message),
-                triggerChange: true
-            });
-            // var villageCode = village_code.replace(/^0+/, '');
-            fetchGeometry('survey_number', district_code, taluk_code, village_code,survey_number,null);
-            alert(4);
-        } else {
-            resetDropdown('sub-division-dropdown', 'Select Sub Division');
-        }
-    } catch (error) {
-        console.error('Async Error:', error);
-        showToast('error', error)
-    }
-});
+// $('#survey-number-dropdown').change(async function () {
+//     try {
+//         var district_code = $("#district-dropdown").val();
+//         var taluk_code = $("#taluk-dropdown").val();
+//         var village_code = $("#village-dropdown").val();
+//         var survey_number = $(this).val();
+//         var area_type = getSelectedAreaType();
+//         // var data_type = getDataFetchType();
+//         if (district_code && taluk_code && village_code && survey_number && area_type ) {
+//             const response = await ajaxPromise({
+//                 url: `${BASE_URL}/v2/admin_master_sub_division`,
+//                 method: 'GET',
+//                 data: { 'district_code': district_code, 'taluk_code': taluk_code, 'revenue_village_code': village_code, 'survey_number': survey_number, 'area_type': area_type, 'data_type': 'cadastral', 'request_type': 'sub_division_number' },
+//                 headers: { 'X-APP-NAME': 'demo' },
+//                 dataType: 'json'
+//             });
+//             console.log('Async Sub Division Response:', response);
+//             populateDropdown('sub-division-dropdown', response, {
+//                 defaultText: 'Select Sub Division',
+//                 valueKey: 'sub_division',
+//                 textKey: 'sub_division',
+//                 errorCallback: (message) => showToast('error', message),
+//                 triggerChange: true
+//             });
+//             // var villageCode = village_code.replace(/^0+/, '');
+//             fetchGeometry('survey_number', district_code, taluk_code, village_code,survey_number,null);
+//             alert(4);
+//         } else {
+//             resetDropdown('sub-division-dropdown', 'Select Sub Division');
+//         }
+//     } catch (error) {
+//         console.error('Async Error:', error);
+//         showToast('error', error)
+//     }
+// });
 
 // Function to get current selected Area Type
 function getSelectedAreaType() {

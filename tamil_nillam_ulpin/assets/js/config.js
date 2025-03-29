@@ -69,6 +69,7 @@ function ajaxPromise(options) {
  * @param {Function} [config.errorCallback] - Optional error callback function
  */
 function populateDropdown(dropdownId, response, config) {
+    console.log(dropdownId);
     const selectElement = document.getElementById(dropdownId);
     if (!selectElement) {
         console.error(`Dropdown with id "${dropdownId}" not found`);
