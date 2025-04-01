@@ -89,17 +89,16 @@
         /* Spinner overlay container */
         .spinner-overlay {
             display: none;                  /* Hidden by default */
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%); /* Center the spinner */
-            z-index: 10;
-            background: rgba(255, 255, 255, 0.8);  /* Light white overlay */
-            width: 100%;
-            height: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+            display: flex;
             justify-content: center;
             align-items: center;
-            border-radius: 18px;
+            z-index: 9999;
         }
 
         /* Spinner size and animation */
@@ -126,7 +125,7 @@
         </div>
     </header>
 
-    <div class="offcanvas offcanvas-end menu" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="offcanvasScrolling" aria-labelledby="offcanvasScrollingLabel">
+    <div class="offcanvas offcanvas-end menu show" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="offcanvasScrolling" aria-labelledby="offcanvasScrollingLabel">
         <div class="offcanvas-header">
             <h5 class="offcanvas-title" id="offcanvasScrollingLabel">Layers and Tools</h5>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
@@ -135,16 +134,19 @@
             <div class="basemap-control my-1">
                 <h6>Basemaps</h6>
                 <label class="maptype">
-                    <input type="radio" name="basemap" value="osm" checked onclick="changeBasemap('basemap', 'osm')">Street Map
+                    <input type="radio" class="basemap-btn" name="basemap" value="osm"  onclick="changeBasemap('basemap', 'osm')">Street Map
                 </label>
                 <label class="maptype">
-                    <input type="radio" name="basemap" value="satellite"  onclick="changeBasemap('basemap', 'satellite')"> Satellite
+                    <input type="radio" class="basemap-btn" name="basemap" value="satellite"  checked onclick="changeBasemap('basemap', 'satellite')"> Satellite
                 </label>
                 <label class="maptype">
-                    <input type="radio" name="basemap" value="terrain"  onclick="changeBasemap('basemap', 'terrain')"> Terrain
+                    <input type="radio" class="basemap-btn" name="basemap" value="terrain"  onclick="changeBasemap('basemap', 'terrain')"> Terrain
                 </label>
                 <label class="maptype">
-                    <input type="radio" name="basemap" value="nomap"  onclick="changeBasemap('basemap', 'nomap')"> No Map
+                    <input type="radio" class="basemap-btn" name="basemap" value="nomap"  onclick="changeBasemap('basemap', 'nomap')"> No Map
+                </label>
+                <label class="maptype">
+                    <input type="radio" class="basemap-btn" name="basemap" value="theamatic_view" onclick="comingsoon()"> Theamatic View
                 </label>
             </div>
 
@@ -219,9 +221,9 @@
                         <option value="" disabled="" selected="">Select Survey Number</option>
                     </select>
 
-                    <select id="sub-division-dropdown">
+                    <!-- <select id="sub-division-dropdown">
                         <option value="" disabled="" selected="">Select Sub Division</option>
-                    </select>
+                    </select> -->
                 </div>
 
                 <!-- Urban Fields -->
@@ -242,11 +244,16 @@
                         <option value="">Select Survey Number</option>
                     </select>
 
-                    <select id="urban-sub-division-dropdown">
+                    <!-- <select id="urban-sub-division-dropdown">
                         <option value="">Select Sub Division</option>
-                    </select>
+                    </select> -->
                 </div>
             </div>
+        </div>
+    </div>
+    <div class="spinner-overlay" id="spinner-overlay">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
         </div>
     </div>
     <!-- Modal -->
@@ -259,11 +266,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body lpi-modal-body" id="lpi-container">
-                    <div class="spinner-overlay" id="spinner-overlay">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
+                    
                     <div class="info-section p-0 px-2" id="lpi-content">
                         <div class="district-taluk-village">
                             <div><strong>District:</strong> <br>- / -</div>
@@ -307,6 +310,20 @@
                                         data-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false">
                                         <!-- <i class="bi bi-currency-rupee"></i> -->
                                         <img src="assets/icons/rubai.svg" id="rubai" alt="">
+                                    </button>
+                                </li>
+                                <li class="nav-item mx-1" role="presentation">
+                                    <button class="nav-link district-icon" id="nex-tab" type="button"
+                                        data-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false">
+                                        <!-- <i class="bi bi-currency-rupee"></i> -->
+                                        <img src="assets/icons/EC.jpeg" id="EC" alt="">
+                                    </button>
+                                </li>
+                                <li class="nav-item mx-1" role="presentation">
+                                    <button class="nav-link district-icon" id="nex-tab" type="button"
+                                        data-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false">
+                                        <!-- <i class="bi bi-currency-rupee"></i> -->
+                                        <img src="assets/icons/JB.jpeg" id="JSB" alt="">
                                     </button>
                                 </li>
                             </ul>
@@ -500,7 +517,7 @@
         }
         $(document).ready(function () {
             console.log("%cWARNING: ADVANCED USERS ONLY", "font-size: 21px; font-weight: bold; color: #FF0000; -webkit-text-stroke: 1px #660000;");
-            changeBasemap('basemap', 'osm');
+            changeBasemap('basemap', 'satellite');
             // changeBasemap('layer', 'cadastral_xyz');
             map.addLayer(geojsonLayer);
             // districtDropDown();
@@ -591,6 +608,103 @@
                     district_code: districtCode,
                     taluk_code: talukCode,
                     village_code: villageCode
+                },
+                success: function (response) {
+                    if (response.success) {
+                        var featureCollection = response.data;
+
+                        var features = geojsonFormat.readFeatures(featureCollection, {
+                            dataProjection: 'EPSG:4326',
+                            featureProjection: 'EPSG:3857'
+                        });
+                        geojsonSource.clear();
+                        geojsonSource.addFeatures(features);
+
+                        var extent = geojsonSource.getExtent();
+
+                        map.getView().fit(extent, {
+                            duration: 4000,
+                            maxZoom: 15,
+                            padding: [20, 20, 20, 20]
+                        });
+                        geojsonLayer.setVisible(true);
+
+                    } else {
+                        console.error(response.message);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error fetching geometry data:', error);
+                }
+            });
+        }
+
+        function fetchGeometryUrban(caseType, districtCode, talukCode, town_code,ward_code,block_code) {
+            $.ajax({
+                url: `${BASE_URL}/v1/get_geom`,
+                method: 'POST',
+                headers: {
+                    'X-APP-NAME': 'NOC'
+                },
+                data: {
+                    case: caseType,
+                    code_type: 'revenue',
+                    district_code: districtCode,
+                    taluk_code: talukCode  || 0,
+                    town_code: town_code  || 0,
+                    ward_code: ward_code  || 0,
+                    block_code: block_code || 0,
+
+                },
+                success: function (response) {
+                    if (response.success) {
+                        var featureCollection = response.data;
+
+                        var features = geojsonFormat.readFeatures(featureCollection, {
+                            dataProjection: 'EPSG:4326',
+                            featureProjection: 'EPSG:3857'
+                        });
+                        geojsonSource.clear();
+                        geojsonSource.addFeatures(features);
+
+                        var extent = geojsonSource.getExtent();
+
+                        map.getView().fit(extent, {
+                            duration: 4000,
+                            maxZoom: 15,
+                            padding: [20, 20, 20, 20]
+                        });
+                        geojsonLayer.setVisible(true);
+
+                    } else {
+                        console.error(response.message);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error fetching geometry data:', error);
+                }
+            });
+        }
+
+
+        function fetchGeometrySurvey(caseType, admin_type,districtCode, talukCode, villageCode,townCode,wardCode,blockCode,surveyNumber) {
+            $.ajax({
+                url: `${BASE_URL}/v1/get_geom`,
+                method: 'POST',
+                headers: {
+                    'X-APP-NAME': 'NOC'
+                },
+                data: {
+                    case: caseType,
+                    code_type: 'revenue',
+                    district_code: districtCode,
+                    taluk_code: talukCode,
+                    village_code: villageCode,
+                    admin_type:admin_type,
+                    town_code:townCode,
+                    ward_code:wardCode,
+                    block_code:blockCode,
+                    survey_number:surveyNumber
                 },
                 success: function (response) {
                     if (response.success) {
@@ -805,6 +919,9 @@
                 });
             });
         });
+        function comingsoon(){
+            alert("Coming soon");
+        }
 
     </script>
     <script>

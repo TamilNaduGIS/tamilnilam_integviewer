@@ -1009,7 +1009,9 @@ header{
 }
 .offcanvas.offcanvas-end.menu{
     background-color: rgb(255, 255, 255);
-    height: min-content;
+    /* height: min-content; */
+    height: 690px;
+    overflow: overlay;
     border-radius: 20px;
     padding: 10px;
     backdrop-filter: blur(5px);
@@ -1044,7 +1046,7 @@ header{
     display: flex;
     position: fixed;
     bottom: 10%;
-    right: 0rem;
+    left: 0rem;
     flex-direction: column;
     z-index: 95;
     align-items: center;
@@ -1192,7 +1194,7 @@ header{
     background-color: #ffffff;
     color: rgb(0 38 117);
     transition: all 0.2s ease;
-    margin-right: 20px;
+    margin-left: 20px;
     border: none;
 }
     .layer-btns.rotation{
@@ -1218,6 +1220,7 @@ header{
         border-radius:20px;
         cursor: pointer;
         transition: background 0.3s, color 0.3s;
+        margin-bottom: 5px;
     }
     
     .maptype input {
@@ -1265,7 +1268,7 @@ filter: invert(100%);
     pointer-events: auto;
     top: 10%;
     left: 2rem;
-    max-width: 440px!important;
+    max-width: 470px!important;
     cursor: auto;
     /* transform: translateX(-50%)!important; */
     margin: 0px 0px!important;
@@ -1385,4 +1388,13 @@ filter: invert(100%);
     text-decoration: none;
     position: relative;
     top: 1.5px;
+}
+.toast-top-right{
+    top: 8px !important;
+}
+
+#JSB,#EC{
+    width: 16px;
+    padding-bottom: 6px;
+    filter: invert(29%) sepia(92%) saturate(746%) hue-rotate(130deg) brightness(93%) contrast(90%);
 }

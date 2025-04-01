@@ -365,6 +365,12 @@ map.on('singleclick', function (evt) {
 
 });
 
+map.on('pointermove', function (e) {
+    var lonlat = ol.proj.toLonLat(e.coordinate);
+    $("#lon").html(lonlat[0].toFixed(6));
+    $("#lat").html(lonlat[1].toFixed(6));
+});
+
 // Close button event listener
 document.getElementById('close-btn').addEventListener('click', hidePanel);
 
@@ -373,7 +379,7 @@ function displaySimplifiedInfo(data, lat, long) {
 
     const panel = document.getElementById('lpi-container');
     const content = document.getElementById('lpi-content');
-
+    console.log(data);
     // Clear previous content
     content.innerHTML = '';
 
@@ -384,13 +390,25 @@ function displaySimplifiedInfo(data, lat, long) {
     // District, Taluk, and Village in a single line
     const districtTalukVillage = document.createElement('div');
     districtTalukVillage.className = 'district-taluk-village';
-    districtTalukVillage.innerHTML = `
+    if(data.rural_urban != 'urban'){
+        districtTalukVillage.innerHTML = `
         <div><strong>District:</strong> <br />${data.district_name} / ${data.district_tamil_name}</div>
         <div><strong>Taluk:</strong> <br /> ${data.taluk_name} / ${data.taluk_tamil_name}</div>
         <div><strong>Village:</strong> <br /> ${data.village_name} / ${data.village_tamil_name}</div>
     `;
+    }else{
+        districtTalukVillage.innerHTML = `
+        <div><strong>District:</strong> <br />${data.district_name} / ${data.district_tamil_name}</div>
+        <div><strong>Taluk:</strong> <br /> ${data.taluk_name} / ${data.taluk_tamil_name}</div>
+        <div><strong>Town:</strong> <br /> ${data.revenue_town_name} / ${data.revenue_town_tamil_name}</div>
+        <div><strong>Ward:</strong> <br /> ${data.revenue_ward_name} / ${data.revenue_ward_tamil_name}</div>
+        <div><strong>Block:</strong> <br /> ${data.revenue_block_name} / ${data.revenue_block_name}</div>
+    `; 
+    }
+    
     infoDiv.appendChild(districtTalukVillage);
 
+    if(data.rural_urban != 'urban'){
     // LGD Codes
     const lgdCodes = document.createElement('div');
     lgdCodes.className = 'lgd-codes';
@@ -398,6 +416,7 @@ function displaySimplifiedInfo(data, lat, long) {
         <div><strong>Village LGD Code:</strong> ${data.lgd_village_code} (${data.rural_urban})</div>
     `;
     infoDiv.appendChild(lgdCodes);
+    }
 
     content.appendChild(infoDiv);
 
@@ -410,7 +429,7 @@ function displaySimplifiedInfo(data, lat, long) {
         : data.survey_number;
 
     surveySection.innerHTML = `
-        <div><strong>ULPIN:</strong> ${data.ulpin}</div> <div><strong>Centroid:</strong> ${data.centroid}</div><br>
+        <div><strong>ULPIN:</strong> ${data.ulpin ? data.ulpin : '-'}</div> <div><strong>Centroid:</strong> ${data.centroid ? data.centroid : '-'}</div><br>
         <div><strong>Survey Number:</strong> ${surveyNumber}</div>
         <br>
     `;
@@ -447,6 +466,20 @@ function displaySimplifiedInfo(data, lat, long) {
                     data-bs-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false" 
                     onclick='openIGRInfo(${JSON.stringify(data)}, ${lat}, ${long})'>
                     <img src="assets/icons/rubai.svg" id="rubai" alt="">
+                </button>
+            </li>
+            <li class="nav-item mx-1" role="presentation">
+                <button class="nav-link district-icon" title="Guideline Value" id="nex-tab" type="button" 
+                    data-bs-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false" 
+                    onclick='openECnfo(${JSON.stringify(data)}, ${lat}, ${long})' style="font-weight:700">
+                    EC
+                </button>
+            </li>
+            <li class="nav-item mx-1" role="presentation">
+                <button class="nav-link district-icon" title="Guideline Value" id="nex-tab" type="button" 
+                    data-bs-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false" 
+                    onclick='openJSBInfo(${JSON.stringify(data)}, ${lat}, ${long})' style="font-weight:700">
+                    JSB
                 </button>
             </li>
         </ul>
@@ -755,7 +788,6 @@ function highlightVertex(coordinate) {
 /** Areg Info Panel Creation Start*/
 
 function openAregInfo(data) {
-    console.log(data);
     if (data.rural_urban === "rural") {
         const params = {
             district_code: data.district_code,
@@ -786,7 +818,36 @@ function openAregInfo(data) {
             }
         });
     } else {
-        alert("Urban in Progress");
+        console.log(data);
+        
+        const params = {
+            district_code: data.district_code,
+            taluk_code: data.taluk_code,
+            town_code:data.town_code,
+            ward_code:data.firka_ward_number ? firka_ward_number:0,
+            block_code:data.urban_block_number,
+            survey_number: data.survey_number,
+            sub_division_number: data.is_fmb == 1 ? (data.sub_division != null ? data.sub_division : 0) : 0,
+            
+        };
+
+        $.ajax({
+            url: `${BASE_URL}/v1/tamil_nillam_urban_ownership`,
+            method: 'POST',
+            headers: { 'X-APP-NAME': 'demo' },
+            data: params,
+            success: function (response) {
+                if (response.success) {
+                    const responseData = response;
+                    populateInfoPanel(responseData);
+                } else {
+                    console.error(response.message);
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error('Error in fetching AREG - ', error);
+            }
+        });
     }
 }
 
@@ -886,12 +947,13 @@ function populateInfoPanel(response) {
         // Populate Land Details Table excluding specified fields
         const landDetailsTable = document.getElementById("land-details-table");
         landDetailsTable.innerHTML = ''; // Clear previous data
-
+        var formatedKey = '';
         for (const [key, value] of Object.entries(landDetail)) {
             if (!excludedFields.includes(key)) {
+                formatedKey = addSpaceBeforeCaps(key);
                 const row = document.createElement("tr");
                 row.innerHTML = `
-                    <td>${key}</td>
+                    <td>${formatedKey}</td>
                     <td>${value !== null && value !== "" ? value : "-"}</td>
                 `;
                 landDetailsTable.appendChild(row);
@@ -1808,7 +1870,7 @@ async function loadTown(district_code,taluk_code) {
             valueKey: 'town_code',
             textKey: 'town_english_name',
             errorCallback: (message) => showToast('error', message),
-            triggerChange: true
+            triggerChange: false
         });
     } catch (error) {
         console.error('Async Error:', error);
@@ -1827,7 +1889,7 @@ $('#town-dropdown').change(async function () {
         } else if (area_type == 'urban') {
             urbanWardRevenueCode(district_code, taluk_code,town_code,area_type);
         }
-        fetchGeometry('taluk', district_code, taluk_code, null,null);
+        fetchGeometryUrban('revenue_town', district_code, taluk_code, town_code,null);
         // alert(2);
     } catch (error) {
         console.error('Async Error:', error);
@@ -1851,7 +1913,7 @@ async function urbanWardRevenueCode(district_code, taluk_code,town_code,area_typ
             valueKey: 'ward_code',
             textKey: 'ward_english_name',
             errorCallback: (message) => showToast('error', message),
-            triggerChange: true
+            triggerChange: false
         });
     } catch (error) {
         console.error('Async Error:', error);
@@ -1872,7 +1934,7 @@ $('#ward-dropdown').change(async function () {
         } else if (area_type == 'urban') {
             urbanBlockRevenueCode(district_code, taluk_code,town_code,ward_code,area_type);
         }
-        fetchGeometry('taluk', district_code, taluk_code, null,null);
+        fetchGeometryUrban('revenue_ward', district_code, taluk_code, town_code,ward_code);
         // alert(2);
     } catch (error) {
         console.error('Async Error:', error);
@@ -1885,7 +1947,7 @@ async function urbanBlockRevenueCode(district_code, taluk_code,town_code,ward_co
         const response = await ajaxPromise({
             url: `${BASE_URL}/v2/admin_master_revenue_block`,
             method: 'GET',
-            data: { 'request_type': 'ward','district_code':district_code,'taluk_code':taluk_code,'town_code':town_code,'ward_code':ward_code },
+            data: { 'request_type': 'revenue_block','district_code':district_code,'taluk_code':taluk_code,'town_code':town_code,'ward_code':ward_code },
             headers: { 'X-APP-NAME': 'demo' },
             dataType: 'json'
         });
@@ -1896,7 +1958,7 @@ async function urbanBlockRevenueCode(district_code, taluk_code,town_code,ward_co
             valueKey: 'block_code',
             textKey: 'block_english_name',
             errorCallback: (message) => showToast('error', message),
-            triggerChange: true
+            triggerChange: false
         });
     } catch (error) {
         console.error('Async Error:', error);
@@ -1918,7 +1980,7 @@ $('#block-dropdown').change(async function () {
         } else if (area_type == 'urban') {
             urbanSurveyNumberRevenueCode(district_code, taluk_code,town_code,ward_code,block_code,area_type);
         }
-        fetchGeometry('taluk', district_code, taluk_code, null,null);
+        fetchGeometryUrban('revenue_block', district_code, taluk_code, town_code,ward_code,block_code);
         // alert(2);
     } catch (error) {
         console.error('Async Error:', error);
@@ -1926,12 +1988,12 @@ $('#block-dropdown').change(async function () {
     }
 });
 
-async function urbanSurveyNumberRevenueCode(district_code, taluk_code,town_code,ward_code,block_code) {
+async function urbanSurveyNumberRevenueCode(district_code, taluk_code,town_code,ward_code,block_code,area_type) {
     try {
         const response = await ajaxPromise({
-            url: `${BASE_URL}/v2/admin_master_revenue_block`,
+            url: `${BASE_URL}/v2/admin_master_survey_number`,
             method: 'GET',
-            data: { 'request_type': 'ward','district_code':district_code,'taluk_code':taluk_code,'town_code':town_code,'ward_code':ward_code,'block_code':block_code },
+            data: { 'request_type': 'survey_number','district_code':district_code,'taluk_code':taluk_code,'town_code':town_code,'ward_code':ward_code,'block_code':block_code,'area_type':area_type },
             headers: { 'X-APP-NAME': 'demo' },
             dataType: 'json'
         });
@@ -1942,14 +2004,35 @@ async function urbanSurveyNumberRevenueCode(district_code, taluk_code,town_code,
             valueKey: 'survey_number',
             textKey: 'survey_number',
             errorCallback: (message) => showToast('error', message),
-            triggerChange: true
+            triggerChange: false
         });
     } catch (error) {
         console.error('Async Error:', error);
         showToast('error', response.message);
     }
 }
-
+$('#urban-survey-number-dropdown').change(async function () {
+    try {
+        var district_code = $("#district-dropdown").val();
+        var taluk_code = $("#taluk-dropdown").val();
+        var town_code = $("#town-dropdown").val();
+        var ward_code = $("#ward-dropdown").val();
+        var block_code = $("#block-dropdown").val();
+        var survey_number = $(this).val();
+        var area_type = getSelectedAreaType();
+        console.log(area_type);
+        if (area_type == 'rural') {
+            loadRevenueVillage(district_code, taluk_code, area_type);
+        } else if (area_type == 'urban') {
+            // urbanSurveyNumberRevenueCode(district_code, taluk_code,town_code,ward_code,block_code,area_type);
+        }
+        fetchGeometrySurvey('survey_number',area_type, district_code, taluk_code, town_code,ward_code,block_code,survey_number);
+        // alert(2);
+    } catch (error) {
+        console.error('Async Error:', error);
+        showToast('error', `${error}`)
+    }
+});
 async function loadRevenueVillage(district_code, taluk_code, area_type) {
     try {
         if (district_code && taluk_code) {
@@ -2118,3 +2201,14 @@ rotateLeftButton.addEventListener('click', () => {
 resetButton.addEventListener('click', () => {
     map.getView().setRotation(0);
 });
+
+
+function openECnfo(){
+    alert("Coming soon");
+}
+function openJSBInfo(){
+    alert("Coming soon");
+}
+function addSpaceBeforeCaps(str) {
+    return str.replace(/([A-Z])/g, ' $1').trim();
+}
