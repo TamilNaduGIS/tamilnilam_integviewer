@@ -4,6 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="robots" content="noindex, nofollow">
+      <!-- Favicons -->
+    <link href="assets/logo/tn-logo.png" rel="icon">
+    <link href="assets/logo/tn-logo.png" rel="apple-touch-icon">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tamil Nilam</title>
     <link rel="stylesheet" href="assets/css/styles.css">
@@ -87,27 +90,28 @@
             visibility: visible;
         }
         /* Spinner overlay container */
-        .spinner-overlay {
-            display: none;                  /* Hidden by default */
+        
+        .loader {
+            width: 40px;
+            aspect-ratio: 1;
+            color: #f03355;
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
+            /* background: radial-gradient(10px, currentColor 94%, #0000); */
+            z-index: 1005;
+            top: 12px;
+            right: 115px;
+            display: none;
         }
-
-        /* Spinner size and animation */
-        .spinner-border {
-            width: 4rem;
-            height: 4rem;
-            border-width: 0.4rem;
+        .loader:before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: radial-gradient(9px at bottom right, #0000 94%, currentColor) top left, radial-gradient(9px at bottom left, #0000 94%, currentColor) top right, radial-gradient(9px at top right, #0000 94%, currentColor) bottom left, radial-gradient(9px at top left, #0000 94%, currentColor) bottom right;
+            background-size: 20px 20px;
+            background-repeat: no-repeat;
+            animation: l18 1.5s infinite cubic-bezier(0.3, 1, 0, 1);
         }
-
     </style>
 </head>
 
@@ -221,9 +225,9 @@
                         <option value="" disabled="" selected="">Select Survey Number</option>
                     </select>
 
-                    <!-- <select id="sub-division-dropdown">
+                    <select id="sub-division-dropdown">
                         <option value="" disabled="" selected="">Select Sub Division</option>
-                    </select> -->
+                    </select>
                 </div>
 
                 <!-- Urban Fields -->
@@ -244,18 +248,14 @@
                         <option value="">Select Survey Number</option>
                     </select>
 
-                    <!-- <select id="urban-sub-division-dropdown">
+                    <select id="urban-sub-division-dropdown">
                         <option value="">Select Sub Division</option>
-                    </select> -->
+                    </select>
                 </div>
             </div>
         </div>
     </div>
-    <div class="spinner-overlay" id="spinner-overlay">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-    </div>
+    <div class="loader"></div>
     <!-- Modal -->
     <div class="modal fade" id="staticBackdrop" data-bs-backdrop="false" data-bs-keyboard="false" focus="false"
         tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
@@ -507,13 +507,13 @@
         // Function to show spinner
         function showSpinner() {
             // Show spinner
-            $(".spinner-overlay").show();
+            $(".loader").show();
         }
 
         // Function to hide spinner
         function hideSpinner() {
             // Hide spinner
-            $(".spinner-overlay").hide();
+            $(".loader").hide();
         }
         $(document).ready(function () {
             console.log("%cWARNING: ADVANCED USERS ONLY", "font-size: 21px; font-weight: bold; color: #FF0000; -webkit-text-stroke: 1px #660000;");

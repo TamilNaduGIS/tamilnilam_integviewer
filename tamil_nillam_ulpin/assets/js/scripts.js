@@ -413,7 +413,7 @@ function displaySimplifiedInfo(data, lat, long) {
     const lgdCodes = document.createElement('div');
     lgdCodes.className = 'lgd-codes';
     lgdCodes.innerHTML = `
-        <div><strong>Village LGD Code:</strong> ${data.lgd_village_code} (${data.rural_urban})</div>
+        <div><strong>Village LGD Code:</strong> ${data.lgd_village_code} (${data.rural_urban ? data.rural_urban: '-'})</div>
     `;
     infoDiv.appendChild(lgdCodes);
     }
@@ -527,8 +527,11 @@ function addGeoJsonLayer(geojson) {
     });
     geojsonLayer.setVisible(true);
 }
+$(".btn-close").on("click", function(){
+    geojsonLayer.setVisible(false);
+    clearVertexLabels();
 
-
+});
 // Global variable to hold reference to the vertex layer
 let vertexLayer = null;
 
@@ -1745,6 +1748,29 @@ function clearLegend() {
     legendContent.innerHTML = '';
 }
 
+document.addEventListener("DOMContentLoaded", function() {
+    let rotationDegree = 0;
+    const map = document.getElementById("map");
+
+    // Rotate Right (Clockwise)
+    document.querySelector(".rotation-right").addEventListener("click", () => {
+        rotationDegree += 90;
+        map.style.transform = `rotate(${rotationDegree}deg)`;
+    });
+
+    // Rotate Left (Counter-clockwise)
+    document.querySelector(".rotation-left").addEventListener("click", () => {
+        rotationDegree -= 90;
+        map.style.transform = `rotate(${rotationDegree}deg)`;
+    });
+
+    // Reset Rotation (Back to North)
+    document.getElementById("resetRotation").addEventListener("click", () => {
+        rotationDegree = 0;
+        map.style.transform = `rotate(0deg)`;
+    });
+});
+
 
 // // Utility function to extract vertices from a GeoJSON geometry
 // function extractVertices(geojsonGeom) {
@@ -2147,6 +2173,42 @@ $('#village-dropdown').change(async function () {
 //     }
 // });
 
+$('#survey-number-dropdown').change(async function () {
+    try {
+        var district_code = $("#district-dropdown").val();
+        var taluk_code = $("#taluk-dropdown").val();
+        var village_code = $("#village-dropdown").val();
+        var survey_number = $(this).val();
+        var area_type = getSelectedAreaType();
+        // var data_type = getDataFetchType();
+        if (district_code && taluk_code && village_code && survey_number && area_type ) {
+            const response = await ajaxPromise({
+                url: `${BASE_URL}/v2/sub_division`,
+                method: 'GET',
+                data: { 'district_code': district_code, 'taluk_code': taluk_code, 'village_code': village_code, 'survey_number': survey_number, 'area_type': area_type, 'sub_division_number':'jjj' },
+                headers: { 'X-APP-NAME': 'demo' },
+                dataType: 'json'
+            });
+            console.log('Async Sub Division Response:', response);
+            populateDropdown('sub-division-dropdown', response, {
+                defaultText: 'Select Sub Division',
+                valueKey: 'subdiv_no',
+                textKey: 'subdiv_no',
+                errorCallback: (message) => showToast('error', message),
+                triggerChange: true
+            });
+            // var villageCode = village_code.replace(/^0+/, '');
+            // fetchGeometry('survey_number', district_code, taluk_code, village_code,survey_number,null);
+            // alert(4);
+        } else {
+            resetDropdown('sub-division-dropdown', 'Select Sub Division');
+        }
+    } catch (error) {
+        console.error('Async Error:', error);
+        showToast('error', error)
+    }
+});
+
 // Function to get current selected Area Type
 function getSelectedAreaType() {
     const selectedRadio = document.querySelector('input[name="area-type"]:checked');
@@ -2179,30 +2241,6 @@ navButtons.forEach(button => {
 });
 
 
-// Select the UI elements
-const resetButton = document.getElementById('resetRotation');
-const rotateRightButton = document.querySelector('.rotation-right');
-const rotateLeftButton = document.querySelector('.rotation-left');
-
-// Function to rotate the map
-const rotationStep = Math.PI / 18;  // Rotate by 10 degrees (in radians)
-
-rotateRightButton.addEventListener('click', () => {
-    const currentRotation = map.getView().getRotation();
-    map.getView().setRotation(currentRotation + rotationStep);
-});
-
-rotateLeftButton.addEventListener('click', () => {
-    const currentRotation = map.getView().getRotation();
-    map.getView().setRotation(currentRotation - rotationStep);
-});
-
-// Reset rotation to North
-resetButton.addEventListener('click', () => {
-    map.getView().setRotation(0);
-});
-
-
 function openECnfo(){
     alert("Coming soon");
 }
@@ -2212,3 +2250,22 @@ function openJSBInfo(){
 function addSpaceBeforeCaps(str) {
     return str.replace(/([A-Z])/g, ' $1').trim();
 }
+
+
+
+const rotationStep = Math.PI / 8; // Rotate by 22.5 degrees per step
+
+// Reset rotation to North (0 degrees)
+document.getElementById("resetRotation").addEventListener("click", function () {
+    view.animate({ rotation: 0, duration: 300 });
+});
+
+// Rotate Right (Clockwise)
+document.querySelector(".rotation-right").addEventListener("click", function () {
+    view.animate({ rotation: view.getRotation() - rotationStep, duration: 300 });
+});
+
+// Rotate Left (Counterclockwise)
+document.querySelector(".rotation-left").addEventListener("click", function () {
+    view.animate({ rotation: view.getRotation() + rotationStep, duration: 300 });
+});
