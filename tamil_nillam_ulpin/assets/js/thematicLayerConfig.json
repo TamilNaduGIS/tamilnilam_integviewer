@@ -1,0 +1,118 @@
+[
+    {
+        "category": "Topography",
+        "layers": [
+            {
+                "id": "Elevation_Raster",
+                "name": "Elevation",
+                "title": "Elevation",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "zIndex": -1,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:elevation_raster",
+                    "STYLES": ""
+                },
+                "icon":"assets/logo/thema-icons/elevation.png"
+            },
+            {
+                "id": "Slope_Layer",
+                "name": "Slope",
+                "title": "Slope",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:tn_slope",
+                    "STYLES": ""
+                },
+                "icon":"assets/logo/thema-icons/slope.png"
+            },
+            {
+                "id": "Aspect_Layer",
+                "name": "Aspect",
+                "title": "Aspect",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:tn_aspect",
+                    "STYLES": ""
+                },
+                "icon":"assets/logo/thema-icons/aspect.png"
+            },
+            {
+                "id": "Contours_Layer",
+                "name": "Contours",
+                "title": "Contours",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:tn_contours",
+                    "STYLES": ""
+                },
+                "icon":"assets/logo/thema-icons/contour.png"
+            }
+            
+        ]
+    },
+    {
+        "category": "Demography",
+        "layers": [
+            {
+                "id": "Thematic_WMSa",
+                "name": "Population",
+                "title": "Population Theme",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "cadastral_analysis:population",
+                    "STYLES": ""
+                },
+                "icon":"assets/logo/thema-icons/elevation.png"
+            }
+        ]
+    },
+    {
+        "category": "Natural Resource",
+        "layers": [
+            {
+                "id": "geology_id",
+                "name": "Geology",
+                "title": "Geology",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:geology",
+                    "STYLES": ""
+                },
+                "icon":"assets/logo/thema-icons/geology.png"
+            },
+            {
+                "id": "geomorphology_id",
+                "name": "G-morphology",
+                "title": "Geomorphology",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:geomorphology",
+                    "STYLES": ""
+                },
+                "icon":"assets/logo/thema-icons/geomorphology.png"
+            }
+        ]
+    }
+    
+]

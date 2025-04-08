@@ -1,0 +1,294 @@
+[
+    {
+        "category": "Administrative Boundary",
+        "layers": [
+            
+            {
+                "id": "TNGIS_Basemap",
+                "name": "TNGIS - Cadastral Map",
+                "title": "TNGIS - Cadastral Map",
+                "type": "xyz",
+                "defaultOpacity": 1,
+                "defaultVisibility": true,
+                "url": "https://tngis.tn.gov.in/data/xyz_tiles/cadastral_xyz/{z}/{x}/{y}.png"
+            },
+            {
+                "id": "state_boundary",
+                "name": "State",
+                "title": "State",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:state_boundary",
+                    "STYLES": ""
+                }
+            },
+            {
+                "id": "district_boundary",
+                "name": "District",
+                "title": "District",
+                "type": "wms",
+                "defaultOpacity": 0.7,
+                "defaultVisibility": true,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:districts",
+                    "STYLES": ""
+                }
+            },
+            {
+                "id": "taluk_boundary",
+                "name": "Taluk",
+                "title": "Taluk",
+                "type": "wms",
+                "defaultOpacity": 0.7,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:taluk_boundary",
+                    "STYLES": ""
+                }
+            },
+            {
+                "id": "revenue_villages",
+                "name": "Revenue Village",
+                "title": "Revenue Village",
+                "type": "wms",
+                "defaultOpacity": 0.7,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:revenue_villages",
+                    "STYLES": ""
+                }
+            }
+            
+            
+        ]
+    },
+    {
+        "category": "CRZ Affected Area",
+        "layers": [
+            {
+                "id": "CRZ_Survey_Number",
+                "name": "CRZ - Affected Land Parcel",
+                "title": "CRZ - Affected Land Parcel",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:crz_cadastral",
+                    "STYLES": ""
+                }
+            }
+        ]
+    },
+    {
+        "category": "Other Land Data",
+        "layers": [
+            {
+                "id": "Reserve_Forest",
+                "name": "Forest",
+                "title": "Forest",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:reserve_forest",
+                    "STYLES": ""
+                }
+            },
+            {
+                "id": "Water_Bodies",
+                "name": "Waterbodies",
+                "title": "Waterbodies",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "waterbody:merged_distinct_waterbody_view",
+                    "STYLES": ""
+                }
+            },
+            {
+                "id": "ASI_sites",
+                "name": "ASI sites",
+                "title": "ASI sites",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:asi_sites",
+                    "STYLES": ""
+                }
+            },
+            {
+                "id": "Mines",
+                "name": "Mines",
+                "title": "Mines",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:mines",
+                    "STYLES": ""
+                }
+            },
+            {
+                "id": "Mines_Lease",
+                "name": "Mines Lease",
+                "title": "Mines Lease",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:mines_lease",
+                    "STYLES": ""
+                }
+            },
+            {
+                "id": "Monuments",
+                "name": "Monuments",
+                "title": "Monuments",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:Monuments",
+                    "STYLES": ""
+                }
+            },
+            {
+                "id": "SIPCOT_Estate",
+                "name": "SIPCOT Estate",
+                "title": "SIPCOT Estate",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:sipcot_estate",
+                    "STYLES": ""
+                }
+            },
+            {
+                "id": "Slum_Boundary",
+                "name": "Slum Boundary",
+                "title": "Slum Boundary",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:slum_boundary",
+                    "STYLES": ""
+                }
+            },
+            {
+                "id": "TNPCB_Land_Parcel_industries_land_parcel",
+                "name": "TNPCB Land Parcel (industries land parcel)",
+                "title": "TNPCB Land Parcel (industries land parcel)",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:industry_cad_matched",
+                    "STYLES": ""
+                }
+            },
+            {
+                "id": "ULP_PIN_Layers",
+                "name": "ULP PIN Layers",
+                "title": "ULP PIN Layers",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "cadastral_information_new:fmb_ulpin",
+                    "STYLES": ""
+                }
+            }
+        ]
+    },
+    {
+        "category": "Transport Infrastructure",
+        "layers": [
+            {
+                "id": "National_Highways",
+                "name": "NH",
+                "title": "National Highways",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:national_highways",
+                    "STYLES": ""
+                }
+            },
+            {
+                "id": "State_Highways",
+                "name": "SH",
+                "title": "State Highways",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:state_highways",
+                    "STYLES": ""
+                }
+            },
+            {
+                "id": "Major_District_Roads",
+                "name": "MDR",
+                "title": "Major District Roads",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:major_district_roads",
+                    "STYLES": ""
+                }
+            },
+            {
+                "id": "Other_District_Roads",
+                "name": "ODR",
+                "title": "Other District Roads",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:other_district_roads",
+                    "STYLES": ""
+                }
+            },
+            {
+                "id": "Rural_Roads",
+                "name": "RD",
+                "title": "Rural Roads",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:tnrd_rural_roads",
+                    "STYLES": ""
+                }
+            }
+        ]
+    }
+]

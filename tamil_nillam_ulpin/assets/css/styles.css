@@ -472,6 +472,7 @@ body {
     font-size: 12px;
     color: #555;
     margin-top: 4px;
+    border-bottom: 1px solid #ddd;
 }
 
 .lgd-codes div {
@@ -491,9 +492,15 @@ body {
     width: 337px;
 }
 
+.note{
+    font-size: 12px;
+    color: red;
+    margin-bottom: 1px !important;
+}
 /* Icons */
 .info-icons {
-    display: inline-flex;
+    display: flex;
+    flex-direction: column;
     gap: 10px;
     vertical-align: middle;
     margin-top: 5px;
@@ -709,6 +716,8 @@ body {
 /*    background: #585858;*/
     background: linear-gradient(45deg, rgb(3, 17, 61), rgb(61, 128, 137));
     justify-content: center;
+    font-size: 10px;
+    padding: 5px!important;
 }
 
 #company-logo img {
@@ -764,10 +773,11 @@ body {
 /* FMB Sketch Panel */
 #fmb-sketch-info-panel {
     position: absolute;
-    top: 90px;
-    right: 20px;
-    width: 500px;
-    height: 328px;
+    top: 0px;
+    left: 0px;
+    width: 454px;
+    height: 430px;
+    margin-bottom: 10px;
     background: white;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     z-index: 1000;
@@ -1017,7 +1027,7 @@ header{
     backdrop-filter: blur(5px);
     border: none;
     font-size: 12px;
-    width: 25%;
+    width: 22%;
 }
 
 .dropdowns select{
@@ -1027,6 +1037,10 @@ header{
     color: rgb(255, 255, 255);
     width: 100%;
     margin: 5px 0px;
+    font-size: 12px!important;
+}
+.dropdowns .form-select{
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e")!important;
 }
 .dropdowns option{
     background-color: white;
@@ -1255,10 +1269,10 @@ button.accordion-button{
 filter: invert(100%);
 }
 
-.info-icons{
+/* .info-icons{
     width: 50px;
     height: 35px;
-}
+} */
 .modal {
     pointer-events: none;
 }
@@ -1339,37 +1353,40 @@ filter: invert(100%);
     background: #003f7f;
     padding: 10px;
     border-radius: 5px;
+    text-align: left;
 }
 #accordionPanelsStayOpenExample .accordion-item{
     margin-bottom: 3px;
 }
 .copyrights{
     color: #fff;
-    font-size: 10px;
+    /* font-size: 10px; */
 }
 .mousePosition{
     color: #fff;
-    font-size: 12px;
+    /* font-size: 12px; */
 }
 .offcanvas-header{
     padding: 1rem 1rem 0rem 0rem !important;
 }
 .more_info{
     position: relative;
-    top: 70px;
+    top: 55px;
     font-size: 12px;
     z-index: 2;
     width: 100%;
     text-align: -webkit-center;
 }
 .more_info_content{
-    background-color: #003f7f;
+    background-color: #042fc5;
     color: #fff;
     text-align: center;
     vertical-align: middle;
     padding: 6px;
     border-radius: 10px;
     width: 20%;
+    text-shadow: 0px 0px 1px white;
+    box-shadow: 2px 2px 10px rgb(0, 0, 0);
 }
 
 .disclaimer .modal-dialog {
@@ -1397,4 +1414,205 @@ filter: invert(100%);
     width: 16px;
     padding-bottom: 6px;
     filter: invert(29%) sepia(92%) saturate(746%) hue-rotate(130deg) brightness(93%) contrast(90%);
+}
+#subdivisionDropdown{
+    padding: 0px 5px;
+    font-size: 13px !important;
+}
+#backto{
+    font-size: xx-small;
+}
+/* Style the main accordion items */
+#accordionPanelsLayers > .accordion-item > .accordion-header > .accordion-button {
+    background-color: #003f7f !important; /* Main accordion background */
+    color: white !important;
+    font-weight: bold;
+    border-radius: 5px;
+}
+
+/* Style the nested accordion items */
+#accordionPanelsLayers .accordion-body .accordion .accordion-item .accordion-header .accordion-button {
+    background-color: #00adaa !important; /* Nested accordion background */
+    color: #fff !important;
+    font-weight: normal;
+}
+
+/* Optional: Change color on hover for better UI */
+#accordionPanelsLayers > .accordion-item > .accordion-header > .accordion-button:hover {
+    background-color: #0a6aca !important;
+}
+
+#accordionPanelsLayers .accordion-body .accordion .accordion-item .accordion-header .accordion-button:hover {
+    background-color: #0dcac7 !important;
+}
+.accordion-body{
+    padding: 0.5rem 1.0rem !important;
+}
+.pdfheader{
+    background: linear-gradient(360deg, #061841, #3c7d87);
+    color: white;
+}
+.pdf-close:hover{
+    color: #fff;
+}
+
+.thematic-icon-card {
+    background: #ffffff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin: 4px;
+    width: 180px;  /* Fixed width for a box layout */
+    height: 80px; /* Adjust for compact size */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    justify-content: center;
+    border: 1px solid #ddd;
+}
+
+.thematic-icon-card-content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: left;
+}
+
+.JSB-icon-card,.thematic-icon-card{
+    cursor: pointer!important;
+    transition: all 0.1s ease-in-out;
+
+}
+.JSB-icon-card:hover, .thematic-icon-card:hover{
+    background: #e0e0e0 !important;
+    transform: scale(1.1);
+    transition: all 0.1s ease-in-out;
+}
+@keyframes glowBorder {
+    0% {
+        box-shadow: 0 0 5px rgba(60, 125, 135, 0.5);
+    }
+    50% {
+        box-shadow: 0 0 10px rgba(60, 125, 135, 0.8);
+    }
+    100% {
+        box-shadow: 0 0 5px rgba(60, 125, 135, 0.5);
+    }
+}
+
+#subdivisionDropdown:focus {
+    outline: none; /* Remove default focus outline */
+    animation: glowBorder 1s infinite alternate ease-in-out;
+    border: 1px solid rgb(60, 125, 135); /* Visible border with animation */
+    border-radius: 5px;
+}
+.animated-border {
+    animation: glowBorder 1s infinite alternate ease-in-out;
+}
+.loading-message {
+    position: absolute;
+    top: 70px;
+    left: 218px;
+    font-weight: bold;
+    font-size: 16px;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.dots::after {
+    content: '.';
+    animation: dots 1.2s steps(3, end) infinite;
+}
+
+@keyframes dots {
+    0%   { content: '.'; }
+    25%  { content: '..'; }
+    50%  { content: '...'; }
+    75%  { content: '....'; }
+    100% { content: '.'; }
+}
+
+
+
+.dot-loader {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 30px;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.dot-loader span {
+    animation: blink 1.5s infinite;
+    padding: 0 2px;
+}
+
+.dot-loader span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.dot-loader span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
+}
+#accordionPanelsStayOpenExampleThematic .accordion-item{
+    margin-bottom: 3px;
+}
+.lpi-style{
+    font-size: 10px;
+    color: #ffe903;
+}
+.error-message{
+    padding: 0px 10px 14px 12px;
+    max-width: 600px;
+    margin: 4px auto;
+    font-size: 10px;
+    border-left: 6px solid #dc3545;
+    box-shadow: 0 4px 10px rgba(220, 53, 69, 0.2);
+    display: none;
+}
+#legend-container{
+    position: absolute;
+    z-index: 99;
+    bottom: 40px;
+    left: 18px;
+    overflow: overlay;
+    font-size: 10px !important;
+}
+#legend-headingOne .accordion-button::after{
+    flex-shrink: 0;
+    width: 1.05rem;
+    height: 0.85rem;
+    margin-left: auto;
+    content: "";
+    background-size: 1.05rem;
+    transition: transform .2s ease-in-out;
+}
+#subdivisionDropdown .form-select{
+    background-position:right 5px !important;
+}
+
+.thematic-icon-card {
+    width: max-content!important;
+}
+.jsb-dept-logo{
+    aspect-ratio: 1/1;
+    width: 50px;
+}
+.error-message{
+    font-size: 16px;
+    text-align: center;
+}
+#legendmodal .modal-content{
+    width: 350px;
 }

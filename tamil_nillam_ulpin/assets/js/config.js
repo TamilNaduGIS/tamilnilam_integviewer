@@ -4,11 +4,13 @@ const GEOSERVER_URL = 'https://tngis.tnega.org/geoserver/wms';
 const ADMIN_CODE_TYPE = 'revenue';
 const AREG_SEARCH_TYPE = 'survey_number';
 const AREG_SEARCH_URL = 'https://tngis.tnega.org/tamilnilam_api/v1/tamil_nillam_ownership';
+const TAMIL_NILAM_ULPIN_URL = 'https://tngis.tnega.org/tamil_nilam_ulpin_api';
 
-const FMB_SKETCH_URL = 'https://tngis.tnega.org/generic_api/v1/fmb_sketch';
+const FMB_SKETCH_URL = 'https://tngis.tn.gov.in/apps/generic_api/v1/fmb_sketch';
 const IGR_SERVICE_LAYER_NAME = 'Thematic_XYZ';
 const IGR_URL = 'https://tngis.tnega.org/thematic_viewer_api/v1/getfeatureInfo'
-
+const jsonFilePath = './assets/js/layerConfig.json';
+const thematicJsonFilePath = './assets/js/thematicLayerConfig.json';
 
 // Configuration
 toastr.options = {
@@ -69,7 +71,7 @@ function ajaxPromise(options) {
  * @param {Function} [config.errorCallback] - Optional error callback function
  */
 function populateDropdown(dropdownId, response, config) {
-    console.log(dropdownId);
+
     const selectElement = document.getElementById(dropdownId);
     if (!selectElement) {
         console.error(`Dropdown with id "${dropdownId}" not found`);
