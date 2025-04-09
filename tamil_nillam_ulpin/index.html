@@ -597,32 +597,29 @@
             // Initial check for visibility
             updateWMSLayerVisibility();
 
-            const $dialog = $('.modal-dialog');
-    
-            // $('#staticBackdrop').on('shown.bs.modal', function () {
-            //     let modal = $(this).find('.modal-dialog');
-                
-            //     modal.draggable({
-            //     handle: '.modal-header' // Only drag by the header
-            //     });
-            // });
             let isDragging = false;
             let offsetX = 0;
             let offsetY = 0;
+            let $currentDialog = null;
 
-            $('.modal-header').on('mousedown', function (e) {
+            $(document).on('mousedown', '.modal-header, .modal-content', function (e) {
+                $currentDialog = $(this).closest('.modal').find('.modal-dialog');
+
                 isDragging = true;
-                offsetX = e.clientX - $dialog.offset().left;
-                offsetY = e.clientY - $dialog.offset().top;
-                $dialog.css('cursor', 'grabbing');
+                offsetX = e.clientX - $currentDialog.offset().left;
+                offsetY = e.clientY - $currentDialog.offset().top;
+
+                $currentDialog.css('cursor', 'grabbing');
+                // Optional: set position to fixed so dragging feels natural
+                $currentDialog.css('position', 'fixed');
             });
 
             $(document).on('mousemove', function (e) {
-                if (isDragging) {
+                if (isDragging && $currentDialog) {
                     const left = e.clientX - offsetX;
                     const top = e.clientY - offsetY;
 
-                    $dialog.css({
+                    $currentDialog.css({
                         left: left + 'px',
                         top: top + 'px'
                     });
@@ -630,9 +627,13 @@
             });
 
             $(document).on('mouseup', function () {
-                isDragging = false;
-                $dialog.css('cursor', 'grab');
+                if (isDragging && $currentDialog) {
+                    isDragging = false;
+                    $currentDialog.css('cursor', 'grab');
+                    $currentDialog = null;
+                }
             });
+
 
             $('.nav-link').on('click', function () {
                 const target = $(this).data('target');
@@ -652,6 +653,8 @@
                     content.addClass('show active');
                 }
             });
+
+            
         })
 
         function populateSelect(selector, data, codeField, nameField, label) {

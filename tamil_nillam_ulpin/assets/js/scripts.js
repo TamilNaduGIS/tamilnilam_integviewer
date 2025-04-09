@@ -236,6 +236,7 @@ function hidePanel() {
 loadDistrict();
 // Click event listener on the map
 var currentRequest = null;
+var allowRequest = null;
 map.on('singleclick', function (evt) {
     $(".error-message").empty().hide();
     // Add click listener to map to close the panel when clicking on the map
@@ -281,6 +282,7 @@ map.on('singleclick', function (evt) {
     if (currentRequest != null) {
         currentRequest.abort();
     }
+    allowRequest = true;
     currentRequest = $.ajax({
         url: `${BASE_URL}/v2/land_details_curl`,
         method: 'POST',
@@ -312,15 +314,17 @@ map.on('singleclick', function (evt) {
                     $(".error-message").empty().text(responseMessage).show();
                 }
                 
-            } else {
-                console.error(response.message);
+            } else if(response.error == 0){
+                // alert(response.message);
+                $(".error-message").empty().text(response.message).show();
+            }else {
                 $(".error-message").empty().text(response.message).show();
             }
 
             
         },
         error: function (xhr, status, error) {
-            console.error('Error fetching geometry data:', error);
+            // alert(error);
         }
     });
 
@@ -330,8 +334,19 @@ $(document).on('click', '.JSB-icon-card', function () {
     $('#JSB-info-container .detail').remove();
 
     // Create and append new detail div
-    const detailDiv = $('<div class="detail mt-2 p-2 border rounded" style="background:#eef;">contents owned by : ' + $(this).text().trim() + '</div>');
+    // const detailDiv = $('<div class="detail mt-2 p-2 border rounded" style="background:#eef;">contents owned by : ' + $(this).text().trim() + '</div>');
+    const detailDiv = $('<div class="detail mt-2 p-2 border rounded" style="background:#eef;">' + $(this).text().trim() + ' contents: <b>Coming soon</b></div>');
     $('#JSB-info-container').append(detailDiv);
+});
+
+$(document).on('click', '.thematic-icon-card', function () {
+    // Remove old detail divs
+    $('#thematic-info-container .detail').remove();
+
+    // Create and append new detail div
+    // const detailDiv = $('<div class="detail mt-2 p-2 border rounded" style="background:#eef;">contents owned by : ' + $(this).text().trim() + '</div>');
+    const detailDiv = $('<div class="detail mt-2 p-2 border rounded" style="background:#eef;">' + $(this).text().trim() + ' contents: <b>Coming soon</b></div>');
+    $('#thematic-info-container').append(detailDiv);
 });
 
 map.on('pointermove', function (e) {
@@ -360,17 +375,17 @@ function displaySimplifiedInfo(data, lat, long) {
     districtTalukVillage.className = 'district-taluk-village';
     if(data.rural_urban != 'urban'){
         districtTalukVillage.innerHTML = `
-        <div><strong>District:</strong> <br />${data.district_name} / ${data.district_tamil_name}</div>
-        <div><strong>Taluk:</strong> <br /> ${data.taluk_name} / ${data.taluk_tamil_name}</div>
-        <div><strong>Village:</strong> <br /> ${data.village_name} / ${data.village_tamil_name}</div>
+        <div><strong>District:</strong> <br />${data.district_name ? data.district_name: '-'} / ${data.district_tamil_name ? data.district_tamil_name: '-'}</div>
+        <div><strong>Taluk:</strong> <br /> ${data.taluk_name ? data.taluk_name: '-'} / ${data.taluk_tamil_name ? data.taluk_tamil_name: '-'}</div>
+        <div><strong>Village:</strong> <br /> ${data.village_name ? data.village_name:'-'} / ${data.village_tamil_name ? data.village_tamil_name:'-'}</div>
     `;
     }else{
         districtTalukVillage.innerHTML = `
-        <div><strong>District:</strong> <br />${data.district_name} / ${data.district_tamil_name}</div>
-        <div><strong>Taluk:</strong> <br /> ${data.taluk_name} / ${data.taluk_tamil_name}</div>
-        <div><strong>Town:</strong> <br /> ${data.revenue_town_name} / ${data.revenue_town_tamil_name}</div>
-        <div><strong>Ward:</strong> <br /> ${data.revenue_ward_name} / ${data.revenue_ward_tamil_name}</div>
-        <div><strong>Block:</strong> <br /> ${data.revenue_block_name} / ${data.revenue_block_name}</div>
+        <div><strong>District:</strong> <br />${data.district_name ? data.district_nam : '-'} / ${data.district_tamil_name ? data.district_tamil_name: '-'}</div>
+        <div><strong>Taluk:</strong> <br /> ${data.taluk_name ? data.taluk_name: '-'} / ${data.taluk_tamil_name ? data.taluk_tamil_name : '-'}</div>
+        <div><strong>Town:</strong> <br /> ${data.revenue_town_name ? data.revenue_town_name: '-'} / ${data.revenue_town_tamil_name ? data.revenue_town_tamil_name: '-'}</div>
+        <div><strong>Ward:</strong> <br /> ${data.revenue_ward_name ? data.revenue_ward_name: '-'} / ${data.revenue_ward_tamil_name ? data.revenue_ward_tamil_name: '-'}</div>
+        <div><strong>Block:</strong> <br /> ${data.revenue_block_name ? data.revenue_block_name: '-'} / ${data.revenue_block_name ? data.revenue_block_name: '-'}</div>
     `; 
     }
     
@@ -381,7 +396,7 @@ function displaySimplifiedInfo(data, lat, long) {
     const lgdCodes = document.createElement('div');
     lgdCodes.className = 'lgd-codes';
     lgdCodes.innerHTML = `
-        <div><strong>Village LGD Code:</strong> ${data.lgd_village_code} (${data.rural_urban ? data.rural_urban: '-'})</div>
+        <div><strong>Village LGD Code:</strong> ${data.lgd_village_code ? data.lgd_village_code:'-'} (${data.rural_urban ? data.rural_urban: '-'})</div>
     `;
     infoDiv.appendChild(lgdCodes);
     }
@@ -507,7 +522,7 @@ function addGeoJsonLayer(geojson) {
 $("#info-close").on("click", function(){
     clearVertexLabels();
     geojsonSource.clear();
-
+    map.removeLayer(vertexLayer);
 });
 
 // Global variable to hold reference to the vertex layer
@@ -516,6 +531,7 @@ let vertexLayer = null;
 // Function to handle vertex extraction, highlighting, and coordinate display
 function highlightVertices(sgeojsonGeom) {
     $(".error-message").empty().hide();
+    map.removeLayer(vertexLayer);
     const geojsonGeom = JSON.parse(sgeojsonGeom);
     const vertices = extractVertices(geojsonGeom);
     // console.log(vertices);
@@ -555,7 +571,7 @@ function highlightVertices(sgeojsonGeom) {
         source: vertexSource,
         zIndex: 1007
     });
-
+    
     map.addLayer(vertexLayer);
 
     displayVertexDetails(vertices);
@@ -721,13 +737,13 @@ function zoomToVertex(longitude, latitude) {
     // Set a dynamic zoom level based on distance
     let zoomLevel;
     if (distance < 500) {
-        zoomLevel = 22; // Very close, high zoom
+        zoomLevel = 20; // Very close, high zoom
     } else if (distance < 1000) {
-        zoomLevel = 20; // Close
+        zoomLevel = 18; // Close
     } else if (distance < 5000) {
-        zoomLevel = 18; // Medium
+        zoomLevel = 16; // Medium
     } else {
-        zoomLevel = 16; // Far away, low zoom
+        zoomLevel = 14; // Far away, low zoom
     }
 
     // Convert the target vertex to map projection
@@ -810,7 +826,6 @@ function openAregInfo(data) {
             if (result.success == 1) {
                 if (result.data && result.data.length >= 1) {
                     sub_division_numbers = data.is_fmb == 1 ? ($("#subDivs").text() != null ? $("#subDivs").text() : '-') : '-';
-                    // alert(3);
                 } else {
                     sub_division_numbers = data.is_fmb == 1 ? ($("#subDivs").text() != null ? $("#subDivs").text() : '-') : '-';
 
@@ -1758,9 +1773,9 @@ function JSBIconInfo(data, lat, long) {
 
                     const fields = [
                         
+                        { label: "Constituencies", icon: '<img src="assets/logo/tn-logo.png" class="jsb-dept-logo">' },
                         { label: "Rural", icon: '<img src="assets/logo/tn-logo.png" class="jsb-dept-logo">' },
                         { label: "Urban", icon: '<img src="assets/logo/tn-logo.png" class="jsb-dept-logo">' },
-                        { label: "Constituencies", icon: '<img src="assets/logo/tn-logo.png" class="jsb-dept-logo">' },
                         { label: "Police", icon: '<img src="assets/logo/dept-logos/police.png" class="jsb-dept-logo">' },
                         { label: "TANGEDCO", icon: '<img src="assets/logo/dept-logos/tangedco.png" class="jsb-dept-logo">' },
                         { label: "Education", icon: '<img src="assets/logo/tn-logo.png" class="jsb-dept-logo">' },
@@ -2030,6 +2045,7 @@ function updateAllLegends(layerConfig) {
     layerConfig.forEach((category) => {
         category.layers.forEach((layerInfo) => {
             let legendImage = null;
+            let altText = "";
     
             if (layerInfo.type === "wms" && layers[layerInfo.id].getVisible()) {
                 const resolution = map.getView().getResolution();
@@ -2038,23 +2054,34 @@ function updateAllLegends(layerConfig) {
                 legendUrl += '&LEGEND_OPTIONS=forceLabels:on;fontColor:0xfffff;fontAntiAliasing:true&transparent=true';
                 legendUrl += `&SCALE=${resolution}`;
     
+                altText = `${layerInfo.title} Legend`;
                 legendImage = document.createElement('img');
                 legendImage.src = legendUrl;
-                legendImage.alt = `${layerInfo.title} Legend`;
+                legendImage.alt = altText;
             } else if (layerInfo.type === "xyz" && layers[layerInfo.id].getVisible()) {
+                altText = 'TNGIS - Cadastral Map';
                 legendImage = document.createElement('img');
                 legendImage.src = 'assets/icons/cadastral_map_legend.png';
-                legendImage.alt = 'TNGIS - Cadastral Map';
+                legendImage.alt = altText;
                 legendImage.style.width = '140px';
             }
     
             if (legendImage) {
                 const legendDiv = document.createElement('div');
+    
+                const legendLabel = document.createElement('div');
+                legendLabel.textContent = altText;
+                legendLabel.style.color = '#fff';
+                legendLabel.style.fontSize = '10px';
+    
+                legendDiv.appendChild(legendLabel);
                 legendDiv.appendChild(legendImage);
+    
                 legendContent.appendChild(legendDiv);
             }
         });
     });
+    
     
 }
 
@@ -2166,7 +2193,6 @@ $('#district-dropdown').change(async function () {
                 triggerChange: false
             });
             fetchGeometry('district', districtCode, null, null,null,null);
-            // alert(1);
         } else {
             // resetDropdown('taluk-dropdown', 'Select Taluk');
         }
@@ -2189,7 +2215,6 @@ $('#taluk-dropdown').change(async function () {
             loadTown(district_code, taluk_code, area_type);
         }
         fetchGeometry('taluk', district_code, taluk_code, null,null);
-        // alert(2);
     } catch (error) {
         console.error('Async Error:', error);
         showToast('error', `${error}`)
@@ -2232,7 +2257,6 @@ $('#town-dropdown').change(async function () {
             urbanWardRevenueCode(district_code, taluk_code,town_code,area_type);
         }
         fetchGeometryUrban('revenue_town', district_code, taluk_code, town_code,null);
-        // alert(2);
     } catch (error) {
         console.error('Async Error:', error);
         showToast('error', `${error}`)
@@ -2277,7 +2301,6 @@ $('#ward-dropdown').change(async function () {
             urbanBlockRevenueCode(district_code, taluk_code,town_code,ward_code,area_type);
         }
         fetchGeometryUrban('revenue_ward', district_code, taluk_code, town_code,ward_code);
-        // alert(2);
     } catch (error) {
         console.error('Async Error:', error);
         showToast('error', `${error}`)
@@ -2323,7 +2346,6 @@ $('#block-dropdown').change(async function () {
             urbanSurveyNumberRevenueCode(district_code, taluk_code,town_code,ward_code,block_code,area_type);
         }
         fetchGeometryUrban('revenue_block', district_code, taluk_code, town_code,ward_code,block_code);
-        // alert(2);
     } catch (error) {
         console.error('Async Error:', error);
         showToast('error', `${error}`)
@@ -2369,7 +2391,6 @@ $('#urban-survey-number-dropdown').change(async function () {
             // urbanSurveyNumberRevenueCode(district_code, taluk_code,town_code,ward_code,block_code,area_type);
         }
         fetchGeometrySurvey('survey_number',area_type, district_code, taluk_code, town_code,ward_code,block_code,survey_number);
-        // alert(2);
     } catch (error) {
         console.error('Async Error:', error);
         showToast('error', `${error}`)
@@ -2442,7 +2463,6 @@ $('#village-dropdown').change(async function () {
             });
             // var villageCode = village_code.replace(/^0+/, '');
             fetchGeometry('revenue_village', district_code, taluk_code, village_code,null,null);
-            // alert(3);
         } else {
             resetDropdown('survey-number-dropdown', 'Select Survey Number');
         }
@@ -2515,7 +2535,6 @@ $('#survey-number-dropdown').change(async function () {
             });
             // var villageCode = village_code.replace(/^0+/, '');
             // fetchGeometry('survey_number', district_code, taluk_code, village_code,survey_number,null);
-            // alert(4);
         } else {
             resetDropdown('sub-division-dropdown', 'Select Sub Division');
         }
@@ -2558,7 +2577,6 @@ navButtons.forEach(button => {
 
 
 function openECnfo(){
-    // alert("Coming soon");
     clearVertexLabels();
     $(".error-message").empty().hide();
     document.getElementById('areg-tab-container')?.remove();
@@ -2567,7 +2585,7 @@ function openECnfo(){
     document.getElementById('JSB-info-container')?.remove();
     document.getElementById('fmb-sketch-info-panel')?.remove();
     document.getElementById('thematic-info-container')?.remove();
-    $(".error-message").empty().text('Coming soon').show();
+    $(".error-message").empty().text('Encumbrance certificate - coming soon').show();
 }
 
 function addSpaceBeforeCaps(str) {
@@ -2674,19 +2692,25 @@ $("#backto").on("click", function(){
 
 
 function LpadAdding(code, type) {
-    if (type == 'district' || type == 'taluk') {
-        let value = code.toString(); // Convert number to string
-        if (value.length === 1) {
+    let value = code.toString();
+
+    switch (type) {
+        case 'district':
+        case 'taluk':
             return value.padStart(2, "0");
-        }
-        return value; // Return as-is if not a single digit
-    } else if (type == 'village') {
-        // You can add logic for 'village' here if needed
+
+        case 'village':
+        case 'town':
+        case 'ward':
+            return value.padStart(3, "0");
+
+        case 'block':
+            return value.padStart(4, "0");
+
+        default:
+            return value;
     }
-    return code.toString(); // Default return if no conditions match
 }
-
-
 
 function closever(){
     clearVertexLabels();

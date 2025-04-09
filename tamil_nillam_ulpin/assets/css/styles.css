@@ -1287,6 +1287,16 @@ filter: invert(100%);
     /* transform: translateX(-50%)!important; */
     margin: 0px 0px!important;
 }
+#legendmodal .modal-dialog {
+    position: absolute;
+    pointer-events: auto;
+    top: 20%;
+    left: 4rem;
+    max-width: 470px!important;
+    cursor: auto;
+    /* transform: translateX(-50%)!important; */
+    margin: 0px 0px!important;
+}
 .modal-body{
     cursor: initial;
 }

@@ -77,7 +77,7 @@
                     "LAYERS": "cadastral_analysis:population",
                     "STYLES": ""
                 },
-                "icon":"assets/logo/thema-icons/elevation.png"
+                "icon":"assets/logo/thema-icons/demography.png"
             }
         ]
     },
