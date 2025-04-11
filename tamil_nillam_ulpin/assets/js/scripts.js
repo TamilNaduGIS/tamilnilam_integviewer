@@ -247,6 +247,36 @@ map.on('singleclick', function (evt) {
     const coordinates = ol.proj.toLonLat(evt.coordinate);
     const lon = coordinates[0].toFixed(6);
     const lat = coordinates[1].toFixed(6);
+
+    map.getLayers().forEach(function (layer) {
+        if (!layer.getVisible()) return;
+        var source = layer.getSource();
+        console.log(source);
+        if (!source || typeof source.getFeatureInfoUrl !== 'function') return;
+      
+        var url = source.getFeatureInfoUrl(
+          evt.coordinate,
+          map.getView().getResolution(),
+          map.getView().getProjection(),
+          {
+            INFO_FORMAT: "application/json",
+            FEATURE_COUNT: 1,
+          }
+        );
+      
+        if (url) {
+          console.log('Feature Info URL:', url);
+          // Optionally fetch data from URL
+          fetch(url)
+            .then(response => response.json())
+            .then(data => {
+              console.log('Feature Info:', data);
+            })
+            .catch(err => console.error('Error fetching feature info:', err));
+        }
+      });
+      
+    
     $("#staticBackdropLabel").html(`Land Parcel Information (<span class='lpi-style'>${lat}, ${lon}</span>)`);
     // var responsess = {
     //     "success": 1,
@@ -284,7 +314,7 @@ map.on('singleclick', function (evt) {
     }
     allowRequest = true;
     currentRequest = $.ajax({
-        url: `${BASE_URL}/v2/land_details_curl`,
+        url: `${BASE_URL}/v2/land_details`,
         method: 'POST',
         headers: {
             'X-APP-NAME': 'demo'
@@ -474,7 +504,7 @@ function displaySimplifiedInfo(data, lat, long) {
             <li class="nav-item mx-1 mb-1" role="presentation">
                 <button class="nav-link district-icon" title="Thematic View" id="nex-tab" type="button" 
                     data-bs-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false" 
-                    onclick='loadThematicIconsFromJson()' style="font-weight:700">
+                    onclick='loadThematicIconsFromJson(${JSON.stringify(data)}, ${lat}, ${long})' style="font-weight:700">
                     Thematic
                 </button>
             </li>
@@ -890,7 +920,8 @@ function openAregInfo(data) {
                             dropdown.parentNode.replaceChild(span, dropdown);
 
                         }else{
-                            alert('Please select the sub division dropdown and get the result');
+                            // alert('Please select the sub division dropdown and get the result');
+                            showToast('info', `Please select the sub division dropdown and get the result`)
                             $("#subdivisionid #subDivs").remove();
 
                             let dropdown = $("#subdivisionDropdown");
@@ -1177,12 +1208,6 @@ function populateInfoPanel(response) {
         $(".error-message").empty().text('No Ownership Details Found for the Selected Land Parcel').show();
     }
 }
-
-
-
-
-
-
 
 function showTabContent(tabId) {
     const tabs = document.querySelectorAll("#areg-info-panel .tab-content");
@@ -1667,178 +1692,151 @@ function JSBIconInfo(data, lat, long) {
     document.getElementById('igr-info-container')?.remove();
     document.getElementById('thematic-info-container')?.remove();
     document.getElementById('fmb-sketch-info-panel')?.remove();
-    if (data.rural_urban === "rural") {
-        const params = {
-            latitude: lat,
-            longitude: long,
-            layer_name: IGR_SERVICE_LAYER_NAME,
-        };
+    
 
-        $.ajax({
-            url: `${IGR_URL}`,
-            method: 'POST',
-            headers: { 'X-APP-ID': 'te$t' },
-            data: params,
-            success: function (response) {
-                if (response.success) {
-                    const iconSection = document.querySelector('.info-icons');
-                    document.getElementById('JSB-info-container')?.remove();
+    const iconSection = document.querySelector('.info-icons');
+    document.getElementById('JSB-info-container')?.remove();
 
-                    const JSBContainer = document.createElement('div');
-                    JSBContainer.id = 'JSB-info-container';
-                    JSBContainer.className = 'mt-1 p-3 border rounded position-relative';
-                    JSBContainer.style.maxHeight = '400px';
-                    JSBContainer.style.overflowY = 'auto';
-                    JSBContainer.style.background = '#f9f9f9';
-                    JSBContainer.style.border = '1px solid #ddd';
-                    JSBContainer.style.marginBottom = '8px';
+    const JSBContainer = document.createElement('div');
+    JSBContainer.id = 'JSB-info-container';
+    JSBContainer.className = 'mt-1 p-3 border rounded position-relative';
+    JSBContainer.style.maxHeight = '400px';
+    JSBContainer.style.overflowY = 'auto';
+    JSBContainer.style.background = '#f9f9f9';
+    JSBContainer.style.border = '1px solid #ddd';
+    JSBContainer.style.marginBottom = '8px';
 
-                    const panelTitle = document.createElement('div');
-                    panelTitle.className = 'd-flex justify-content-between align-items-center';
-                    panelTitle.innerHTML = `<h6 class="m-0">Jurisdiction Boundaries Information For</h6>`;
+    const panelTitle = document.createElement('div');
+    panelTitle.className = 'd-flex justify-content-between align-items-center';
+    panelTitle.innerHTML = `<h6 class="m-0">Jurisdiction Boundaries Information For</h6>`;
 
-                    const closeButton = document.createElement('button');
-                    closeButton.innerHTML = '&times;';
-                    closeButton.className = 'btn-close vertex-close position-absolute';
-                    closeButton.style.top = '5px';
-                    closeButton.style.right = '10px';
-                    closeButton.style.fontSize = '18px';
-                    closeButton.style.cursor = 'pointer';
-                    closeButton.style.border = 'none';
-                    closeButton.style.background = 'transparent';
-                    closeButton.addEventListener('click', () => { JSBContainer.remove(); });
+    const closeButton = document.createElement('button');
+    closeButton.innerHTML = '&times;';
+    closeButton.className = 'btn-close vertex-close position-absolute';
+    closeButton.style.top = '5px';
+    closeButton.style.right = '10px';
+    closeButton.style.fontSize = '18px';
+    closeButton.style.cursor = 'pointer';
+    closeButton.style.border = 'none';
+    closeButton.style.background = 'transparent';
+    closeButton.addEventListener('click', () => { JSBContainer.remove(); });
 
-                    panelTitle.appendChild(closeButton);
-                    JSBContainer.appendChild(panelTitle);
+    panelTitle.appendChild(closeButton);
+    JSBContainer.appendChild(panelTitle);
+
+    const scrollWrapper = document.createElement('div');
+    scrollWrapper.className = 'jsb-carousel-wrapper position-relative';
+
+    // Left button
+    const leftBtn = document.createElement('button');
+    leftBtn.innerHTML = '&#10094;';
+    leftBtn.className = 'jsb-scroll-left';
+    leftBtn.style.position = 'absolute';
+    leftBtn.style.left = '0';
+    leftBtn.style.top = '50%';
+    leftBtn.style.transform = 'translateY(-50%)';
+    leftBtn.style.zIndex = '2';
+    leftBtn.style.border = 'none';
+    leftBtn.style.background = '#42abff';
+    leftBtn.style.color = '#fff';
+    leftBtn.style.boxShadow = '0 0 5px rgba(0,0,0,0.2)';
+    leftBtn.style.borderRadius = '50%';
+    leftBtn.style.width = '30px';
+    leftBtn.style.height = '30px';
+    leftBtn.style.cursor = 'pointer';
+
+    // Right button
+    const rightBtn = document.createElement('button');
+    rightBtn.innerHTML = '&#10095;';
+    rightBtn.className = 'jsb-scroll-right';
+    rightBtn.style.position = 'absolute';
+    rightBtn.style.right = '0';
+    rightBtn.style.top = '50%';
+    rightBtn.style.transform = 'translateY(-50%)';
+    rightBtn.style.zIndex = '2';
+    rightBtn.style.border = 'none';
+    rightBtn.style.color = '#fff';
+    rightBtn.style.background = '#42abff';
+    rightBtn.style.boxShadow = '0 0 5px rgba(0,0,0,0.2)';
+    rightBtn.style.borderRadius = '50%';
+    rightBtn.style.width = '30px';
+    rightBtn.style.height = '30px';
+    rightBtn.style.cursor = 'pointer';
+
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'JSB-icon-card-content d-flex gap-2';
+    contentDiv.style.overflowX = 'auto';
+    contentDiv.style.scrollBehavior = 'smooth';
+    contentDiv.style.whiteSpace = 'nowrap';
+    contentDiv.style.padding = '10px 30px'; // spacing for scroll buttons
+    contentDiv.style.msOverflowStyle = 'none';  // IE 10+
+    contentDiv.style.scrollbarWidth = 'none';  // Firefox
+    contentDiv.style.overflowY = 'hidden';
+    contentDiv.style.margin = '0 -15px';
+
+    // Hide scrollbar (for Chrome)
+    contentDiv.style.setProperty('::-webkit-scrollbar', 'display: none');
+
+    contentDiv.addEventListener('wheel', e => {
+        e.preventDefault();
+        contentDiv.scrollLeft += e.deltaY;
+    });
+
+    let hasValidData = false;
+
+    const fields = [
         
-                    const scrollWrapper = document.createElement('div');
-                    scrollWrapper.className = 'jsb-carousel-wrapper position-relative';
-        
-                    // Left button
-                    const leftBtn = document.createElement('button');
-                    leftBtn.innerHTML = '&#10094;';
-                    leftBtn.className = 'jsb-scroll-left';
-                    leftBtn.style.position = 'absolute';
-                    leftBtn.style.left = '0';
-                    leftBtn.style.top = '50%';
-                    leftBtn.style.transform = 'translateY(-50%)';
-                    leftBtn.style.zIndex = '2';
-                    leftBtn.style.border = 'none';
-                    leftBtn.style.background = '#42abff';
-                    leftBtn.style.color = '#fff';
-                    leftBtn.style.boxShadow = '0 0 5px rgba(0,0,0,0.2)';
-                    leftBtn.style.borderRadius = '50%';
-                    leftBtn.style.width = '30px';
-                    leftBtn.style.height = '30px';
-                    leftBtn.style.cursor = 'pointer';
-        
-                    // Right button
-                    const rightBtn = document.createElement('button');
-                    rightBtn.innerHTML = '&#10095;';
-                    rightBtn.className = 'jsb-scroll-right';
-                    rightBtn.style.position = 'absolute';
-                    rightBtn.style.right = '0';
-                    rightBtn.style.top = '50%';
-                    rightBtn.style.transform = 'translateY(-50%)';
-                    rightBtn.style.zIndex = '2';
-                    rightBtn.style.border = 'none';
-                    rightBtn.style.color = '#fff';
-                    rightBtn.style.background = '#42abff';
-                    rightBtn.style.boxShadow = '0 0 5px rgba(0,0,0,0.2)';
-                    rightBtn.style.borderRadius = '50%';
-                    rightBtn.style.width = '30px';
-                    rightBtn.style.height = '30px';
-                    rightBtn.style.cursor = 'pointer';
+        { label: "Constituencies", icon: '<img src="assets/logo/tn-logo.png" class="jsb-dept-logo">' },
+        { label: "Rural", icon: '<img src="assets/logo/tn-logo.png" class="jsb-dept-logo">' },
+        { label: "Urban", icon: '<img src="assets/logo/tn-logo.png" class="jsb-dept-logo">' },
+        { label: "Police", icon: '<img src="assets/logo/dept-logos/police.png" class="jsb-dept-logo">' },
+        { label: "TANGEDCO", icon: '<img src="assets/logo/dept-logos/tangedco.png" class="jsb-dept-logo">' },
+        { label: "Education", icon: '<img src="assets/logo/tn-logo.png" class="jsb-dept-logo">' },
+        { label: "Forest", icon: '<img src="assets/logo/tn-logo.png" class="jsb-dept-logo">' },
+        { label: "Registration", icon: '<img src="assets/logo/tn-logo.png" class="jsb-dept-logo">' },
+        { label: "Highways", icon: '<img src="assets/logo/tn-logo.png" class="jsb-dept-logo">' },
+        { label: "TASMAC", icon: '<img src="assets/logo/dept-logos/tasmac.png" class="jsb-dept-logo">' },
+    ];
 
-                    const contentDiv = document.createElement('div');
-                    contentDiv.className = 'JSB-icon-card-content d-flex gap-2';
-                    contentDiv.style.overflowX = 'auto';
-                    contentDiv.style.scrollBehavior = 'smooth';
-                    contentDiv.style.whiteSpace = 'nowrap';
-                    contentDiv.style.padding = '10px 30px'; // spacing for scroll buttons
-                    contentDiv.style.msOverflowStyle = 'none';  // IE 10+
-                    contentDiv.style.scrollbarWidth = 'none';  // Firefox
-                    contentDiv.style.overflowY = 'hidden';
-                    contentDiv.style.margin = '0 -15px';
-        
-                    // Hide scrollbar (for Chrome)
-                    contentDiv.style.setProperty('::-webkit-scrollbar', 'display: none');
-        
-                    contentDiv.addEventListener('wheel', e => {
-                        e.preventDefault();
-                        contentDiv.scrollLeft += e.deltaY;
-                    });
+    fields.forEach(field => {
+        hasValidData = true;
+        const card = document.createElement("div");
+        card.classList.add("JSB-icon-card", "p-2", "border", "rounded", "d-flex", "flex-column", "align-items-center");
+        card.style.background = "#fff";
+        card.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
+        card.style.width = "70px";
+        card.style.height = "70px";
+        card.style.fontSize = "10px";
+        card.style.display = "flex";
+        card.style.flexDirection = "column";
+        card.style.justifyContent = "center";
+        card.style.alignItems = "center";
+        card.style.textAlign = "center";
+        card.style.flex = "0 0 auto";
+        card.innerHTML = `${field.icon || "📌"}<strong>${field.label}</strong>`;
 
-                    let hasValidData = false;
+        contentDiv.appendChild(card);
+    });
 
-                    const fields = [
-                        
-                        { label: "Constituencies", icon: '<img src="assets/logo/tn-logo.png" class="jsb-dept-logo">' },
-                        { label: "Rural", icon: '<img src="assets/logo/tn-logo.png" class="jsb-dept-logo">' },
-                        { label: "Urban", icon: '<img src="assets/logo/tn-logo.png" class="jsb-dept-logo">' },
-                        { label: "Police", icon: '<img src="assets/logo/dept-logos/police.png" class="jsb-dept-logo">' },
-                        { label: "TANGEDCO", icon: '<img src="assets/logo/dept-logos/tangedco.png" class="jsb-dept-logo">' },
-                        { label: "Education", icon: '<img src="assets/logo/tn-logo.png" class="jsb-dept-logo">' },
-                        { label: "Forest", icon: '<img src="assets/logo/tn-logo.png" class="jsb-dept-logo">' },
-                        { label: "Registration", icon: '<img src="assets/logo/tn-logo.png" class="jsb-dept-logo">' },
-                        { label: "Highways", icon: '<img src="assets/logo/tn-logo.png" class="jsb-dept-logo">' },
-                        { label: "TASMAC", icon: '<img src="assets/logo/dept-logos/tasmac.png" class="jsb-dept-logo">' },
-                    ];
+    if (hasValidData) {
+        scrollWrapper.appendChild(leftBtn);
+        scrollWrapper.appendChild(contentDiv);
+        scrollWrapper.appendChild(rightBtn);
+        JSBContainer.appendChild(scrollWrapper);
+        iconSection.insertAdjacentElement('afterend', JSBContainer);
 
-                    fields.forEach(field => {
-                        hasValidData = true;
-                        const card = document.createElement("div");
-                        card.classList.add("JSB-icon-card", "p-2", "border", "rounded", "d-flex", "flex-column", "align-items-center");
-                        card.style.background = "#fff";
-                        card.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
-                        card.style.width = "70px";
-                        card.style.height = "70px";
-                        card.style.fontSize = "10px";
-                        card.style.display = "flex";
-                        card.style.flexDirection = "column";
-                        card.style.justifyContent = "center";
-                        card.style.alignItems = "center";
-                        card.style.textAlign = "center";
-                        card.style.flex = "0 0 auto";
-                        card.innerHTML = `${field.icon || "📌"}<strong>${field.label}</strong>`;
-
-                        contentDiv.appendChild(card);
-                    });
-
-                    if (hasValidData) {
-                        scrollWrapper.appendChild(leftBtn);
-                        scrollWrapper.appendChild(contentDiv);
-                        scrollWrapper.appendChild(rightBtn);
-                        JSBContainer.appendChild(scrollWrapper);
-                        iconSection.insertAdjacentElement('afterend', JSBContainer);
-        
-                        // Scroll button functionality
-                        leftBtn.addEventListener('click', () => {
-                            contentDiv.scrollLeft -= 150;
-                        });
-                        rightBtn.addEventListener('click', () => {
-                            contentDiv.scrollLeft += 150;
-                        });
-                    } else {
-                        // alert("No data available for the selected location.");
-                        $(".error-message").empty().text('No data available for the selected location.').show();
-                    }
-                } else {
-                    console.error(response.message);
-                }
-            },
-            error: function (xhr, status, error) {
-                console.error("Error in fetching JSB Land Value - ", error);
-            }
+        // Scroll button functionality
+        leftBtn.addEventListener('click', () => {
+            contentDiv.scrollLeft -= 150;
+        });
+        rightBtn.addEventListener('click', () => {
+            contentDiv.scrollLeft += 150;
         });
     } else {
-        // alert("Urban in Progress");
-        $(".error-message").empty().text('Urban in Progress').show();
+        // alert("No data available for the selected location.");
+        $(".error-message").empty().text('No data available for the selected location.').show();
     }
 }
-
-
-
 
 function closeIGRInfoPanel(){
     const infoPanel = document.getElementById("igr-info-panel");
@@ -1853,8 +1851,6 @@ function closeIGRInfoPanel(){
 const layerControl = document.getElementById('accordionPanelsStayOpenExample');
 const layerControlThematic = document.getElementById('accordionPanelsStayOpenExampleThematic');
 const layers = {};
-
-
 
 
 // Fetch the JSON file and process its contents
@@ -2519,9 +2515,9 @@ $('#survey-number-dropdown').change(async function () {
         // var data_type = getDataFetchType();
         if (district_code && taluk_code && village_code && survey_number && area_type ) {
             const response = await ajaxPromise({
-                url: `${BASE_URL}v2/sub_division`,
+                url: checkAregUrl,
                 method: 'GET',
-                data: { 'district_code': district_code, 'taluk_code': taluk_code, 'village_code': village_code, 'survey_number': survey_number, 'area_type': area_type, 'sub_division_number':'jjj' },
+                data: { 'district_code': district_code, 'taluk_code': taluk_code, 'village_code': village_code, 'survey_number': survey_number, 'sub_division_number':'jjj' },
                 headers: { 'X-APP-NAME': 'demo' },
                 dataType: 'json'
             });
@@ -2620,7 +2616,7 @@ document.querySelector(".rotation-left").addEventListener("click", function () {
 function verifySubDivision(response) {
     return new Promise((resolve, reject) => {
         $.ajax({
-            url: "https://tngis.tnega.org/generic_api/v1/check_Areg",
+            url: checkAregUrl,
             type: "GET",
             data: {
                 district_code: response.district_code,

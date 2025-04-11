@@ -1,5 +1,6 @@
 const BASE_URL = "https://tngis.tnega.org/generic_api";
 const GEOSERVER_URL = 'https://tngis.tnega.org/geoserver/wms';
+const checkAregUrl = '"https://tngis.tnega.org/generic_api/v1/check_Areg"';
 
 const ADMIN_CODE_TYPE = 'revenue';
 const AREG_SEARCH_TYPE = 'survey_number';
