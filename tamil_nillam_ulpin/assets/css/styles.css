@@ -333,6 +333,8 @@ body {
 
 .info-section {
     padding: 5px;
+    overflow: auto;
+    scrollbar-width: thin;
     
 }
 
@@ -1417,7 +1419,7 @@ filter: invert(100%);
     top: 1.5px;
 }
 .toast-top-right{
-    top: 8px !important;
+    top: 0px !important;
 }
 
 #JSB,#EC{

@@ -241,6 +241,8 @@ map.on('singleclick', function (evt) {
     $(".error-message").empty().hide();
     // Add click listener to map to close the panel when clicking on the map
     clearVertexLabels();
+    geojsonSource.clear();
+    map.removeLayer(vertexLayer);
     // simplifiedHidePanel();
     closeAregPanel();
     closeFMBSketchPanel();
@@ -252,6 +254,7 @@ map.on('singleclick', function (evt) {
         if (!layer.getVisible()) return;
         var source = layer.getSource();
         console.log(source);
+        // console.log(source.params_);
         if (!source || typeof source.getFeatureInfoUrl !== 'function') return;
       
         var url = source.getFeatureInfoUrl(
@@ -345,8 +348,12 @@ map.on('singleclick', function (evt) {
                 }
                 
             } else if(response.error == 0){
-                // alert(response.message);
+                showToast('error', response.message)
                 $(".error-message").empty().text(response.message).show();
+                document.getElementById('areg-tab-container')?.remove();
+                document.getElementById('fmb-sketch-info-panel')?.remove();
+                document.getElementById('igr-info-container')?.remove();
+                document.getElementById('vertex-info-container')?.remove();
             }else {
                 $(".error-message").empty().text(response.message).show();
             }
@@ -354,7 +361,7 @@ map.on('singleclick', function (evt) {
             
         },
         error: function (xhr, status, error) {
-            // alert(error);
+            
         }
     });
 
@@ -411,7 +418,7 @@ function displaySimplifiedInfo(data, lat, long) {
     `;
     }else{
         districtTalukVillage.innerHTML = `
-        <div><strong>District:</strong> <br />${data.district_name ? data.district_nam : '-'} / ${data.district_tamil_name ? data.district_tamil_name: '-'}</div>
+        <div><strong>District:</strong> <br />${data.district_name ? data.district_name : '-'} / ${data.district_tamil_name ? data.district_tamil_name: '-'}</div>
         <div><strong>Taluk:</strong> <br /> ${data.taluk_name ? data.taluk_name: '-'} / ${data.taluk_tamil_name ? data.taluk_tamil_name : '-'}</div>
         <div><strong>Town:</strong> <br /> ${data.revenue_town_name ? data.revenue_town_name: '-'} / ${data.revenue_town_tamil_name ? data.revenue_town_tamil_name: '-'}</div>
         <div><strong>Ward:</strong> <br /> ${data.revenue_ward_name ? data.revenue_ward_name: '-'} / ${data.revenue_ward_tamil_name ? data.revenue_ward_tamil_name: '-'}</div>
@@ -849,7 +856,13 @@ function openAregInfo(data) {
     var lapad_district_codes = LpadAdding(data.district_code,'district');
     var lapad_taluk_codes = LpadAdding(data.taluk_code,'taluk');
     
-    verifySubDivision(data)
+    
+
+    // Define params outside if-else blocks
+    
+
+    if (data.rural_urban === "rural") {
+        verifySubDivision(data)
         .then(result => {
             
             $("#verifiedSubDivision").val('');
@@ -947,31 +960,25 @@ function openAregInfo(data) {
         .catch(error => {
             console.error("Request failed:", error);
         });
-
-    // Define params outside if-else blocks
-    
-
-    if (data.rural_urban === "rural") {
-        
     } else {
         const urbanParams = {
             district_code: data.district_code,
             taluk_code: lapad_taluk_codes,
-            town_code: data.town_code,
+            town_code: data.revenue_town_code,
             ward_code: data.firka_ward_number ? data.firka_ward_number : 0,
             block_code: data.urban_block_number,
             survey_number: data.survey_number,
             sub_division_number: data.is_fmb == 1 ? (data.sub_division != null ? data.sub_division : 0) : 0,
         };
-
+        var landType = data.rural_urban;
         $.ajax({
             url: `${BASE_URL}/v1/tamil_nillam_urban_ownership`,
             method: 'POST',
             headers: { 'X-APP-NAME': 'demo' },
             data: urbanParams,
             success: function (response) {
-                if (response.success) {
-                    populateInfoPanel(response);
+                if (response.success == 1) {
+                    populateInfoPanel(response,landType);
                 } else {
                     console.error(response.message);
                     $(".error-message").empty().text(response.message).show();
@@ -1011,202 +1018,368 @@ function fetchAreg(params){
     });
 }
 
-function populateInfoPanel(response) {
-    // console.log(response);
+function populateInfoPanel(response,landType) {
     document.getElementById('vertex-info-container')?.remove();
     document.getElementById('igr-info-container')?.remove();
+    if(landType != 'urban'){
+        if (response.success === 1) {
+        
+            
+            const landDetail = response.data.land_detail;
+            const ownershipDetails = response.data.ownership_detail;
 
-    if (response.success === 1) {
-        const landDetail = response.data.land_detail;
-        const ownershipDetails = response.data.ownership_detail;
+            // Select the .info-icons div
+            const iconSection = document.querySelector('.info-icons');
 
-        // Select the .info-icons div
-        const iconSection = document.querySelector('.info-icons');
+            // Remove existing tab container if it exists
+            const existingTabContainer = document.getElementById('areg-tab-container');
+            if (existingTabContainer) {
+                existingTabContainer.remove();
+            }
 
-        // Remove existing tab container if it exists
-        const existingTabContainer = document.getElementById('areg-tab-container');
-        if (existingTabContainer) {
-            existingTabContainer.remove();
-        }
+            // Create the tab container
+            const tabContainer = document.createElement('div');
+            tabContainer.id = 'areg-tab-container';
+            tabContainer.className = 'mt-1 position-relative';
 
-        // Create the tab container
-        const tabContainer = document.createElement('div');
-        tabContainer.id = 'areg-tab-container';
-        tabContainer.className = 'mt-1 position-relative';
+            // Create close button
+            const closeButton = document.createElement('button');
+            closeButton.innerHTML = '&times;';
+            closeButton.className = 'btn-close vertex-close position-absolute';
+            closeButton.style.top = '0px';
+            closeButton.style.right = '10px';
+            closeButton.style.fontSize = '22px';
+            closeButton.style.cursor = 'pointer';
+            closeButton.style.border = 'none';
+            closeButton.style.background = 'transparent';
+            closeButton.style.padding = '0px';
 
-        // Create close button
-        const closeButton = document.createElement('button');
-        closeButton.innerHTML = '&times;';
-        closeButton.className = 'btn-close vertex-close position-absolute';
-        closeButton.style.top = '0px';
-        closeButton.style.right = '10px';
-        closeButton.style.fontSize = '22px';
-        closeButton.style.cursor = 'pointer';
-        closeButton.style.border = 'none';
-        closeButton.style.background = 'transparent';
-        closeButton.style.padding = '0px';
+            // Close button event listener
+            closeButton.addEventListener('click', () => {
+                tabContainer.remove();
+            });
 
-        // Close button event listener
-        closeButton.addEventListener('click', () => {
-            tabContainer.remove();
-        });
+            // Create tab navigation
+            const tabNav = document.createElement('ul');
+            tabNav.className = 'nav nav-tabs';
+            tabNav.innerHTML = `
+                <li class="nav-item">
+                    <button class="nav-link active" id="ownership-tab" data-bs-toggle="tab" 
+                        data-bs-target="#ownership" type="button" role="tab" aria-controls="ownership" aria-selected="true">
+                        Ownership Details
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="land-tab" data-bs-toggle="tab" 
+                        data-bs-target="#land" type="button" role="tab" aria-controls="land" aria-selected="false">
+                        Land Details
+                    </button>
+                </li>
+            `;
 
-        // Create tab navigation
-        const tabNav = document.createElement('ul');
-        tabNav.className = 'nav nav-tabs';
-        tabNav.innerHTML = `
-            <li class="nav-item">
-                <button class="nav-link active" id="ownership-tab" data-bs-toggle="tab" 
-                    data-bs-target="#ownership" type="button" role="tab" aria-controls="ownership" aria-selected="true">
-                    Ownership Details
-                </button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link" id="land-tab" data-bs-toggle="tab" 
-                    data-bs-target="#land" type="button" role="tab" aria-controls="land" aria-selected="false">
-                    Land Details
-                </button>
-            </li>
-        `;
+            // Create the tab content container with scrollable area
+            const tabContent = document.createElement('div');
+            tabContent.className = 'tab-content mt-2';
+            tabContent.style.maxHeight = '300px';  // Set max height
+            tabContent.style.overflowY = 'auto';   // Add vertical scroll bar
+            tabContent.style.background = '#f9f9f9';
+            tabContent.style.border = '1px solid #ddd';
 
-        // Create the tab content container with scrollable area
-        const tabContent = document.createElement('div');
-        tabContent.className = 'tab-content mt-2';
-        tabContent.style.maxHeight = '300px';  // Set max height
-        tabContent.style.overflowY = 'auto';   // Add vertical scroll bar
-        tabContent.style.background = '#f9f9f9';
-        tabContent.style.border = '1px solid #ddd';
+            // Ownership Details Tab (first tab)
+            const ownershipTabPane = document.createElement('div');
+            ownershipTabPane.className = 'tab-pane fade show active';
+            ownershipTabPane.id = 'ownership';
+            ownershipTabPane.role = 'tabpanel';
+            ownershipTabPane.innerHTML = `
+                <table class="table table-bordered table-striped mt-2">
+                    <thead class="table-dark">
+                        <tr><th>#</th><th>Owner</th><th>Relation</th></tr>
+                    </thead>
+                    <tbody id="ownership-details-table"></tbody>
+                </table>
+            `;
 
-        // Ownership Details Tab (first tab)
-        const ownershipTabPane = document.createElement('div');
-        ownershipTabPane.className = 'tab-pane fade show active';
-        ownershipTabPane.id = 'ownership';
-        ownershipTabPane.role = 'tabpanel';
-        ownershipTabPane.innerHTML = `
-            <table class="table table-bordered table-striped mt-2">
-                <thead class="table-dark">
-                    <tr><th>#</th><th>Owner</th><th>Relation</th></tr>
-                </thead>
-                <tbody id="ownership-details-table"></tbody>
-            </table>
-        `;
+            // Land Details Tab (second tab)
+            const landTabPane = document.createElement('div');
+            landTabPane.className = 'tab-pane fade';
+            landTabPane.id = 'land';
+            landTabPane.role = 'tabpanel';
+            landTabPane.innerHTML = `
+                <table class="table table-bordered table-striped mt-2">
+                    <thead class="table-dark">
+                        <tr><th>Field</th><th>Value</th></tr>
+                    </thead>
+                    <tbody id="land-details-table"></tbody>
+                </table>
+            `;
 
-        // Land Details Tab (second tab)
-        const landTabPane = document.createElement('div');
-        landTabPane.className = 'tab-pane fade';
-        landTabPane.id = 'land';
-        landTabPane.role = 'tabpanel';
-        landTabPane.innerHTML = `
-            <table class="table table-bordered table-striped mt-2">
-                <thead class="table-dark">
-                    <tr><th>Field</th><th>Value</th></tr>
-                </thead>
-                <tbody id="land-details-table"></tbody>
-            </table>
-        `;
+            // Append elements
+            tabContainer.appendChild(closeButton); // Add close button to container
+            tabContainer.appendChild(tabNav);
+            tabContainer.appendChild(tabContent);
+            tabContent.appendChild(ownershipTabPane);
+            tabContent.appendChild(landTabPane);
 
-        // Append elements
-        tabContainer.appendChild(closeButton); // Add close button to container
-        tabContainer.appendChild(tabNav);
-        tabContainer.appendChild(tabContent);
-        tabContent.appendChild(ownershipTabPane);
-        tabContent.appendChild(landTabPane);
+            // Insert the tab section below the .info-icons div
+            iconSection.insertAdjacentElement('afterend', tabContainer);
 
-        // Insert the tab section below the .info-icons div
-        iconSection.insertAdjacentElement('afterend', tabContainer);
+            // Fields to Exclude
+            const excludedFields = [
+                "districtCode", "talukCode", "villCode", 
+                "surveyNo", "subdivNo", "osurveyNo"
+            ];
 
-        // Fields to Exclude
-        const excludedFields = [
-            "districtCode", "talukCode", "villCode", 
-            "surveyNo", "subdivNo", "osurveyNo"
-        ];
-
-        // Populate Land Details Table excluding specified fields
-        const landDetailsTable = document.getElementById("land-details-table");
-        landDetailsTable.innerHTML = ''; // Clear previous data
-        var formatedKey = '';
-        for (const [key, value] of Object.entries(landDetail)) {
-            if (!excludedFields.includes(key)) {
-                // Special case: combine govtPriEng + govtPriTamil as "Land Type"
-                if (key === "govtPriEng") {
-                    const tamil = landDetail["govtPriTamil"];
-                    const tamilValue = tamil !== null && tamil.trim() !== "" ? tamil : "-";
-                    const combined = `${value} / ${tamilValue}`;
+            // Populate Land Details Table excluding specified fields
+            const landDetailsTable = document.getElementById("land-details-table");
+            landDetailsTable.innerHTML = ''; // Clear previous data
+            var formatedKey = '';
+            for (const [key, value] of Object.entries(landDetail)) {
+                if (!excludedFields.includes(key)) {
+                    // Special case: combine govtPriEng + govtPriTamil as "Land Type"
+                    if (key === "govtPriEng") {
+                        const tamil = landDetail["govtPriTamil"];
+                        const tamilValue = tamil !== null && tamil.trim() !== "" ? tamil : "-";
+                        const combined = `${value} / ${tamilValue}`;
+                        const row = document.createElement("tr");
+                        row.innerHTML = `
+                            <td>Land Type</td>
+                            <td>${combined}</td>
+                        `;
+                        landDetailsTable.appendChild(row);
+                        continue;
+                    }
+            
+                    // Skip govtPriTamil since it's combined
+                    if (key === "govtPriTamil") {
+                        continue;
+                    }
+            
+                    // Special case: Govt Pri Code mapping
+                    // if (key === "govtPriCode") {
+                    //     let codeText = "-";
+                    //     if (value === "1" || value === 1) codeText = "Government";
+                    //     else if (value === "2" || value === 2) codeText = "Private";
+            
+                    //     const row = document.createElement("tr");
+                    //     row.innerHTML = `
+                    //         <td>Govt Pri Code</td>
+                    //         <td>${codeText}</td>
+                    //     `;
+                    //     landDetailsTable.appendChild(row);
+                    //     continue;
+                    // }
+            
+                    // Default value formatting
+                    let displayValue = "-";
+                    if (typeof value === "boolean") {
+                        displayValue = value ? "Yes" : "No";
+                    } else if (value !== null && String(value).trim() !== "") {
+                        displayValue = value;
+                    }
+            
+                    const formattedKey = addSpaceBeforeCaps(key);
+            
                     const row = document.createElement("tr");
                     row.innerHTML = `
-                        <td>Land Type</td>
-                        <td>${combined}</td>
+                        <td>${formattedKey}</td>
+                        <td>${displayValue}</td>
                     `;
                     landDetailsTable.appendChild(row);
-                    continue;
                 }
-        
-                // Skip govtPriTamil since it's combined
-                if (key === "govtPriTamil") {
-                    continue;
-                }
-        
-                // Special case: Govt Pri Code mapping
-                // if (key === "govtPriCode") {
-                //     let codeText = "-";
-                //     if (value === "1" || value === 1) codeText = "Government";
-                //     else if (value === "2" || value === 2) codeText = "Private";
-        
-                //     const row = document.createElement("tr");
-                //     row.innerHTML = `
-                //         <td>Govt Pri Code</td>
-                //         <td>${codeText}</td>
-                //     `;
-                //     landDetailsTable.appendChild(row);
-                //     continue;
-                // }
-        
-                // Default value formatting
-                let displayValue = "-";
-                if (typeof value === "boolean") {
-                    displayValue = value ? "Yes" : "No";
-                } else if (value !== null && String(value).trim() !== "") {
-                    displayValue = value;
-                }
-        
-                const formattedKey = addSpaceBeforeCaps(key);
-        
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                    <td>${formattedKey}</td>
-                    <td>${displayValue}</td>
-                `;
-                landDetailsTable.appendChild(row);
             }
-        }
-        
+            
 
-        // Populate Ownership Details Table
-        const ownershipDetailsTable = document.getElementById("ownership-details-table");
-        ownershipDetailsTable.innerHTML = ''; // Clear previous data
-        if (ownershipDetails.length === 0) {
-            const row = document.createElement("tr");
-            row.innerHTML = `
-                <td colspan="4" style="text-align: center;">No owners found</td>
-            `;
-            ownershipDetailsTable.appendChild(row);
-        } else {
-            ownershipDetails.forEach((owner, index) => {
+            // Populate Ownership Details Table
+            const ownershipDetailsTable = document.getElementById("ownership-details-table");
+            ownershipDetailsTable.innerHTML = ''; // Clear previous data
+            if (ownershipDetails.length === 0) {
                 const row = document.createElement("tr");
                 row.innerHTML = `
-                    <td>${index + 1}</td>
-                    <td>${owner.Owner.trim()}</td>
-                    <td>${owner.Relative.trim()} அவர்களின் ${owner.Relation.trim()} </td>
-                `; 
+                    <td colspan="4" style="text-align: center;">No owners found</td>
+                `;
                 ownershipDetailsTable.appendChild(row);
-            });
+            } else {
+                ownershipDetails.forEach((owner, index) => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${owner.Owner.trim()}</td>
+                        <td>${owner.Relative.trim()} அவர்களின் ${owner.Relation.trim()} </td>
+                    `; 
+                    ownershipDetailsTable.appendChild(row);
+                });
+            }
+        
+        } else {
+            closeAregPanel();
+            // alert("No Ownership Details Found for the Selected Land Parcel");
+            $(".error-message").empty().text('No Ownership Details Found for the Selected Land Parcel').show();
         }
+    }else{
+        $(".error-message").empty();
+        if(response.data != 'Land Detail is Not Found'){
+            const landDetail = response.data.UaregData || {};  // Corrected data path for land details
+            let ownershipDetailsRaw = response.data.UchittaNatham.owner ? response.data.UchittaNatham.owner : '-';
+            let ownershipDetails = [];
 
-    } else {
-        closeAregPanel();
-        // alert("No Ownership Details Found for the Selected Land Parcel");
-        $(".error-message").empty().text('No Ownership Details Found for the Selected Land Parcel').show();
+            // Select the .info-icons div
+            const iconSection = document.querySelector('.info-icons');
+
+            // Remove existing tab container if it exists
+            const existingTabContainer = document.getElementById('areg-tab-container');
+            if (existingTabContainer) {
+                existingTabContainer.remove();
+            }
+
+            // Create the tab container
+            const tabContainer = document.createElement('div');
+            tabContainer.id = 'areg-tab-container';
+            tabContainer.className = 'mt-1 position-relative';
+
+            // Create close button
+            const closeButton = document.createElement('button');
+            closeButton.innerHTML = '&times;';
+            closeButton.className = 'btn-close vertex-close position-absolute';
+            closeButton.style.top = '0px';
+            closeButton.style.right = '10px';
+            closeButton.style.fontSize = '22px';
+            closeButton.style.cursor = 'pointer';
+            closeButton.style.border = 'none';
+            closeButton.style.background = 'transparent';
+            closeButton.style.padding = '0px';
+
+            // Close button event listener
+            closeButton.addEventListener('click', () => {
+                tabContainer.remove();
+            });
+
+            // Create tab navigation
+            const tabNav = document.createElement('ul');
+            tabNav.className = 'nav nav-tabs';
+            tabNav.innerHTML = `
+                <li class="nav-item">
+                    <button class="nav-link active" id="ownership-tab" data-bs-toggle="tab" 
+                        data-bs-target="#ownership" type="button" role="tab" aria-controls="ownership" aria-selected="true">
+                        Ownership Details
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="land-tab" data-bs-toggle="tab" 
+                        data-bs-target="#land" type="button" role="tab" aria-controls="land" aria-selected="false">
+                        Land Details
+                    </button>
+                </li>
+            `;
+
+            // Create the tab content container
+            const tabContent = document.createElement('div');
+            tabContent.className = 'tab-content mt-2';
+            tabContent.style.maxHeight = '300px';
+            tabContent.style.overflowY = 'auto';
+            tabContent.style.background = '#f9f9f9';
+            tabContent.style.border = '1px solid #ddd';
+
+            // Ownership Tab
+            const ownershipTabPane = document.createElement('div');
+            ownershipTabPane.className = 'tab-pane fade show active';
+            ownershipTabPane.id = 'ownership';
+            ownershipTabPane.role = 'tabpanel';
+            ownershipTabPane.innerHTML = `
+                <table class="table table-bordered table-striped mt-2">
+                    <thead class="table-dark">
+                        <tr><th>#</th><th>Owner Details</th></tr>
+                    </thead>
+                    <tbody id="ownership-details-table"></tbody>
+                </table>
+            `;
+
+            // Land Tab
+            const landTabPane = document.createElement('div');
+            landTabPane.className = 'tab-pane fade';
+            landTabPane.id = 'land';
+            landTabPane.role = 'tabpanel';
+            landTabPane.innerHTML = `
+                <table class="table table-bordered table-striped mt-2">
+                    <thead class="table-dark">
+                        <tr><th>Field</th><th>Value</th></tr>
+                    </thead>
+                    <tbody id="land-details-table"></tbody>
+                </table>
+            `;
+
+            // Append all
+            tabContainer.appendChild(closeButton);
+            tabContainer.appendChild(tabNav);
+            tabContainer.appendChild(tabContent);
+            tabContent.appendChild(ownershipTabPane);
+            tabContent.appendChild(landTabPane);
+            iconSection.insertAdjacentElement('afterend', tabContainer);
+
+            // Fields to exclude
+            const excludedFields = [
+                "Taluk", "Town", "Ward", "Block", "District_t",
+                "Taluk_t","Town_t","Ward_t","Block_t","SurveyNo","SubDivNo",
+                "SourceOfIrrigationAndClass","District","Street"
+            ];
+
+            // Populate Land Details
+            const landDetailsTable = document.getElementById("land-details-table");
+            landDetailsTable.innerHTML = '';
+            for (const [key, value] of Object.entries(landDetail)) {
+                if (!excludedFields.includes(key)) {
+                    if (key === "govtPriEng") {
+                        const tamil = landDetail["govtPriTamil"];
+                        const combined = `${value} / ${(tamil && tamil.trim()) || '-'}`;
+                        const row = document.createElement("tr");
+                        row.innerHTML = `<td>Land Type</td><td>${combined}</td>`;
+                        landDetailsTable.appendChild(row);
+                        continue;
+                    }
+                    if (key === "govtPriTamil") continue;
+
+                    let displayValue = "-";
+                    if (typeof value === "boolean") {
+                        displayValue = value ? "Yes" : "No";
+                    } else if (value !== null && String(value).trim() !== "") {
+                        displayValue = value;
+                    }
+
+                    const formattedKey = addSpaceBeforeCaps(key);
+                    const row = document.createElement("tr");
+                    row.innerHTML = `<td>${formattedKey}</td><td>${displayValue}</td>`;
+                    landDetailsTable.appendChild(row);
+                }
+            }
+
+            // Populate Ownership Details
+            const owners = ownershipDetailsRaw
+            .replace(/\[|\]/g, '') // Remove square brackets
+            .split(','); // Split only by commas
+
+            const ownershipDetailsTable = document.getElementById("ownership-details-table");
+            ownershipDetailsTable.innerHTML = '';
+
+            // Check if owners are found
+            if (owners.length === 0 || owners[0].trim() === '') {
+                const row = document.createElement("tr");
+                row.innerHTML = `<td colspan="4" style="text-align: center;">No owners found</td>`;
+                ownershipDetailsTable.appendChild(row);
+            } else {
+                owners.forEach((owner, index) => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${owner.trim()}</td>
+                    `;
+                    ownershipDetailsTable.appendChild(row);
+                });
+            }
+        }else{
+            $(".error-message").empty().text('Land Detail is Not Found').show();
+        }
+        
     }
+    
 }
 
 function showTabContent(tabId) {
@@ -1243,83 +1416,80 @@ function openFMBSketchInfo(data) {
     document.getElementById('JSB-info-container')?.remove();
     document.getElementById('igr-info-container')?.remove();
     var lapad_taluk_codes = LpadAdding(data.taluk_code,'taluk');
-    if (data.rural_urban === "rural") {
-        const params = {
-            districtCode: data.district_code,
-            talukCode: lapad_taluk_codes,
-            villageCode: data.village_code,
-            surveyNumber: data.survey_number,
-            subdivisionNumber: data.is_fmb == 1 ? ($("#subDivs").text() != null ? $("#subDivs").text() : '') : '',
-            type: data.rural_urban,
-        };
+    let params={};
+    
+    params = {
+        districtCode: data.district_code,
+        talukCode: lapad_taluk_codes,
+        villageCode: data.village_code,
+        surveyNumber: data.survey_number,
+        subdivisionNumber: data.is_fmb == 1 ? ($("#subDivs").text() != null ? $("#subDivs").text() : '') : '',
+        type: data.rural_urban,
+    };
 
-        $.ajax({
-            url: `${FMB_SKETCH_URL}`,
-            method: 'POST',
-            data: params,
-            success: function (response) {
-                if (response.success == 1) {
-                    // Decode base64 data
-                    try {
-                        const fileContent = atob(response.data);
-                        const byteArray = new Uint8Array(fileContent.length);
+    $.ajax({
+        url: `${FMB_SKETCH_URL}`,
+        method: 'POST',
+        data: params,
+        success: function (response) {
+            if (response.success == 1) {
+                // Decode base64 data
+                try {
+                    const fileContent = atob(response.data);
+                    const byteArray = new Uint8Array(fileContent.length);
 
-                        // Convert the base64 string back to a binary file
-                        for (let i = 0; i < fileContent.length; i++) {
-                            byteArray[i] = fileContent.charCodeAt(i);
-                        }
-                        // Create a Blob from the binary data
-                        const blob = new Blob([byteArray], { type: 'application/pdf' });
-
-                        // Check if the Blob is a valid PDF
-                        const fileReader = new FileReader();
-                        fileReader.onloadend = function () {
-                            try {
-                                // Check the file type by reading the first few bytes (PDF signature)
-                                const byteArray = new Uint8Array(fileReader.result);
-                                const pdfSignature = '%PDF-';
-
-                                if (String.fromCharCode.apply(null, byteArray.slice(0, 5)) !== pdfSignature) {
-                                    throw new Error('Invalid PDF');
-                                }
-
-                                // Create PDF URL
-                                const pdfURL = URL.createObjectURL(blob);
-                                displayFMBSketch(pdfURL);
-                                
-
-                            } catch (error) {
-                                console.error("Caught error in onloadend:", error);
-                                // alert('FMB Sketch could not be downloaded for visualization. Please contact the Revenue Surveyor in taluk office.');
-
-                                $(".error-message").empty().text('FMB Sketch could not be downloaded for visualization. Please contact the Revenue Surveyor in taluk office.').show();
-
-                            }
-                        };
-
-                        // Read the blob content as ArrayBuffer to check for PDF signature
-                        fileReader.readAsArrayBuffer(blob);
-                    } catch (error) {
-                        // Handle invalid base64 or PDF error
-                        // alert('FMB Sketch could not be downloaded for visualization. Please contact the Revenue Surveyor in taluk office.');
-                        $(".error-message").empty().text('FMB Sketch could not be downloaded for visualization. Please contact the Revenue Surveyor in taluk office.').show();
-                        console.error('Error while loading PDF:', error);
-                        // You can display a custom message here, e.g., "Invalid PDF data."
+                    // Convert the base64 string back to a binary file
+                    for (let i = 0; i < fileContent.length; i++) {
+                        byteArray[i] = fileContent.charCodeAt(i);
                     }
-                } else {
-                    // alert(response.message);
-                    $(".error-message").empty().text(response.message).show();
+                    // Create a Blob from the binary data
+                    const blob = new Blob([byteArray], { type: 'application/pdf' });
+
+                    // Check if the Blob is a valid PDF
+                    const fileReader = new FileReader();
+                    fileReader.onloadend = function () {
+                        try {
+                            // Check the file type by reading the first few bytes (PDF signature)
+                            const byteArray = new Uint8Array(fileReader.result);
+                            const pdfSignature = '%PDF-';
+
+                            if (String.fromCharCode.apply(null, byteArray.slice(0, 5)) !== pdfSignature) {
+                                throw new Error('Invalid PDF');
+                            }
+
+                            // Create PDF URL
+                            const pdfURL = URL.createObjectURL(blob);
+                            displayFMBSketch(pdfURL);
+                            
+
+                        } catch (error) {
+                            console.error("Caught error in onloadend:", error);
+                            // alert('FMB Sketch could not be downloaded for visualization. Please contact the Revenue Surveyor in taluk office.');
+
+                            $(".error-message").empty().text('FMB Sketch could not be downloaded for visualization. Please contact the Revenue Surveyor in taluk office.').show();
+
+                        }
+                    };
+
+                    // Read the blob content as ArrayBuffer to check for PDF signature
+                    fileReader.readAsArrayBuffer(blob);
+                } catch (error) {
+                    // Handle invalid base64 or PDF error
+                    // alert('FMB Sketch could not be downloaded for visualization. Please contact the Revenue Surveyor in taluk office.');
+                    $(".error-message").empty().text('FMB Sketch could not be downloaded for visualization. Please contact the Revenue Surveyor in taluk office.').show();
+                    console.error('Error while loading PDF:', error);
+                    // You can display a custom message here, e.g., "Invalid PDF data."
                 }
-            },
-            error: function (xhr, status, error) {
-                // alert('Unable to fetch data from NIC. ', error);
-                $(".error-message").empty().text('Unable to fetch data from NIC. ', error).show();
+            } else {
+                // alert(response.message);
+                $(".error-message").empty().text(response.message).show();
             }
-        });
-    } else {
-        // alert("Urban in Progress");
-        $(".error-message").empty().text('Urban in Progress').show();
-    }
+        },
+        error: function (xhr, status, error) {
+            // alert('Unable to fetch data from NIC. ', error);
+            $(".error-message").empty().text('Unable to fetch data from NIC. ', error).show();
+        }
+    });
 }
 
 function displayFMBSketch(fmbSketchUrl) {
@@ -1575,7 +1745,6 @@ function openIGRInfo(data, lat, long) {
             }
         });
     } else {
-        alert("Urban in Progress");
         $(".error-message").empty().text('Urban in Progress').show();
     }
 }
