@@ -116,6 +116,8 @@
                 <button class="filter-menu" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasScrolling-right" aria-controls="offcanvasScrolling"><i class="bi bi-funnel-fill"></i></button>
             </div>
             <input type="hidden" id="verifiedSubDivision" value="">
+            <input type="hidden" id="latitude" value="">
+            <input type="hidden" id="longitude" value="">
         </div>
     </header>
     <div class="legend-div" title="Legend">
@@ -190,23 +192,6 @@
             
         </div>
     </div>
-    <!-- <div id="legend-container">
-        <div class="accordion" id="legend-div">
-            <div class="accordion-item">
-              <h2 class="accordion-header" id="legend-headingOne">
-                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#legend-collapseOne" aria-expanded="true" aria-controls="legend-collapseOne">
-                  Legend
-                </button>
-              </h2>
-              <div id="legend-collapseOne" class="accordion-collapse collapse" aria-labelledby="legend-headingOne">
-                <div class="accordion-body">
-                  <div id="legend-content"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-    </div> -->
-    
     
     <div class="gears text-center">
         <!-- Reset to Default Rotation Button -->
@@ -454,7 +439,7 @@
                 
             </div>
         </div>
-
+ 
         <div class="ps-2 copyrights">
             <a class="text-white px-2 txt-aligns" data-bs-toggle="modal" data-bs-target=".disclaimer"
                 style="cursor: pointer;"><span><i class="bi bi-eye"></i> Disclaimer</span></a>
@@ -887,7 +872,10 @@
     <script>
     $(document).ready(function () {
         $("#year").text(new Date().getFullYear());
-        
+        $(".district-icon").on("click", function(){
+            $('.district-icon').removeClass('active'); // Remove from all
+            $(this).addClass('active'); 
+        })
     }); 
     </script>
     

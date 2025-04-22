@@ -432,13 +432,12 @@ body {
     border-bottom: 1px solid #ddd;
 }
 
-#rubai{
-    width: 16px;
-    padding-bottom: 6px;
+.info-icon-img-style{
+    width: 22px;
     filter: invert(29%) sepia(92%) saturate(746%) hue-rotate(130deg) brightness(93%) contrast(90%);
 }
 
-.district-icon.active #rubai{
+.district-icon.active .info-icon-img-style{
     padding-bottom: 6px;
     filter: invert(100%);
 }
@@ -1496,7 +1495,7 @@ filter: invert(100%);
     transition: all 0.1s ease-in-out;
 
 }
-.JSB-icon-card:hover, .thematic-icon-card:hover{
+.JSB-icon-card:hover, .thematic-icon-card:hover, .thematic-icon-card.active{
     background: #e0e0e0 !important;
     transform: scale(1.1);
     transition: all 0.1s ease-in-out;
@@ -1627,4 +1626,7 @@ filter: invert(100%);
 }
 #legendmodal .modal-content{
     width: 350px;
+}
+.bgcolordiv{
+    background: linear-gradient(45deg, #061841, #3c7d87);
 }

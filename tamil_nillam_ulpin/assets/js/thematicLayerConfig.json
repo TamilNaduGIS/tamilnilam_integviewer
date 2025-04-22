@@ -15,7 +15,8 @@
                     "LAYERS": "generic_viewer:elevation_raster",
                     "STYLES": ""
                 },
-                "icon":"assets/logo/thema-icons/elevation.png"
+                "icon":"assets/logo/thema-icons/elevation.png",
+                "view":"thematic_view"
             },
             {
                 "id": "Slope_Layer",
@@ -29,7 +30,8 @@
                     "LAYERS": "generic_viewer:tn_slope",
                     "STYLES": ""
                 },
-                "icon":"assets/logo/thema-icons/slope.png"
+                "icon":"assets/logo/thema-icons/slope.png",
+                "view":"thematic_view"
             },
             {
                 "id": "Aspect_Layer",
@@ -43,7 +45,8 @@
                     "LAYERS": "generic_viewer:tn_aspect",
                     "STYLES": ""
                 },
-                "icon":"assets/logo/thema-icons/aspect.png"
+                "icon":"assets/logo/thema-icons/aspect.png",
+                "view":"thematic_view"
             },
             {
                 "id": "Contours_Layer",
@@ -57,7 +60,8 @@
                     "LAYERS": "generic_viewer:tn_contours",
                     "STYLES": ""
                 },
-                "icon":"assets/logo/thema-icons/contour.png"
+                "icon":"assets/logo/thema-icons/contour.png",
+                "view":"thematic_view"
             }
             
         ]
@@ -77,7 +81,8 @@
                     "LAYERS": "cadastral_analysis:population",
                     "STYLES": ""
                 },
-                "icon":"assets/logo/thema-icons/demography.png"
+                "icon":"assets/logo/thema-icons/demography.png",
+                "view":"thematic_view"
             }
         ]
     },
@@ -96,7 +101,8 @@
                     "LAYERS": "generic_viewer:geology",
                     "STYLES": ""
                 },
-                "icon":"assets/logo/thema-icons/geology.png"
+                "icon":"assets/logo/thema-icons/geology.png",
+                "view":"thematic_view"
             },
             {
                 "id": "geomorphology_id",
@@ -110,7 +116,8 @@
                     "LAYERS": "generic_viewer:geomorphology",
                     "STYLES": ""
                 },
-                "icon":"assets/logo/thema-icons/geomorphology.png"
+                "icon":"assets/logo/thema-icons/geomorphology.png",
+                "view":"thematic_view"
             }
         ]
     }

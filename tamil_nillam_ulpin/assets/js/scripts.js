@@ -237,10 +237,11 @@ loadDistrict();
 // Click event listener on the map
 var currentRequest = null;
 var allowRequest = null;
+$("#longitude").val('');
+$("#latitude").val('');
 map.on('singleclick', function (evt) {
     $(".error-message").empty().hide();
     // Add click listener to map to close the panel when clicking on the map
-    clearVertexLabels();
     geojsonSource.clear();
     map.removeLayer(vertexLayer);
     // simplifiedHidePanel();
@@ -250,35 +251,8 @@ map.on('singleclick', function (evt) {
     const lon = coordinates[0].toFixed(6);
     const lat = coordinates[1].toFixed(6);
 
-    map.getLayers().forEach(function (layer) {
-        if (!layer.getVisible()) return;
-        var source = layer.getSource();
-        console.log(source);
-        // console.log(source.params_);
-        if (!source || typeof source.getFeatureInfoUrl !== 'function') return;
-      
-        var url = source.getFeatureInfoUrl(
-          evt.coordinate,
-          map.getView().getResolution(),
-          map.getView().getProjection(),
-          {
-            INFO_FORMAT: "application/json",
-            FEATURE_COUNT: 1,
-          }
-        );
-      
-        if (url) {
-          console.log('Feature Info URL:', url);
-          // Optionally fetch data from URL
-          fetch(url)
-            .then(response => response.json())
-            .then(data => {
-              console.log('Feature Info:', data);
-            })
-            .catch(err => console.error('Error fetching feature info:', err));
-        }
-      });
-      
+    $("#longitude").val(lon.trim());
+    $("#latitude").val(lat.trim());
     
     $("#staticBackdropLabel").html(`Land Parcel Information (<span class='lpi-style'>${lat}, ${lon}</span>)`);
     // var responsess = {
@@ -327,7 +301,7 @@ map.on('singleclick', function (evt) {
             longitude: lon,
         },
         success: function (response) {
-            
+            $(".error-message").empty().hide();
             var responseMessage = '';
             if (response.success) {
                 if(response.success == 1){
@@ -372,18 +346,204 @@ $(document).on('click', '.JSB-icon-card', function () {
 
     // Create and append new detail div
     // const detailDiv = $('<div class="detail mt-2 p-2 border rounded" style="background:#eef;">contents owned by : ' + $(this).text().trim() + '</div>');
-    const detailDiv = $('<div class="detail mt-2 p-2 border rounded" style="background:#eef;">' + $(this).text().trim() + ' contents: <b>Coming soon</b></div>');
+    const detailDiv = $('<div class="detail mt-2 p-2 border rounded" style="background:#1a3d5b;color: #fff;">' + $(this).text().trim() + ' contents: <b>Coming soon</b></div>');
     $('#JSB-info-container').append(detailDiv);
 });
 
 $(document).on('click', '.thematic-icon-card', function () {
+    let currentController = null;
+    let currentPopulationRequest = null;
+
+    $('.thematic-icon-card').removeClass('active'); // Remove from all
+    $(this).addClass('active'); 
     // Remove old detail divs
     $('#thematic-info-container .detail').remove();
+    var selectedLayerTitle = this.title;
+    var lat = $("#latitude").val();
+    var lon = $("#longitude").val();
+    let geoserverUrl='',layerName='';
+    let grayIndexValue = '';
+    geoserverUrl = "https://tngis.tnega.org/geoserver/wms";
+    if(selectedLayerTitle != 'Population Theme'){
+        if(selectedLayerTitle == 'Elevation'){
+            layerName = "generic_viewer:elevation_raster";
+        }else if(selectedLayerTitle == 'Slope'){
+            layerName = "generic_viewer:tn_slope";
+        }else if(selectedLayerTitle == 'Aspect'){
+            layerName = "generic_viewer:tn_aspect";
+        }else if(selectedLayerTitle == 'Contours'){
+            layerName = "generic_viewer:tn_contours";
+        }else if(selectedLayerTitle == 'Geology'){
+            layerName = "generic_viewer:geology";
+        }else if(selectedLayerTitle == 'Geomorphology'){
+            layerName = "generic_viewer:geomorphology";
+        }
+        
+        const coord = ol.proj.fromLonLat([lon, lat], 'EPSG:3857');
+        // BBOX around the point
+        const resolution = 10; // meters per pixel (adjust as needed)
+        const halfSize = 50 * resolution;
+        const minX = coord[0] - halfSize;
+        const minY = coord[1] - halfSize;
+        const maxX = coord[0] + halfSize;
+        const maxY = coord[1] + halfSize;
+    
+         // or slope/aspect
+    
+        const url = `${geoserverUrl}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo` +
+        `&FORMAT=image/png&TRANSPARENT=true` +
+        `&QUERY_LAYERS=${layerName}&LAYERS=${layerName}` +
+        `&INFO_FORMAT=application/json` +
+        `&I=50&J=50&WIDTH=101&HEIGHT=101` +
+        `&CRS=EPSG:3857&BBOX=${minX},${minY},${maxX},${maxY}`;
+    
+        if (currentController) {
+            currentController.abort(); // Abort previous request
+        }
+        
+        currentController = new AbortController(); // Create new controller for this request
+        
+        fetch(url, { signal: currentController.signal })
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`Network response was not ok. Status: ${res.status}`);
+                }
+                return res.json();
+            })
+            .then(data => {
+                let grayIndexValue = 'No Data';
+                let grayIndex = null;
+                let properties = null;
+        
+                if (data.features && data.features.length > 0 && data.features[0].properties) {
+                    const props = data.features[0].properties;
+                    if (typeof props.GRAY_INDEX !== 'undefined') {
+                        grayIndex = Math.floor(props.GRAY_INDEX);
+                        properties = props.GRAY_INDEX;
+                    }
+                } else {
+                    throw new Error("Invalid or missing 'features' or 'properties' in response.");
+                }
+        
+                if (selectedLayerTitle === 'Elevation' && grayIndex !== null) {
+                    grayIndexValue = grayIndex + ' M';
+                } else if (selectedLayerTitle === 'Contours' && data.features[0].properties.elevation !== undefined) {
+                    grayIndexValue = data.features[0].properties.elevation + ' M';
+                } else if (selectedLayerTitle === 'Slope' && grayIndex !== null) {
+                    grayIndexValue = grayIndex + ' °';
+                } else if (selectedLayerTitle === 'Aspect' && properties !== null) {
+                    if (properties <= -1) {
+                        grayIndexValue = grayIndex + ' Flat';
+                    } else if (properties > 0 && properties <= 22.5) {
+                        grayIndexValue = grayIndex + ' N';
+                    } else if (properties > 22.5 && properties <= 67.5) {
+                        grayIndexValue = grayIndex + ' NE';
+                    } else if (properties > 67.5 && properties <= 112.5) {
+                        grayIndexValue = grayIndex + ' E';
+                    } else if (properties > 112.5 && properties <= 157.5) {
+                        grayIndexValue = grayIndex + ' SE';
+                    } else if (properties > 157.5 && properties <= 202.5) {
+                        grayIndexValue = grayIndex + ' S';
+                    } else if (properties > 202.5 && properties <= 247.5) {
+                        grayIndexValue = grayIndex + ' SW';
+                    } else if (properties > 247.5 && properties <= 292.5) {
+                        grayIndexValue = grayIndex + ' W';
+                    } else if (properties > 292.5 && properties <= 337.5) {
+                        grayIndexValue = grayIndex + ' NW';
+                    } else if (properties > 337.5) {
+                        grayIndexValue = grayIndex + ' N';
+                    } else {
+                        grayIndexValue = 'Unknown Direction';
+                    }
+                } else {
+                    grayIndexValue = 'No valid data found for selected layer.';
+                }
+        
+                if (selectedLayerTitle === 'Geology' || selectedLayerTitle === 'Geomorphology') {
+                    const propertyDiv = $('<div class="detail mt-2 p-2 border rounded bgcolordiv" style="color:#fff;"></div>');
+                    $.each(data.features[0].properties, function (key, value) {
+                        if (key !== 'tngis_id' && key !== 'layer_id') {
+                            propertyDiv.append('<div><b>' + key.replace(/_/g, ' ').toUpperCase() + '</b>: ' + value + '</div>');
+                        }
+                    });
+                    $('#thematic-info-container .detail').remove();
+                    $('#thematic-info-container').append(propertyDiv);
+                } else {
+                    $('#thematic-info-container .detail').remove();
+                    const detailDiv = $('<div class="detail mt-2 p-2 border rounded bgcolordiv" style="color: #fff;"><b>' + selectedLayerTitle + '</b>: ' + grayIndexValue + '</div>');
+                    $('#thematic-info-container').append(detailDiv);
+                }
+        
+            })
+            .catch(err => {
+                if (err.name === 'AbortError') {
+                    console.warn('Previous request aborted');
+                    return;
+                }
+                $('#thematic-info-container .detail').remove();
+                const errorDiv = $('<div class="detail mt-2 p-2 border rounded" style="background:#a94442;color: #fff;"><b>Error:</b> Failed to load ' + selectedLayerTitle + ' data.</div>');
+                $('#thematic-info-container').append(errorDiv);
+            });
+        
+    }else{
+        $('#thematic-info-container .detail').remove();
+        let urbanParams = {
+            latitude:lat,
+            longitude:lon,
+            layer_name: 'population'
+        }
+        // Abort the previous request if it's still in progress
+        if (currentPopulationRequest && currentPopulationRequest.readyState !== 4) {
+            currentPopulationRequest.abort();
+        }
 
-    // Create and append new detail div
-    // const detailDiv = $('<div class="detail mt-2 p-2 border rounded" style="background:#eef;">contents owned by : ' + $(this).text().trim() + '</div>');
-    const detailDiv = $('<div class="detail mt-2 p-2 border rounded" style="background:#eef;">' + $(this).text().trim() + ' contents: <b>Coming soon</b></div>');
-    $('#thematic-info-container').append(detailDiv);
+        currentPopulationRequest = $.ajax({
+            url: `${POPULATION_URL}`,
+            method: 'POST',
+            headers: { 'X-APP-ID': 'te$t' },
+            data: urbanParams,
+            success: function (response) {
+                if (response.success == 1) {
+                    var results = response.data[0];
+                    const card = $(`
+                        <div class="detail mt-2 p-2 border rounded bgcolordiv" style="color: #336c7b;">
+                            <div class="card p-1 m-1"><div class="text-center"><strong>Type:</strong> ${results.type}</div></div>
+                            <div class="card-body p-1">
+                                <div class="row g-2">
+                                    <!-- Card 1 -->
+                                    <div class="col-md-6">
+                                        <div class="card p-3 h-100">
+                                            <div><strong>Total Population:</strong> ${results.tot_p}</div>
+                                            <div><strong>No. of Households:</strong> ${results.no_hh}</div>
+                                        </div>
+                                    </div>
+                                    <!-- Card 2 -->
+                                    <div class="col-md-6">
+                                        <div class="card p-3 h-100">
+                                            <div><strong>Male Population:</strong> ${results.tot_m}</div>
+                                            <div><strong>Female Population:</strong> ${results.tot_f}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                    $('#thematic-info-container').append(card);
+                } else {
+                    console.error(response.message);
+                    $(".error-message").empty().text(response.message).show();
+                }
+            },
+            error: function (xhr, status, error) {
+                if (status !== 'abort') {
+                    console.error('Error in fetching AREG - ', error);
+                }
+            }
+        });
+
+    }
+    
+
 });
 
 map.on('pointermove', function (e) {
@@ -491,28 +651,29 @@ function displaySimplifiedInfo(data, lat, long) {
                 <button class="nav-link district-icon" title="Guideline Value" id="nex-tab" type="button" 
                     data-bs-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false" 
                     onclick='openIGRInfo(${JSON.stringify(data)}, ${lat}, ${long})'>
-                    <img src="assets/icons/rubai.svg" id="rubai" alt="">
+                    <img src="assets/icons/rubai.svg" class="info-icon-img-style" alt="">
                 </button>
             </li>
             <li class="nav-item mx-1 mb-1" role="presentation">
                 <button class="nav-link district-icon" title="EC" id="nex-tab" type="button" 
                     data-bs-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false" 
                     onclick='openECnfo(${JSON.stringify(data)}, ${lat}, ${long})' style="font-weight:700">
-                    EC
+                    <img src="assets/icons/EC_logo.png" id="EC_logo" class="info-icon-img-style" alt="">
                 </button>
             </li>
             <li class="nav-item mx-1 mb-1" role="presentation">
                 <button class="nav-link district-icon" title="Jurisdictional Boundaries" id="nex-tab" type="button" 
                     data-bs-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false" 
                     onclick='JSBIconInfo(${JSON.stringify(data)}, ${lat}, ${long})' style="font-weight:700">
-                    JSB
+                    
+                    <img src="assets/icons/boundaries.png" id="boundaries" class="info-icon-img-style" alt="">
                 </button>
             </li>
             <li class="nav-item mx-1 mb-1" role="presentation">
                 <button class="nav-link district-icon" title="Thematic View" id="nex-tab" type="button" 
                     data-bs-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false" 
                     onclick='loadThematicIconsFromJson(${JSON.stringify(data)}, ${lat}, ${long})' style="font-weight:700">
-                    Thematic
+                    <img src="assets/icons/thematic_view.png" id="thematic_view" class="info-icon-img-style" alt="">
                 </button>
             </li>
         </ul>
@@ -522,15 +683,10 @@ function displaySimplifiedInfo(data, lat, long) {
     content.appendChild(surveySection);
     content.appendChild(iconSection);
     $("#staticBackdrop").modal('show');
-
-    
 }
 
 // Hide the info panel
 function simplifiedHidePanel() {
-    // const panel = document.getElementById('staticBackdrop');
-    // panel.classList.remove('show');
-    // panel.style.display = 'none';
     $("#staticBackdrop").modal('hide');
 }
 
@@ -855,11 +1011,6 @@ function openAregInfo(data) {
     let sub_division_numbers = '';
     var lapad_district_codes = LpadAdding(data.district_code,'district');
     var lapad_taluk_codes = LpadAdding(data.taluk_code,'taluk');
-    
-    
-
-    // Define params outside if-else blocks
-    
 
     if (data.rural_urban === "rural") {
         verifySubDivision(data)
@@ -1019,6 +1170,8 @@ function fetchAreg(params){
 }
 
 function populateInfoPanel(response,landType) {
+    $(".error-message").empty();
+
     document.getElementById('vertex-info-container')?.remove();
     document.getElementById('igr-info-container')?.remove();
     if(landType != 'urban'){
@@ -1416,16 +1569,32 @@ function openFMBSketchInfo(data) {
     document.getElementById('JSB-info-container')?.remove();
     document.getElementById('igr-info-container')?.remove();
     var lapad_taluk_codes = LpadAdding(data.taluk_code,'taluk');
+    var lapad_town_codes = LpadAdding(data.revenue_town_code,'town');
+    var lapad_ward_codes = LpadAdding(data.firka_ward_number,'ward');
+    var lapad_block_codes = LpadAdding(data.urban_block_number,'block');
     let params={};
+    if(data.rural_urban == 'rural'){
+        params = {
+            districtCode: data.district_code,
+            talukCode: lapad_taluk_codes,
+            villageCode: data.village_code,
+            surveyNumber: data.survey_number,
+            subdivisionNumber: data.is_fmb == 1 ? ($("#subDivs").text() != null ? $("#subDivs").text() : '') : '',
+            type: data.rural_urban,
+        };
+    }else if(data.rural_urban == 'urban'){
+        params = {
+            districtCode: data.district_code,
+            talukCode: lapad_taluk_codes,
+            townCode:lapad_town_codes,
+            wardCode:lapad_ward_codes,
+            blockCode:lapad_block_codes,
+            surveyNumber: data.survey_number,
+            subdivisionNumber: data.is_fmb == 1 ? ($("#subDivs").text() != null ? $("#subDivs").text() : '') : '',
+            type: data.rural_urban,
+        };
+    }
     
-    params = {
-        districtCode: data.district_code,
-        talukCode: lapad_taluk_codes,
-        villageCode: data.village_code,
-        surveyNumber: data.survey_number,
-        subdivisionNumber: data.is_fmb == 1 ? ($("#subDivs").text() != null ? $("#subDivs").text() : '') : '',
-        type: data.rural_urban,
-    };
 
     $.ajax({
         url: `${FMB_SKETCH_URL}`,
@@ -1821,8 +1990,8 @@ function loadThematicIconsFromJson() {
                         const img = document.createElement("img");
                         img.src = layer.icon;
                         img.alt = layer.title;
-                        img.style.width = "20px";
-                        img.style.height = "20px";
+                        img.style.width = "25px";
+                        img.style.height = "25px";
                         iconSpan.appendChild(img);
                     } else {
                         iconSpan.style.fontSize = "16px";
@@ -2163,6 +2332,12 @@ fetch(thematicJsonFilePath)
                         }),
                         opacity: layerInfo.defaultOpacity,
                         visible: layerInfo.defaultVisibility,
+                        type: 'wms',
+                        title:layerInfo.title,
+                        layer_id:layerInfo.id,
+                        category:category.category,
+                        view:layerInfo.view
+
                     });
                 } else if (layerInfo.type === "xyz") {
                     layer = new ol.layer.Tile({
@@ -2256,28 +2431,32 @@ function clearLegend() {
     legendContent.innerHTML = '';
 }
 
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
     let rotationDegree = 0;
     const map = document.getElementById("map");
 
-    // Rotate Right (Clockwise)
+    // Apply smooth transition to the map
+    map.style.transition = "transform 0.5s ease-in-out";
+
+    // Rotate Right (+20 degrees)
     document.querySelector(".rotation-right").addEventListener("click", () => {
-        rotationDegree += 90;
+        rotationDegree += 20;
         map.style.transform = `rotate(${rotationDegree}deg)`;
     });
 
-    // Rotate Left (Counter-clockwise)
+    // Rotate Left (-20 degrees)
     document.querySelector(".rotation-left").addEventListener("click", () => {
-        rotationDegree -= 90;
+        rotationDegree -= 20;
         map.style.transform = `rotate(${rotationDegree}deg)`;
     });
 
-    // Reset Rotation (Back to North)
+    // Reset Rotation (0 degrees)
     document.getElementById("resetRotation").addEventListener("click", () => {
         rotationDegree = 0;
         map.style.transform = `rotate(0deg)`;
     });
 });
+
 
 
 // // Utility function to extract vertices from a GeoJSON geometry
@@ -2857,6 +3036,10 @@ $("#backto").on("click", function(){
 
 
 function LpadAdding(code, type) {
+    if (code === null || code === undefined) {
+        return "";
+    }
+
     let value = code.toString();
 
     switch (type) {
@@ -2877,6 +3060,8 @@ function LpadAdding(code, type) {
     }
 }
 
+
 function closever(){
     clearVertexLabels();
 }
+
