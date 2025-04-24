@@ -434,7 +434,6 @@ body {
 
 .info-icon-img-style{
     width: 22px;
-    filter: invert(29%) sepia(92%) saturate(746%) hue-rotate(130deg) brightness(93%) contrast(90%);
 }
 
 .district-icon.active .info-icon-img-style{
@@ -524,10 +523,18 @@ body {
 .district-icon{
     color: #336c7b!important;
     background-color: white!important;
-    padding: 5px 12px!important;
+    padding: 8px!important;
     border-radius: 10px!important;
     border: 1px solid rgba(0, 0, 0, 0.233)!important;
     
+}
+/* .district-icon :hover{
+    transform: scale(1.4);
+    transition: all 0.4s ease-in-out;
+} */
+#myTab li:hover{
+    transform: scale(1.1);
+    transition: all 0.1s ease-in-out;
 }
 .district-icon.active{
     background-color: #336c7b!important;
@@ -1629,4 +1636,8 @@ filter: invert(100%);
 }
 .bgcolordiv{
     background: linear-gradient(45deg, #061841, #3c7d87);
+}
+#toast-container > .toast {
+    width: 400px !important;  /* Adjust as needed */
+    height: 64px !important;  /* Or set a fixed height like 100px */
 }

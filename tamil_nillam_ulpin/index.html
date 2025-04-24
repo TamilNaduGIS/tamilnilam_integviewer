@@ -251,6 +251,10 @@
                         <input type="radio" name="area-type" value="urban">
                         Urban
                     </label>
+                    <label class="radio-label maptype">
+                        <input type="radio" name="area-type" value="goto">
+                        Goto
+                    </label>
                 </div>
                 <select id="district-dropdown" class="form-select">
                     <option value="" disabled="" selected="">Select District</option>
@@ -295,6 +299,9 @@
                     <select id="urban-sub-division-dropdown" class="form-select">
                         <option value="">Select Sub Division</option>
                     </select>
+                </div>
+                <div id="goto-fields">
+                    <p>Goto option Coming soon</p>
                 </div>
             </div>
         </div>
@@ -656,7 +663,7 @@
             geojsonLayer.setVisible(false);
         }
 
-        function fetchGeometry(caseType, districtCode, talukCode, villageCode) {
+        function fetchGeometry(caseType, districtCode, talukCode, villageCode,survey_number) {
             $.ajax({
                 url: `${BASE_URL}/v1/get_geom`,
                 method: 'POST',
@@ -668,7 +675,8 @@
                     code_type: 'revenue',
                     district_code: districtCode,
                     taluk_code: talukCode,
-                    village_code: villageCode
+                    village_code: villageCode,
+                    survey_number:survey_number,
                 },
                 success: function (response) {
                     if (response.success) {
@@ -804,14 +812,22 @@
             const ruralFields = document.getElementById("rural-fields");
             const urbanFields = document.getElementById("urban-fields");
             const areaTypeRadios = document.querySelectorAll("input[name='area-type']");
-
             function toggleFields() {
+                $("#goto-fields").hide();
+                $("#taluk-dropdown").show();
+                $("#district-dropdown").show();
                 if (document.querySelector("input[name='area-type']:checked").value === "urban") {
                     urbanFields.style.display = "block";
                     ruralFields.style.display = "none";
-                } else {
+                } else if(document.querySelector("input[name='area-type']:checked").value === "rural"){
                     ruralFields.style.display = "block";
                     urbanFields.style.display = "none";
+                }else{
+                    ruralFields.style.display = "none";
+                    urbanFields.style.display = "none";
+                    $("#taluk-dropdown").hide();
+                    $("#district-dropdown").hide();
+                    $("#goto-fields").show();
                 }
             }
 

@@ -306,14 +306,13 @@ map.on('singleclick', function (evt) {
             if (response.success) {
                 if(response.success == 1){
                     var response_data = response.data;
-                    // console.log(response_data)
-                    
+                    loadDistrict(response_data.district_code,response_data.taluk_code,response_data.village_code,response_data.survey_number,response_data.sub_division);
                     addGeoJsonLayer(response_data.geojson_geom)
                     displaySimplifiedInfo(response_data, lat, lon)
                     $(".error-message").empty().hide();
                 }else{
                     responseMessage = response.message;
-                    // alert(responseMessage);
+                    showToast('warning', response.message)
                     document.getElementById('areg-tab-container')?.remove();
                     document.getElementById('fmb-sketch-info-panel')?.remove();
                     document.getElementById('igr-info-container')?.remove();
@@ -338,7 +337,12 @@ map.on('singleclick', function (evt) {
             
         }
     });
-
+    document.getElementById('areg-tab-container')?.remove();
+    document.getElementById('fmb-sketch-info-panel')?.remove();
+    document.getElementById('igr-info-container')?.remove();
+    document.getElementById('vertex-info-container')?.remove();
+    document.getElementById('thematic-info-container')?.remove();
+    document.getElementById('JSB-info-container')?.remove();
 });
 $(document).on('click', '.JSB-icon-card', function () {
     // Remove old detail divs
@@ -626,54 +630,74 @@ function displaySimplifiedInfo(data, lat, long) {
     iconSection.innerHTML = `
     <h6 class="note">Click on the below icons to view more details</h6>
         <ul class="nav nav-tabs mb-1 d-flex flex-row" id="myTab" role="tablist">
-            <li class="nav-item mx-1 mb-1" role="presentation">
+            <li class="nav-item mx-1 mb-2" role="presentation">
                 <button class="nav-link district-icon" title="Patta / Chitta - A-Reg" id="profile-tab" type="button" 
                     data-bs-target="#profile-tab-pane" aria-controls="profile-tab-pane" aria-selected="false" 
                     onclick='openAregInfo(${JSON.stringify(data)})'>
-                    <i class="bi bi-bank2"></i>
+                    <img src="assets/icons/patta-chitta-icon.svg" class="info-icon-img-style" alt="">
                 </button>
             </li>
-            <li class="nav-item mx-1 mb-1" role="presentation">
+            <li class="nav-item mx-1 mb-2" role="presentation">
                 <button class="nav-link district-icon" title="FMB Sketch" id="next-tab" type="button" 
                     data-bs-target="#next-tab-pane" aria-controls="next-tab-pane" aria-selected="false" 
                     onclick='openFMBSketchInfo(${JSON.stringify(data)})'>
-                    <i class="bi bi-rulers"></i>
+                    <img src="assets/icons/FMB-Sketch-icon.svg" class="info-icon-img-style" alt="">
                 </button>
             </li>
-            <li class="nav-item mx-1 mb-1" role="presentation">
+            <li class="nav-item mx-1 mb-2" role="presentation">
                 <button class="nav-link district-icon" title="Vertex / Plot Corner List" id="pro-tab" type="button" 
                     data-bs-target="#pro-tab-pane" aria-controls="pro-tab-pane" aria-selected="false" 
                     onclick='highlightVertices(${JSON.stringify(data.geojson_geom)})'>
-                    <i class="bi bi-globe"></i>
+                    <img src="assets/icons/vertex-icon.svg" class="info-icon-img-style" alt="">
                 </button>
             </li>
-            <li class="nav-item mx-1 mb-1" role="presentation">
+            <li class="nav-item mx-1 mb-2" role="presentation">
                 <button class="nav-link district-icon" title="Guideline Value" id="nex-tab" type="button" 
                     data-bs-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false" 
                     onclick='openIGRInfo(${JSON.stringify(data)}, ${lat}, ${long})'>
-                    <img src="assets/icons/rubai.svg" class="info-icon-img-style" alt="">
+                    <img src="assets/icons/rupee-icon.svg" class="info-icon-img-style" alt="">
                 </button>
             </li>
-            <li class="nav-item mx-1 mb-1" role="presentation">
+            <li class="nav-item mx-1 mb-2" role="presentation">
                 <button class="nav-link district-icon" title="EC" id="nex-tab" type="button" 
                     data-bs-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false" 
                     onclick='openECnfo(${JSON.stringify(data)}, ${lat}, ${long})' style="font-weight:700">
-                    <img src="assets/icons/EC_logo.png" id="EC_logo" class="info-icon-img-style" alt="">
+                    <img src="assets/icons/EC-icon.svg" id="EC_logo" class="info-icon-img-style" alt="">
                 </button>
             </li>
-            <li class="nav-item mx-1 mb-1" role="presentation">
+            <li class="nav-item mx-1 mb-2" role="presentation">
                 <button class="nav-link district-icon" title="Jurisdictional Boundaries" id="nex-tab" type="button" 
                     data-bs-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false" 
                     onclick='JSBIconInfo(${JSON.stringify(data)}, ${lat}, ${long})' style="font-weight:700">
-                    
-                    <img src="assets/icons/boundaries.png" id="boundaries" class="info-icon-img-style" alt="">
+                    <img src="assets/icons/boundary-icon.svg" id="boundaries" class="info-icon-img-style" alt="">
                 </button>
             </li>
-            <li class="nav-item mx-1 mb-1" role="presentation">
+            <li class="nav-item mx-1 mb-2" role="presentation">
                 <button class="nav-link district-icon" title="Thematic View" id="nex-tab" type="button" 
                     data-bs-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false" 
                     onclick='loadThematicIconsFromJson(${JSON.stringify(data)}, ${lat}, ${long})' style="font-weight:700">
-                    <img src="assets/icons/thematic_view.png" id="thematic_view" class="info-icon-img-style" alt="">
+                    <img src="assets/icons/thematic-icon.svg" id="thematic_view" class="info-icon-img-style" alt="">
+                </button>
+            </li>
+            <li class="nav-item mx-1 mb-2" role="presentation">
+                <button class="nav-link district-icon" title="E-Adangal" id="nex-tab" type="button" 
+                    data-bs-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false" 
+                    onclick='adangalView()' style="font-weight:700">
+                    <img src="assets/icons/adangal-icon.svg" id="adangal_view" class="info-icon-img-style" alt="">
+                </button>
+            </li>
+            <li class="nav-item mx-1 mb-2" role="presentation">
+                <button class="nav-link district-icon" title="Master Plan" id="nex-tab" type="button" 
+                    data-bs-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false" 
+                    onclick='masterPlanView()' style="font-weight:700">
+                    <img src="assets/icons/master-plan-icon.svg" id="master_plan_view" class="info-icon-img-style" alt="">
+                </button>
+            </li>
+            <li class="nav-item mx-1 mb-2" role="presentation">
+                <button class="nav-link district-icon" title="Near By Location" id="nex-tab" type="button" 
+                    data-bs-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false" 
+                    onclick='nearByView()' style="font-weight:700">
+                    <img src="assets/icons/nearby-icon.svg" id="nearby_view" class="info-icon-img-style" alt="">
                 </button>
             </li>
         </ul>
@@ -706,8 +730,8 @@ function addGeoJsonLayer(geojson) {
 
     map.getView().fit(extent, {
         duration: 4000,
-        maxZoom: 18,
-        padding: [20, 20, 20, 20]
+        maxZoom: 18.4,
+        padding: [19, 19, 19, 19]
     });
     
     geojsonLayer.setVisible(true);
@@ -773,8 +797,8 @@ function highlightVertices(sgeojsonGeom) {
     const extent = vertexSource.getExtent();
     map.getView().fit(extent, {
         duration: 4000,
-        maxZoom: 18,
-        padding: [20, 20, 20, 20]
+        maxZoom: 18.4,
+        padding: [19, 19, 19, 19]
     });
 }
 function displayVertexDetails(vertices) {
@@ -2492,7 +2516,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 // Populate District Dropdown
-async function loadDistrict() {
+async function loadDistrict(districtCode, talukCode = null, villageCode = null, surveyNumber = null, subdivision = null) {
     try {
         const response = await ajaxPromise({
             url: `${BASE_URL}/v2/admin_master_district`,
@@ -2501,20 +2525,123 @@ async function loadDistrict() {
             headers: { 'X-APP-NAME': 'demo' },
             dataType: 'json'
         });
-        // console.log('Async Response District:', response);
 
         populateDropdown('district-dropdown', response, {
             defaultText: 'Select District',
             valueKey: 'district_code',
             textKey: 'district_english_name',
             errorCallback: (message) => showToast('error', message),
-            triggerChange: true
+            preselectValue: districtCode,
+            triggerChange: !!districtCode,
+            onComplete: async () => {
+                if (!districtCode) return;
+
+                const talukResponse = await ajaxPromise({
+                    url: `${BASE_URL}/v2/admin_master_taluk`,
+                    method: 'GET',
+                    data: { district_code: districtCode, request_type: 'taluk' },
+                    headers: { 'X-APP-NAME': 'demo' },
+                    dataType: 'json'
+                });
+
+                populateDropdown('taluk-dropdown', talukResponse, {
+                    defaultText: 'Select Taluk',
+                    valueKey: 'taluk_code',
+                    textKey: 'taluk_english_name',
+                    errorCallback: (message) => showToast('error', message),
+                    preselectValue: talukCode,
+                    triggerChange: !!talukCode,
+                    onComplete: async () => {
+                        if (!talukCode) return;
+
+                        const villageResponse = await ajaxPromise({
+                            url: `${BASE_URL}/v2/admin_master_village`,
+                            method: 'GET',
+                            data: {
+                                district_code: districtCode,
+                                taluk_code: talukCode,
+                                request_type: 'revenue_village'
+                            },
+                            headers: { 'X-APP-NAME': 'demo' },
+                            dataType: 'json'
+                        });
+
+                        populateDropdown('village-dropdown', villageResponse, {
+                            defaultText: 'Select Village',
+                            valueKey: 'village_code',
+                            textKey: 'village_english_name',
+                            errorCallback: (message) => showToast('error', message),
+                            preselectValue: villageCode,
+                            triggerChange: !!villageCode,
+                            onComplete: async () => {
+                                if (!villageCode) return;
+
+                                const areaType = getSelectedAreaType();
+                                const surveyResponse = await ajaxPromise({
+                                    url: `${BASE_URL}/v2/admin_master_survey_number`,
+                                    method: 'GET',
+                                    data: {
+                                        district_code: districtCode,
+                                        taluk_code: talukCode,
+                                        revenue_village_code: villageCode,
+                                        area_type: areaType,
+                                        data_type: 'cadastral',
+                                        request_type: 'survey_number'
+                                    },
+                                    headers: { 'X-APP-NAME': 'demo' },
+                                    dataType: 'json'
+                                });
+
+                                populateDropdown('survey-number-dropdown', surveyResponse, {
+                                    defaultText: 'Select Survey Number',
+                                    valueKey: 'survey_number',
+                                    textKey: 'survey_number',
+                                    errorCallback: (message) => showToast('error', message),
+                                    preselectValue: surveyNumber,
+                                    triggerChange: !!surveyNumber,
+                                    onComplete: async () => {
+                                        if (!surveyNumber) return;
+
+                                        const subdivResponse = await ajaxPromise({
+                                            url: checkAregUrl,
+                                            method: 'GET',
+                                            data: {
+                                                district_code: districtCode,
+                                                taluk_code: talukCode,
+                                                village_code: villageCode,
+                                                survey_number: surveyNumber,
+                                                sub_division_number: 'jjj'
+                                            },
+                                            headers: { 'X-APP-NAME': 'demo' },
+                                            dataType: 'json'
+                                        });
+
+                                        populateDropdown('sub-division-dropdown', subdivResponse, {
+                                            defaultText: 'Select Sub Division',
+                                            valueKey: 'subdiv_no',
+                                            textKey: 'subdiv_no',
+                                            errorCallback: (message) => showToast('error', message),
+                                            preselectValue: subdivision,
+                                            triggerChange: !!subdivision
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+            }
         });
     } catch (error) {
         console.error('Async Error:', error);
-        showToast('error', response.message);
+        showToast('error', error);
     }
 }
+
+
+
+
+
 
 // Update Taluks based on District
 $('#district-dropdown').change(async function () {
@@ -2878,7 +3005,7 @@ $('#survey-number-dropdown').change(async function () {
                 triggerChange: true
             });
             // var villageCode = village_code.replace(/^0+/, '');
-            // fetchGeometry('survey_number', district_code, taluk_code, village_code,survey_number,null);
+            fetchGeometry('survey_number', district_code, taluk_code, village_code,survey_number,);
         } else {
             resetDropdown('sub-division-dropdown', 'Select Sub Division');
         }

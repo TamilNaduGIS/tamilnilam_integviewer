@@ -73,55 +73,61 @@ function ajaxPromise(options) {
  * @param {Function} [config.errorCallback] - Optional error callback function
  */
 function populateDropdown(dropdownId, response, config) {
-
     const selectElement = document.getElementById(dropdownId);
     if (!selectElement) {
         console.error(`Dropdown with id "${dropdownId}" not found`);
         return;
     }
 
-    // Set default configuration
     const defaultConfig = {
         defaultText: 'Select Option',
         valueKey: 'id',
         textKey: 'name',
         sortFunction: (a, b) => a[config.textKey].localeCompare(b[config.textKey]),
         errorCallback: (message) => console.error(message),
-        triggerChange: false
+        triggerChange: false,
+        preselectValue: null,
+        onComplete: null
     };
 
-    // Merge provided config with defaults
     config = { ...defaultConfig, ...config };
 
-    // Set default option
     selectElement.innerHTML = `<option value="" disabled selected>${config.defaultText}</option>`;
 
-    // Check if request was successful
-    if (response.success === 1 && response.data && response.data.length > 0) {
-        // Sort data if sort function is provided
+    if ((response.success === 1 || response.success === 2) && response.data?.length > 0 ) {
         const sortedData = [...response.data].sort(config.sortFunction);
 
-        // Create and append options
         sortedData.forEach(item => {
             const option = document.createElement('option');
             option.value = item[config.valueKey];
             option.textContent = item[config.textKey];
+
+            if (item[config.valueKey] == config.preselectValue) {
+                option.selected = true;
+            }
+
             selectElement.appendChild(option);
         });
 
-        // Trigger change event if specified
-        if (config.triggerChange) {
-            // Create and dispatch the change event
-            const event = new Event('change', {
-                bubbles: true,
-                cancelable: true,
-            });
+        // Only dispatch change if triggerChange is true AND there is NO preselected value
+        if (config.triggerChange && !config.preselectValue) {
+            const event = new Event('change', { bubbles: true });
             selectElement.dispatchEvent(event);
+        }
+
+        // Always run onComplete if it's a function
+        if (typeof config.onComplete === 'function') {
+            config.onComplete();
         }
     } else {
         config.errorCallback(response.message);
     }
 }
+
+
+
+
+
 
 function resetDropdown(dropdownId, defaultText) {
     const selectElement = document.getElementById(dropdownId);
