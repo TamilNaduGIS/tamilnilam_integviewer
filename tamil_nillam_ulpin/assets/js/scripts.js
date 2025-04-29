@@ -199,6 +199,21 @@ document.getElementById('zoom-to-extent-btn').addEventListener('click', () => {
     view.fit(zoomtoExtentValue, { size: map.getSize() });
 });
 
+// --- Define marker layer and add it to the map ---
+const markerSource = new ol.source.Vector();
+const markerLayer = new ol.layer.Vector({
+    source: markerSource,
+    style: new ol.style.Style({
+        image: new ol.style.Icon({
+            anchor: [0.5, 1],
+            src: 'https://maps.google.com/mapfiles/kml/paddle/red-circle.png', // you can replace with your own icon
+            scale: 0.7,
+        }),
+    }),
+    zIndex: 9999999999999999,
+});
+map.addLayer(markerLayer);
+
 // document.addEventListener('click', function (event) {
 //     const menu = document.getElementById('menu');
 //     const navbar = document.getElementById('navbar');
@@ -234,6 +249,7 @@ function hidePanel() {
 }
 
 loadDistrict();
+siteVisitorsCount();
 // Click event listener on the map
 var currentRequest = null;
 var allowRequest = null;
@@ -255,6 +271,13 @@ map.on('singleclick', function (evt) {
     $("#latitude").val(lat.trim());
     
     $("#staticBackdropLabel").html(`Land Parcel Information (<span class='lpi-style'>${lat}, ${lon}</span>)`);
+
+    markerSource.clear();
+    const markerFeature = new ol.Feature({
+        geometry: new ol.geom.Point(evt.coordinate)
+    });
+    markerSource.addFeature(markerFeature);
+
     // var responsess = {
     //     "success": 1,
     //     "message": "Land Details Found",
@@ -306,7 +329,18 @@ map.on('singleclick', function (evt) {
             if (response.success) {
                 if(response.success == 1){
                     var response_data = response.data;
-                    loadDistrict(response_data.district_code,response_data.taluk_code,response_data.village_code,response_data.survey_number,response_data.sub_division);
+                    console.log(response_data);
+                    let areaType = response_data.rural_urban;
+                    if(areaType == 'rural'){
+                        loadDistrict(response_data.district_code,response_data.taluk_code,response_data.village_code,response_data.survey_number,response_data.sub_division,areaType);
+                        document.querySelector('input[name="area-type"][value="rural"]').checked = true;
+                        document.querySelector('input[name="area-type"][value="rural"]').dispatchEvent(new Event('change'));
+
+                    }else{
+                        loadDistrict(response_data.district_code,response_data.taluk_code,response_data.village_code,response_data.survey_number,response_data.sub_division,areaType,response_data.revenue_town_code , response_data.firka_ward_number , response_data.urban_block_number); 
+                        document.querySelector('input[name="area-type"][value="urban"]').checked = true;
+                        document.querySelector('input[name="area-type"][value="urban"]').dispatchEvent(new Event('change'));
+                    }
                     addGeoJsonLayer(response_data.geojson_geom)
                     displaySimplifiedInfo(response_data, lat, lon)
                     $(".error-message").empty().hide();
@@ -314,9 +348,11 @@ map.on('singleclick', function (evt) {
                     responseMessage = response.message;
                     showToast('warning', response.message)
                     document.getElementById('areg-tab-container')?.remove();
+                    document.getElementById('facility-info-container')?.remove();
                     document.getElementById('fmb-sketch-info-panel')?.remove();
                     document.getElementById('igr-info-container')?.remove();
                     document.getElementById('vertex-info-container')?.remove();
+                    document.getElementById('facility-info-container')?.remove();
                     $(".error-message").empty().text(responseMessage).show();
                 }
                 
@@ -324,9 +360,11 @@ map.on('singleclick', function (evt) {
                 showToast('error', response.message)
                 $(".error-message").empty().text(response.message).show();
                 document.getElementById('areg-tab-container')?.remove();
+                document.getElementById('facility-info-container')?.remove();
                 document.getElementById('fmb-sketch-info-panel')?.remove();
                 document.getElementById('igr-info-container')?.remove();
                 document.getElementById('vertex-info-container')?.remove();
+                document.getElementById('facility-info-container')?.remove();
             }else {
                 $(".error-message").empty().text(response.message).show();
             }
@@ -343,16 +381,181 @@ map.on('singleclick', function (evt) {
     document.getElementById('vertex-info-container')?.remove();
     document.getElementById('thematic-info-container')?.remove();
     document.getElementById('JSB-info-container')?.remove();
+    document.getElementById('facility-info-container')?.remove();
 });
-$(document).on('click', '.JSB-icon-card', function () {
-    // Remove old detail divs
-    $('#JSB-info-container .detail').remove();
 
-    // Create and append new detail div
-    // const detailDiv = $('<div class="detail mt-2 p-2 border rounded" style="background:#eef;">contents owned by : ' + $(this).text().trim() + '</div>');
-    const detailDiv = $('<div class="detail mt-2 p-2 border rounded" style="background:#1a3d5b;color: #fff;">' + $(this).text().trim() + ' contents: <b>Coming soon</b></div>');
-    $('#JSB-info-container').append(detailDiv);
+$(document).ready(function () {
+    $(document).on('click', '.JSB-icon-card', function () {
+        // Remove old detail divs
+        let jSBRequest = null;
+        $('#JSB-info-container .detail, #facility-info-container .detail').remove();
+        const JSBCardElement = document.querySelector('.JSB-icon-card');
+        const layerCode = this.getAttribute('layer_id');
+        const priorityOrder = this.getAttribute('priority_order');
+        const layerType = this.getAttribute('layer_type');
+        const lat = $("#latitude").val();
+        const long = $("#longitude").val();
+        let selected_facilities = [
+            {
+                layer_code: layerCode,
+                priority_order: priorityOrder,
+                layer_type: layerType,
+            }
+        ];
+
+        let formatedata = {
+            user_id: 7505,
+            session_id: 'pm384s2oir7as1e2f43kbevs5f2025042512541904',
+            type: 'nearest',
+            longitude: long,
+            latitude: lat,
+            selected_facilities: JSON.stringify(selected_facilities)
+        };
+
+        if (jSBRequest && jSBRequest.readyState !== 4) {
+            jSBRequest.abort();
+        }
+        
+        jSBRequest = $.ajax({
+            url: 'https://tngis.tn.gov.in/apps/mugavari_api/api/nearest',
+            method: 'POST',
+            headers: { 'x-app-key': 'en-arukil' },
+            data: formatedata,
+            success: function (response) {
+                if (response[0].success == 1) {
+                    const facilities = response[0].data[layerCode];
+        
+                    // Create a container for the list
+                    const detailDiv = $('<div class="detail mt-2 p-2 border rounded" style="background:#fff;color:#1a3d5b;"></div>');
+        
+                    // Create a list of facilities
+                    const list = $('<ul class="facility-list" style="font-size:0.875rem;list-style:none; padding:0; margin:0;"></ul>');
+                    if(layerType == 'assets'){
+                        facilities.forEach(facility => {
+                            var coordinates = [
+                                [long, lat],
+                                [facility.longitude, facility.latitude]
+                            ];
+                            var direction = generateLink(coordinates);
+            
+                            const listItem = $(`
+                                <li class="facility-item" style="margin-bottom: 3px;">
+                                    <div class="d-flex facilities-details">
+                                        <div class="facility-name">${facility.label}</div>
+                                        <div class="facility-distance">${facility.distance} ${facility.distance_unit}</div>
+                                        <div class="facility-action">
+                                            <a href="${direction}" target="_blank">
+                                                <img src="assets/icons/direction.svg" class="info-icon-img-style" alt="">
+                                            </a>
+                                        </div>
+                                    </div>
+                                </li>
+                            `);
+                            list.append(listItem);
+                        });
+                        detailDiv.append(list);
+                        $('#facility-info-container').append(detailDiv);
+                        $(".error-message").empty().hide();
+                    }else{
+                        clearVectorSourceData();
+                        let infoDetailes = '';
+                        facilities.forEach(facility => {
+                            // Generate HTML content for key-value pairs
+                            let infoDetails = '';
+                            const excludedKeys = ['geometry', 'object_id', 'layer_id', 'district_name', 'taluk_name','district_code','e_district_code','ed_taluk_code','district_lgd_code','block_lgd_code','village_lgd_code'];
+
+                            for (const [key, value] of Object.entries(facility.data)) {
+                                if (!excludedKeys.includes(key) && typeof value !== 'object') {
+                                    const label = formatKeyName(key);
+                                    infoDetails += `<div><strong>${label}:</strong> ${value}</div>`;
+                                }
+                            }
+                            // Create list item with the generated content
+                            const listItem = $(`
+                                <li class="facility-item" style="margin-bottom: 3px;">
+                                    <div class="d-flex facilities-details">
+                                        <div class="facility-name">${infoDetails}</div>
+                                    </div>
+                                </li>
+                            `);
+                            list.append(listItem);
+                        
+                            // Log geometry
+                            // Feature handling
+                            if (layerType === 'boundary') {
+                                const boundary = geojsonFormat.readFeature(facility.data.geometry);
+                                boundary.getGeometry().transform('EPSG:4326', 'EPSG:3857');
+                                geojsonSource.addFeature(boundary);
+                            } else {
+                                nearest_feature_source.addFeatures(features);
+                            }
+                        
+                            // Map view fit
+                            const padding = [10, 0, 10, 0];
+                            if (layerType === 'boundary') {
+                                map.getView().fit(geojsonLayer.getSource().getExtent(), {
+                                    size: map.getSize(),
+                                    duration: 2000,
+                                    maxZoom: 12,
+                                    padding: padding
+                                });
+                                geojsonLayer.setVisible(true);
+                            } else {
+                                map.getView().fit(nearest_feature_layer.getSource().getExtent(), {
+                                    size: map.getSize(),
+                                    duration: 2000,
+                                    maxZoom: 8,
+                                    padding: padding
+                                });
+                                nearest_feature_layer.setVisible(true);
+                            }
+                        });
+                        
+                        detailDiv.append(list);
+                        
+                        $('#JSB-info-container').append(detailDiv);
+                        $(".error-message").empty().hide();
+                        
+                    }
+                } else {
+                    $(".error-message").empty().text(response[0].message).show();
+                }
+            },
+            error: function (xhr, status, error) {
+                if (status !== 'abort') {
+                    console.error('Error in fetching AREG - ', error);
+                }
+            }
+        });
+        
+    });
+
+    
+    
 });
+
+
+$(document).on("click", ".district-icon", function () {
+    // Remove active class from all district icon images
+    $(".district-icon img").removeClass("district-icon-active");
+
+    // Add active class to the clicked button's image
+    $(this).find("img").addClass("district-icon-active");
+});
+
+$(document).on("click", ".JSB-icon-card", function () {
+    // Remove active class from all district icon images
+    $(".JSB-icon-card img").removeClass("JSB-icon-card-active");
+
+    // Add active class to the clicked button's image
+    $(this).find("img").addClass("JSB-icon-card-active");
+});
+
+function formatKeyName(key) {
+    return key
+        .replace(/_/g, ' ') // Replace underscores with spaces
+        .replace(/\b\w/g, char => char.toUpperCase()); // Capitalize first letter of each word
+}
 
 $(document).on('click', '.thematic-icon-card', function () {
     let currentController = null;
@@ -367,7 +570,7 @@ $(document).on('click', '.thematic-icon-card', function () {
     var lon = $("#longitude").val();
     let geoserverUrl='',layerName='';
     let grayIndexValue = '';
-    geoserverUrl = "https://tngis.tnega.org/geoserver/wms";
+    geoserverUrl = "https://tngis.tn.gov.in/tngismaps/wms";
     if(selectedLayerTitle != 'Population Theme'){
         if(selectedLayerTitle == 'Elevation'){
             layerName = "generic_viewer:elevation_raster";
@@ -464,9 +667,9 @@ $(document).on('click', '.thematic-icon-card', function () {
                 }
         
                 if (selectedLayerTitle === 'Geology' || selectedLayerTitle === 'Geomorphology') {
-                    const propertyDiv = $('<div class="detail mt-2 p-2 border rounded bgcolordiv" style="color:#fff;"></div>');
+                    const propertyDiv = $('<div class="detail mt-2 p-2 border rounded bgcolordiv" style="color:#212529;"></div>');
                     $.each(data.features[0].properties, function (key, value) {
-                        if (key !== 'tngis_id' && key !== 'layer_id') {
+                        if (key !== 'tngis_id' && key !== 'layer_id' && key !== 'object_id' && key !== 'lith_code' && key != 'gu_code') {
                             propertyDiv.append('<div><b>' + key.replace(/_/g, ' ').toUpperCase() + '</b>: ' + value + '</div>');
                         }
                     });
@@ -474,7 +677,7 @@ $(document).on('click', '.thematic-icon-card', function () {
                     $('#thematic-info-container').append(propertyDiv);
                 } else {
                     $('#thematic-info-container .detail').remove();
-                    const detailDiv = $('<div class="detail mt-2 p-2 border rounded bgcolordiv" style="color: #fff;"><b>' + selectedLayerTitle + '</b>: ' + grayIndexValue + '</div>');
+                    const detailDiv = $('<div class="detail mt-2 p-2 border rounded bgcolordiv" style="color: #212529;">Selected <b>' + selectedLayerTitle + '</b> of the property: ' + grayIndexValue + '</div>');
                     $('#thematic-info-container').append(detailDiv);
                 }
         
@@ -510,26 +713,12 @@ $(document).on('click', '.thematic-icon-card', function () {
                 if (response.success == 1) {
                     var results = response.data[0];
                     const card = $(`
-                        <div class="detail mt-2 p-2 border rounded bgcolordiv" style="color: #336c7b;">
-                            <div class="card p-1 m-1"><div class="text-center"><strong>Type:</strong> ${results.type}</div></div>
-                            <div class="card-body p-1">
-                                <div class="row g-2">
-                                    <!-- Card 1 -->
-                                    <div class="col-md-6">
-                                        <div class="card p-3 h-100">
-                                            <div><strong>Total Population:</strong> ${results.tot_p}</div>
-                                            <div><strong>No. of Households:</strong> ${results.no_hh}</div>
-                                        </div>
-                                    </div>
-                                    <!-- Card 2 -->
-                                    <div class="col-md-6">
-                                        <div class="card p-3 h-100">
-                                            <div><strong>Male Population:</strong> ${results.tot_m}</div>
-                                            <div><strong>Female Population:</strong> ${results.tot_f}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="detail mt-2 p-2 border rounded bgcolordiv" style="color: #212529;">
+                            <div><strong>Total Population:</strong> ${results.tot_p}</div>
+                            <div><strong>No. of Households:</strong> ${results.no_hh}</div>
+                            <div><strong>Male Population:</strong> ${results.tot_m}</div>
+                            <div><strong>Female Population:</strong> ${results.tot_f}</div>
+                            
                         </div>
                     `);
                     $('#thematic-info-container').append(card);
@@ -635,6 +824,7 @@ function displaySimplifiedInfo(data, lat, long) {
                     data-bs-target="#profile-tab-pane" aria-controls="profile-tab-pane" aria-selected="false" 
                     onclick='openAregInfo(${JSON.stringify(data)})'>
                     <img src="assets/icons/patta-chitta-icon.svg" class="info-icon-img-style" alt="">
+                    <p class="font-size-9">Patta</p>
                 </button>
             </li>
             <li class="nav-item mx-1 mb-2" role="presentation">
@@ -642,6 +832,7 @@ function displaySimplifiedInfo(data, lat, long) {
                     data-bs-target="#next-tab-pane" aria-controls="next-tab-pane" aria-selected="false" 
                     onclick='openFMBSketchInfo(${JSON.stringify(data)})'>
                     <img src="assets/icons/FMB-Sketch-icon.svg" class="info-icon-img-style" alt="">
+                    <p class="font-size-9">FMB</p>
                 </button>
             </li>
             <li class="nav-item mx-1 mb-2" role="presentation">
@@ -649,6 +840,7 @@ function displaySimplifiedInfo(data, lat, long) {
                     data-bs-target="#pro-tab-pane" aria-controls="pro-tab-pane" aria-selected="false" 
                     onclick='highlightVertices(${JSON.stringify(data.geojson_geom)})'>
                     <img src="assets/icons/vertex-icon.svg" class="info-icon-img-style" alt="">
+                    <p class="font-size-9">Vertex</p>
                 </button>
             </li>
             <li class="nav-item mx-1 mb-2" role="presentation">
@@ -656,48 +848,55 @@ function displaySimplifiedInfo(data, lat, long) {
                     data-bs-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false" 
                     onclick='openIGRInfo(${JSON.stringify(data)}, ${lat}, ${long})'>
                     <img src="assets/icons/rupee-icon.svg" class="info-icon-img-style" alt="">
+                    <p class="font-size-9">G-Value</p>
                 </button>
             </li>
             <li class="nav-item mx-1 mb-2" role="presentation">
                 <button class="nav-link district-icon" title="EC" id="nex-tab" type="button" 
                     data-bs-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false" 
-                    onclick='openECnfo(${JSON.stringify(data)}, ${lat}, ${long})' style="font-weight:700">
+                    onclick='openECnfo(${JSON.stringify(data)}, ${lat}, ${long})'>
                     <img src="assets/icons/EC-icon.svg" id="EC_logo" class="info-icon-img-style" alt="">
+                    <p class="font-size-9">EC</p>
                 </button>
             </li>
             <li class="nav-item mx-1 mb-2" role="presentation">
                 <button class="nav-link district-icon" title="Jurisdictional Boundaries" id="nex-tab" type="button" 
                     data-bs-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false" 
-                    onclick='JSBIconInfo(${JSON.stringify(data)}, ${lat}, ${long})' style="font-weight:700">
+                    onclick='JSBIconInfo(${JSON.stringify(data)}, ${lat}, ${long})'>
                     <img src="assets/icons/boundary-icon.svg" id="boundaries" class="info-icon-img-style" alt="">
+                    <p class="font-size-9">Boundary</p>
                 </button>
             </li>
             <li class="nav-item mx-1 mb-2" role="presentation">
                 <button class="nav-link district-icon" title="Thematic View" id="nex-tab" type="button" 
                     data-bs-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false" 
-                    onclick='loadThematicIconsFromJson(${JSON.stringify(data)}, ${lat}, ${long})' style="font-weight:700">
+                    onclick='loadThematicIconsFromJson(${JSON.stringify(data)}, ${lat}, ${long})'>
                     <img src="assets/icons/thematic-icon.svg" id="thematic_view" class="info-icon-img-style" alt="">
+                    <p class="font-size-9">Thematic</p>
                 </button>
             </li>
             <li class="nav-item mx-1 mb-2" role="presentation">
-                <button class="nav-link district-icon" title="E-Adangal" id="nex-tab" type="button" 
+                <button class="nav-link district-icon" title="Crop" id="nex-tab" type="button" 
                     data-bs-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false" 
-                    onclick='adangalView()' style="font-weight:700">
+                    onclick='adangalView()'>
                     <img src="assets/icons/adangal-icon.svg" id="adangal_view" class="info-icon-img-style" alt="">
+                    <p class="font-size-9">Crop</p>
                 </button>
             </li>
             <li class="nav-item mx-1 mb-2" role="presentation">
                 <button class="nav-link district-icon" title="Master Plan" id="nex-tab" type="button" 
                     data-bs-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false" 
-                    onclick='masterPlanView()' style="font-weight:700">
+                    onclick='masterPlanView()'>
                     <img src="assets/icons/master-plan-icon.svg" id="master_plan_view" class="info-icon-img-style" alt="">
+                    <p class="font-size-9">M plan</p>
                 </button>
             </li>
             <li class="nav-item mx-1 mb-2" role="presentation">
-                <button class="nav-link district-icon" title="Near By Location" id="nex-tab" type="button" 
+                <button class="nav-link district-icon" title="Nearby Facilities" id="nex-tab" type="button" 
                     data-bs-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false" 
-                    onclick='nearByView()' style="font-weight:700">
-                    <img src="assets/icons/nearby-icon.svg" id="nearby_view" class="info-icon-img-style" alt="">
+                    onclick='nearByView(${JSON.stringify(data)}, ${lat}, ${long})'>
+                    <img src="assets/icons/nearby-icon.svg" id="nearby_facilities" class="info-icon-img-style" alt="">
+                    <p class="font-size-9">Facility</p>
                 </button>
             </li>
         </ul>
@@ -719,23 +918,57 @@ document.getElementById('simplified-close-btn').addEventListener('click', simpli
 
 
 function addGeoJsonLayer(geojson) {
+    // Read the GeoJSON and transform the coordinates to 'EPSG:3857'
     var features = geojsonFormat.readFeatures(geojson, {
         dataProjection: 'EPSG:4326',
         featureProjection: 'EPSG:3857'
     });
+
     geojsonSource.clear();
     geojsonSource.addFeatures(features);
 
     var extent = geojsonSource.getExtent();
 
+    // Get the map's size and calculate the polygon's bounding box (extent)
+    var mapSize = map.getSize();
+    var extentWidth = extent[2] - extent[0];  // Max X - Min X
+    var extentHeight = extent[3] - extent[1]; // Max Y - Min Y
+
+    // Calculate the aspect ratio of the extent (width/height)
+    var extentRatio = extentWidth / extentHeight;
+
+    // Calculate zoom level based on extent size (aspect ratio and bounding box size)
+    let zoomLevel;
+
+    // Basic condition for zooming (you can adjust these thresholds as needed)
+    if (extentWidth < mapSize[0] && extentHeight < mapSize[1]) {
+        zoomLevel = 19;  // Adjust zoom as needed (higher number for zoomed-in view)
+    } else if (extentWidth < mapSize[0] * 2 && extentHeight < mapSize[1] * 2) {
+        zoomLevel = 17;
+    } else if (extentWidth < mapSize[0] * 3 && extentHeight < mapSize[1] * 3) {
+        zoomLevel = 15;
+    } else {
+        zoomLevel = 13;
+    }
+
+    console.log('Selected Zoom Level: ', zoomLevel);
+
+    // Fit the map to the extent and apply the selected zoom level
     map.getView().fit(extent, {
         duration: 4000,
-        maxZoom: 18.4,
-        padding: [19, 19, 19, 19]
+        maxZoom: zoomLevel,  // Use the dynamically selected zoom level
+        padding: [18, 18, 18, 18]
     });
-    
+
+    // Enable drag and drop interaction (in case it was disabled)
+    const dragPan = new ol.interaction.DragPan();  // Enable drag/pan
+    map.addInteraction(dragPan);
+
+    // Set the visibility of the GeoJSON layer
     geojsonLayer.setVisible(true);
 }
+
+
 $("#info-close").on("click", function(){
     clearVertexLabels();
     geojsonSource.clear();
@@ -808,6 +1041,7 @@ function displayVertexDetails(vertices) {
     document.getElementById('thematic-info-container')?.remove();
     document.getElementById('JSB-info-container')?.remove();
     document.getElementById('igr-info-container')?.remove();
+    document.getElementById('facility-info-container')?.remove();
 
 
     // Select the .info-icons div
@@ -1031,6 +1265,7 @@ function openAregInfo(data) {
     document.getElementById('thematic-info-container')?.remove();
     document.getElementById('JSB-info-container')?.remove();
     document.getElementById('igr-info-container')?.remove();
+    document.getElementById('facility-info-container')?.remove();
 
     let sub_division_numbers = '';
     var lapad_district_codes = LpadAdding(data.district_code,'district');
@@ -1168,6 +1403,11 @@ function openAregInfo(data) {
 
 
 function fetchAreg(params){
+    document.getElementById('fmb-sketch-info-panel')?.remove();
+    document.getElementById('thematic-info-container')?.remove();
+    document.getElementById('JSB-info-container')?.remove();
+    document.getElementById('igr-info-container')?.remove();
+    document.getElementById('facility-info-container')?.remove();
     $.ajax({
         url: `${AREG_SEARCH_URL}`,
         method: 'POST',
@@ -1592,6 +1832,7 @@ function openFMBSketchInfo(data) {
     document.getElementById('thematic-info-container')?.remove();
     document.getElementById('JSB-info-container')?.remove();
     document.getElementById('igr-info-container')?.remove();
+    document.getElementById('facility-info-container')?.remove();
     var lapad_taluk_codes = LpadAdding(data.taluk_code,'taluk');
     var lapad_town_codes = LpadAdding(data.revenue_town_code,'town');
     var lapad_ward_codes = LpadAdding(data.firka_ward_number,'ward');
@@ -1817,7 +2058,7 @@ function openIGRInfo(data, lat, long) {
     document.getElementById('fmb-sketch-info-panel')?.remove();
     document.getElementById('thematic-info-container')?.remove();
     document.getElementById('JSB-info-container')?.remove();
-
+    document.getElementById('facility-info-container')?.remove();
     if (data.rural_urban === "rural") {
         const params = {
             latitude: lat,
@@ -1951,6 +2192,7 @@ function loadThematicIconsFromJson() {
     document.getElementById('JSB-info-container')?.remove();
     document.getElementById('fmb-sketch-info-panel')?.remove();
     document.getElementById('thematic-info-container')?.remove();
+    document.getElementById('facility-info-container')?.remove();
 
     const iconSection = document.querySelector('.info-icons');
 
@@ -2047,17 +2289,12 @@ function loadThematicIconsFromJson() {
 
 
 function JSBIconInfo(data, lat, long) {
-    clearVertexLabels()
+    clearVertexLabels();
     $(".error-message").empty().hide();
-    document.getElementById('areg-tab-container')?.remove();
-    document.getElementById('vertex-info-container')?.remove();
-    document.getElementById('igr-info-container')?.remove();
-    document.getElementById('thematic-info-container')?.remove();
-    document.getElementById('fmb-sketch-info-panel')?.remove();
-    
+    ['areg-tab-container', 'facility-info-container', 'vertex-info-container', 'igr-info-container', 'thematic-info-container', 'fmb-sketch-info-panel', 'JSB-info-container']
+        .forEach(id => document.getElementById(id)?.remove());
 
     const iconSection = document.querySelector('.info-icons');
-    document.getElementById('JSB-info-container')?.remove();
 
     const JSBContainer = document.createElement('div');
     JSBContainer.id = 'JSB-info-container';
@@ -2066,7 +2303,7 @@ function JSBIconInfo(data, lat, long) {
     JSBContainer.style.overflowY = 'auto';
     JSBContainer.style.background = '#f9f9f9';
     JSBContainer.style.border = '1px solid #ddd';
-    JSBContainer.style.marginBottom = '8px';
+    JSBContainer.style.marginBottom = '4px';
 
     const panelTitle = document.createElement('div');
     panelTitle.className = 'd-flex justify-content-between align-items-center';
@@ -2088,117 +2325,288 @@ function JSBIconInfo(data, lat, long) {
 
     const scrollWrapper = document.createElement('div');
     scrollWrapper.className = 'jsb-carousel-wrapper position-relative';
+    scrollWrapper.style.position = 'relative';
+    scrollWrapper.style.marginTop = '15px';
 
-    // Left button
     const leftBtn = document.createElement('button');
     leftBtn.innerHTML = '&#10094;';
     leftBtn.className = 'jsb-scroll-left';
-    leftBtn.style.position = 'absolute';
-    leftBtn.style.left = '0';
-    leftBtn.style.top = '50%';
-    leftBtn.style.transform = 'translateY(-50%)';
-    leftBtn.style.zIndex = '2';
-    leftBtn.style.border = 'none';
-    leftBtn.style.background = '#42abff';
-    leftBtn.style.color = '#fff';
-    leftBtn.style.boxShadow = '0 0 5px rgba(0,0,0,0.2)';
-    leftBtn.style.borderRadius = '50%';
-    leftBtn.style.width = '30px';
-    leftBtn.style.height = '30px';
-    leftBtn.style.cursor = 'pointer';
+    Object.assign(leftBtn.style, {
+        position: 'absolute', left: '0', top: '50%', transform: 'translateY(-50%)', zIndex: '2',
+        border: 'none', background: '#42abff', color: '#fff', boxShadow: '0 0 5px rgba(0,0,0,0.2)',
+        borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer'
+    });
 
-    // Right button
     const rightBtn = document.createElement('button');
     rightBtn.innerHTML = '&#10095;';
     rightBtn.className = 'jsb-scroll-right';
-    rightBtn.style.position = 'absolute';
-    rightBtn.style.right = '0';
-    rightBtn.style.top = '50%';
-    rightBtn.style.transform = 'translateY(-50%)';
-    rightBtn.style.zIndex = '2';
-    rightBtn.style.border = 'none';
-    rightBtn.style.color = '#fff';
-    rightBtn.style.background = '#42abff';
-    rightBtn.style.boxShadow = '0 0 5px rgba(0,0,0,0.2)';
-    rightBtn.style.borderRadius = '50%';
-    rightBtn.style.width = '30px';
-    rightBtn.style.height = '30px';
-    rightBtn.style.cursor = 'pointer';
+    Object.assign(rightBtn.style, {
+        position: 'absolute', right: '0', top: '50%', transform: 'translateY(-50%)', zIndex: '2',
+        border: 'none', background: '#42abff', color: '#fff', boxShadow: '0 0 5px rgba(0,0,0,0.2)',
+        borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer'
+    });
 
     const contentDiv = document.createElement('div');
     contentDiv.className = 'JSB-icon-card-content d-flex gap-2';
-    contentDiv.style.overflowX = 'auto';
-    contentDiv.style.scrollBehavior = 'smooth';
-    contentDiv.style.whiteSpace = 'nowrap';
-    contentDiv.style.padding = '10px 30px'; // spacing for scroll buttons
-    contentDiv.style.msOverflowStyle = 'none';  // IE 10+
-    contentDiv.style.scrollbarWidth = 'none';  // Firefox
-    contentDiv.style.overflowY = 'hidden';
-    contentDiv.style.margin = '0 -15px';
-
-    // Hide scrollbar (for Chrome)
-    contentDiv.style.setProperty('::-webkit-scrollbar', 'display: none');
+    Object.assign(contentDiv.style, {
+        overflowX: 'auto',
+        scrollBehavior: 'smooth',
+        whiteSpace: 'nowrap',
+        padding: '0px 30px',
+        msOverflowStyle: 'none',
+        scrollbarWidth: 'none',
+        overflowY: 'hidden',
+        margin: '0 -15px'
+    });
 
     contentDiv.addEventListener('wheel', e => {
         e.preventDefault();
         contentDiv.scrollLeft += e.deltaY;
     });
 
-    let hasValidData = false;
+    fetch('https://tngis.tn.gov.in/apps/mugavari/assets/scripts/layers.json')
+        .then(response => response.json())
+        .then(data => {
+            let hasValidData = false;
+            data.forEach(field => {
+                if (field.status === 'active' && field.type === 'boundary') {
+                    hasValidData = true;
+                    const card = document.createElement("div");
+                    card.classList.add("JSB-icon-card", "rounded");
+                    card.setAttribute('layer_id', field.layer_code);
+                    card.setAttribute('priority_order', field.priority_order);
+                    card.setAttribute('layer_type', field.type);
+                    Object.assign(card.style, {
+                        // background: "#5982a5",
+                        // boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                        width: "68px",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        textAlign: "center",
+                        overflow: "hidden",
+                        color: "#000000",
+                        padding: "10px 5px",
+                        flex: "0 0 auto",
+                        position: "relative"
+                    });
 
-    const fields = [
-        
-        { label: "Constituencies", icon: '<img src="assets/logo/tn-logo.png" class="jsb-dept-logo">' },
-        { label: "Rural", icon: '<img src="assets/logo/tn-logo.png" class="jsb-dept-logo">' },
-        { label: "Urban", icon: '<img src="assets/logo/tn-logo.png" class="jsb-dept-logo">' },
-        { label: "Police", icon: '<img src="assets/logo/dept-logos/police.png" class="jsb-dept-logo">' },
-        { label: "TANGEDCO", icon: '<img src="assets/logo/dept-logos/tangedco.png" class="jsb-dept-logo">' },
-        { label: "Education", icon: '<img src="assets/logo/tn-logo.png" class="jsb-dept-logo">' },
-        { label: "Forest", icon: '<img src="assets/logo/tn-logo.png" class="jsb-dept-logo">' },
-        { label: "Registration", icon: '<img src="assets/logo/tn-logo.png" class="jsb-dept-logo">' },
-        { label: "Highways", icon: '<img src="assets/logo/tn-logo.png" class="jsb-dept-logo">' },
-        { label: "TASMAC", icon: '<img src="assets/logo/dept-logos/tasmac.png" class="jsb-dept-logo">' },
-    ];
+                    const imageUrl = (field.display_image_url || '') + (field.display_image_name || '');
 
-    fields.forEach(field => {
-        hasValidData = true;
-        const card = document.createElement("div");
-        card.classList.add("JSB-icon-card", "p-2", "border", "rounded", "d-flex", "flex-column", "align-items-center");
-        card.style.background = "#fff";
-        card.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
-        card.style.width = "70px";
-        card.style.height = "70px";
-        card.style.fontSize = "10px";
-        card.style.display = "flex";
-        card.style.flexDirection = "column";
-        card.style.justifyContent = "center";
-        card.style.alignItems = "center";
-        card.style.textAlign = "center";
-        card.style.flex = "0 0 auto";
-        card.innerHTML = `${field.icon || "📌"}<strong>${field.label}</strong>`;
+                    const img = document.createElement('img');
+                    img.src = imageUrl;
+                    Object.assign(img.style, {
+                        width: "auto",
+                        height: "40px",
+                        objectFit: "contain",
+                        marginBottom: "8px"
+                    });
 
-        contentDiv.appendChild(card);
+                    const title = document.createElement('div');
+                    title.textContent = field.layer_display_name || '';
+                    Object.assign(title.style, {
+                        fontSize: "9px",
+                        wordBreak: "break-word",
+                        overflowWrap: "break-word",
+                        whiteSpace: "normal",
+                        textAlign: "center",
+                        width: "100%",
+                        lineHeight: "1.2",
+                        minHeight: "10px"
+                    });
+
+                    card.appendChild(img);
+                    card.appendChild(title);
+
+                    contentDiv.appendChild(card);
+                }
+            });
+
+            if (hasValidData) {
+                scrollWrapper.appendChild(leftBtn);
+                scrollWrapper.appendChild(contentDiv);
+                scrollWrapper.appendChild(rightBtn);
+                JSBContainer.appendChild(scrollWrapper);
+                iconSection.insertAdjacentElement('afterend', JSBContainer);
+
+                leftBtn.addEventListener('click', () => {
+                    contentDiv.scrollLeft -= 150;
+                });
+                rightBtn.addEventListener('click', () => {
+                    contentDiv.scrollLeft += 150;
+                });
+            } else {
+                $(".error-message").empty().text('No data available for the selected location.').show();
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching JSON:', error);
+            $(".error-message").empty().text('Failed to load jurisdiction data.').show();
+        });
+}
+
+function nearByView(data, lat, long) {
+    clearVertexLabels();
+    $(".error-message").empty().hide();
+    ['areg-tab-container','facility-info-container', 'vertex-info-container', 'igr-info-container', 'thematic-info-container', 'fmb-sketch-info-panel', 'JSB-info-container']
+        .forEach(id => document.getElementById(id)?.remove());
+
+    const iconSection = document.querySelector('.info-icons');
+
+    const JSBContainer = document.createElement('div');
+    JSBContainer.id = 'facility-info-container';
+    JSBContainer.className = 'mt-1 p-3 border rounded position-relative';
+    JSBContainer.style.maxHeight = '400px';
+    JSBContainer.style.overflowY = 'auto';
+    JSBContainer.style.background = '#f9f9f9';
+    JSBContainer.style.border = '1px solid #ddd';
+    JSBContainer.style.marginBottom = '4px';
+
+    const panelTitle = document.createElement('div');
+    panelTitle.className = 'd-flex justify-content-between align-items-center';
+    panelTitle.innerHTML = `<h6 class="m-0">Nearby Facilities Information For</h6>`;
+
+    const closeButton = document.createElement('button');
+    closeButton.innerHTML = '&times;';
+    closeButton.className = 'btn-close vertex-close position-absolute';
+    closeButton.style.top = '5px';
+    closeButton.style.right = '10px';
+    closeButton.style.fontSize = '18px';
+    closeButton.style.cursor = 'pointer';
+    closeButton.style.border = 'none';
+    closeButton.style.background = 'transparent';
+    closeButton.addEventListener('click', () => { JSBContainer.remove(); });
+
+    panelTitle.appendChild(closeButton);
+    JSBContainer.appendChild(panelTitle);
+
+    const scrollWrapper = document.createElement('div');
+    scrollWrapper.className = 'jsb-carousel-wrapper position-relative';
+    scrollWrapper.style.position = 'relative';
+    scrollWrapper.style.marginTop = '15px';
+
+    const leftBtn = document.createElement('button');
+    leftBtn.innerHTML = '&#10094;';
+    leftBtn.className = 'jsb-scroll-left';
+    Object.assign(leftBtn.style, {
+        position: 'absolute', left: '0', top: '50%', transform: 'translateY(-50%)', zIndex: '2',
+        border: 'none', background: '#42abff', color: '#fff', boxShadow: '0 0 5px rgba(0,0,0,0.2)',
+        borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer'
     });
 
-    if (hasValidData) {
-        scrollWrapper.appendChild(leftBtn);
-        scrollWrapper.appendChild(contentDiv);
-        scrollWrapper.appendChild(rightBtn);
-        JSBContainer.appendChild(scrollWrapper);
-        iconSection.insertAdjacentElement('afterend', JSBContainer);
+    const rightBtn = document.createElement('button');
+    rightBtn.innerHTML = '&#10095;';
+    rightBtn.className = 'jsb-scroll-right';
+    Object.assign(rightBtn.style, {
+        position: 'absolute', right: '0', top: '50%', transform: 'translateY(-50%)', zIndex: '2',
+        border: 'none', background: '#42abff', color: '#fff', boxShadow: '0 0 5px rgba(0,0,0,0.2)',
+        borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer'
+    });
 
-        // Scroll button functionality
-        leftBtn.addEventListener('click', () => {
-            contentDiv.scrollLeft -= 150;
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'JSB-icon-card-content d-flex gap-2';
+    Object.assign(contentDiv.style, {
+        overflowX: 'auto',
+        scrollBehavior: 'smooth',
+        whiteSpace: 'nowrap',
+        padding: '10px 30px',
+        msOverflowStyle: 'none',
+        scrollbarWidth: 'none',
+        overflowY: 'hidden',
+        margin: '0 -15px'
+    });
+
+    contentDiv.addEventListener('wheel', e => {
+        e.preventDefault();
+        contentDiv.scrollLeft += e.deltaY;
+    });
+
+    fetch('https://tngis.tn.gov.in/apps/mugavari/assets/scripts/layers.json')
+        .then(response => response.json())
+        .then(data => {
+            let hasValidData = false;
+            data.forEach(field => {
+                if (field.status === 'active' && field.type === 'assets') {
+                    hasValidData = true;
+                    const card = document.createElement("div");
+                    card.classList.add("JSB-icon-card", "rounded");
+                    card.setAttribute('layer_id', field.layer_code);
+                    card.setAttribute('priority_order', field.priority_order);
+                    card.setAttribute('layer_type', field.type);
+                    Object.assign(card.style, {
+                        // background: "#5982a5",
+                        // boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                        width: "75px",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        textAlign: "center",
+                        overflow: "hidden",
+                        color: "#000000",
+                        padding: "10px 5px",
+                        flex: "0 0 auto",
+                        position: "relative"
+                    });
+
+                    const imageUrl = (field.display_image_url || '') + (field.display_image_name || '');
+
+                    const img = document.createElement('img');
+                    img.src = imageUrl;
+                    Object.assign(img.style, {
+                        width: "auto",
+                        height: "40px",
+                        objectFit: "contain",
+                        marginBottom: "8px"
+                    });
+
+                    const title = document.createElement('div');
+                    title.textContent = field.layer_display_name || '';
+                    Object.assign(title.style, {
+                        fontSize: "9px",
+                        wordBreak: "break-word",
+                        overflowWrap: "break-word",
+                        whiteSpace: "normal",
+                        textAlign: "center",
+                        width: "100%",
+                        lineHeight: "1.2",
+                        minHeight: "10px"
+                    });
+
+                    card.appendChild(img);
+                    card.appendChild(title);
+
+                    contentDiv.appendChild(card);
+                }
+            });
+
+            if (hasValidData) {
+                scrollWrapper.appendChild(leftBtn);
+                scrollWrapper.appendChild(contentDiv);
+                scrollWrapper.appendChild(rightBtn);
+                JSBContainer.appendChild(scrollWrapper);
+                iconSection.insertAdjacentElement('afterend', JSBContainer);
+
+                leftBtn.addEventListener('click', () => {
+                    contentDiv.scrollLeft -= 150;
+                });
+                rightBtn.addEventListener('click', () => {
+                    contentDiv.scrollLeft += 150;
+                });
+            } else {
+                $(".error-message").empty().text('No data available for the selected location.').show();
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching JSON:', error);
+            $(".error-message").empty().text('Failed to load jurisdiction data.').show();
         });
-        rightBtn.addEventListener('click', () => {
-            contentDiv.scrollLeft += 150;
-        });
-    } else {
-        // alert("No data available for the selected location.");
-        $(".error-message").empty().text('No data available for the selected location.').show();
-    }
 }
+
+
+
+
 
 function closeIGRInfoPanel(){
     const infoPanel = document.getElementById("igr-info-panel");
@@ -2396,6 +2804,7 @@ fetch(thematicJsonFilePath)
             });
 
             layerControlThematic.appendChild(accordionItem);
+            
         });
         updateAllLegends(jsonData);
     })
@@ -2516,7 +2925,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 // Populate District Dropdown
-async function loadDistrict(districtCode, talukCode = null, villageCode = null, surveyNumber = null, subdivision = null) {
+async function loadDistrict(districtCode, talukCode = null, villageCode = null, surveyNumber = null, subdivision = null, areaType = null, townCode = null, wardCode = null, blockCode = null) {
     try {
         const response = await ajaxPromise({
             url: `${BASE_URL}/v2/admin_master_district`,
@@ -2554,89 +2963,212 @@ async function loadDistrict(districtCode, talukCode = null, villageCode = null, 
                     onComplete: async () => {
                         if (!talukCode) return;
 
-                        const villageResponse = await ajaxPromise({
-                            url: `${BASE_URL}/v2/admin_master_village`,
-                            method: 'GET',
-                            data: {
-                                district_code: districtCode,
-                                taluk_code: talukCode,
-                                request_type: 'revenue_village'
-                            },
-                            headers: { 'X-APP-NAME': 'demo' },
-                            dataType: 'json'
-                        });
+                        if (areaType === 'rural') {
+                            const villageResponse = await ajaxPromise({
+                                url: `${BASE_URL}/v2/admin_master_village`,
+                                method: 'GET',
+                                data: {
+                                    district_code: districtCode,
+                                    taluk_code: talukCode,
+                                    request_type: 'revenue_village'
+                                },
+                                headers: { 'X-APP-NAME': 'demo' },
+                                dataType: 'json'
+                            });
 
-                        populateDropdown('village-dropdown', villageResponse, {
-                            defaultText: 'Select Village',
-                            valueKey: 'village_code',
-                            textKey: 'village_english_name',
-                            errorCallback: (message) => showToast('error', message),
-                            preselectValue: villageCode,
-                            triggerChange: !!villageCode,
-                            onComplete: async () => {
-                                if (!villageCode) return;
+                            populateDropdown('village-dropdown', villageResponse, {
+                                defaultText: 'Select Village',
+                                valueKey: 'village_code',
+                                textKey: 'village_english_name',
+                                errorCallback: (message) => showToast('error', message),
+                                preselectValue: villageCode,
+                                triggerChange: !!villageCode,
+                                onComplete: async () => {
+                                    if (!villageCode) return;
 
-                                const areaType = getSelectedAreaType();
-                                const surveyResponse = await ajaxPromise({
-                                    url: `${BASE_URL}/v2/admin_master_survey_number`,
-                                    method: 'GET',
-                                    data: {
-                                        district_code: districtCode,
-                                        taluk_code: talukCode,
-                                        revenue_village_code: villageCode,
-                                        area_type: areaType,
-                                        data_type: 'cadastral',
-                                        request_type: 'survey_number'
-                                    },
-                                    headers: { 'X-APP-NAME': 'demo' },
-                                    dataType: 'json'
-                                });
+                                    const surveyResponse = await ajaxPromise({
+                                        url: `${BASE_URL}/v2/admin_master_survey_number`,
+                                        method: 'GET',
+                                        data: {
+                                            district_code: districtCode,
+                                            taluk_code: talukCode,
+                                            revenue_village_code: villageCode,
+                                            area_type: areaType,
+                                            data_type: 'cadastral',
+                                            request_type: 'survey_number'
+                                        },
+                                        headers: { 'X-APP-NAME': 'demo' },
+                                        dataType: 'json'
+                                    });
 
-                                populateDropdown('survey-number-dropdown', surveyResponse, {
-                                    defaultText: 'Select Survey Number',
-                                    valueKey: 'survey_number',
-                                    textKey: 'survey_number',
-                                    errorCallback: (message) => showToast('error', message),
-                                    preselectValue: surveyNumber,
-                                    triggerChange: !!surveyNumber,
-                                    onComplete: async () => {
-                                        if (!surveyNumber) return;
+                                    populateDropdown('survey-number-dropdown', surveyResponse, {
+                                        defaultText: 'Select Survey Number',
+                                        valueKey: 'survey_number',
+                                        textKey: 'survey_number',
+                                        errorCallback: (message) => showToast('error', message),
+                                        preselectValue: surveyNumber,
+                                        triggerChange: !!surveyNumber,
+                                        onComplete: async () => {
+                                            if (!surveyNumber) return;
 
-                                        const subdivResponse = await ajaxPromise({
-                                            url: checkAregUrl,
-                                            method: 'GET',
-                                            data: {
-                                                district_code: districtCode,
-                                                taluk_code: talukCode,
-                                                village_code: villageCode,
-                                                survey_number: surveyNumber,
-                                                sub_division_number: 'jjj'
-                                            },
-                                            headers: { 'X-APP-NAME': 'demo' },
-                                            dataType: 'json'
-                                        });
+                                            const subdivResponse = await ajaxPromise({
+                                                url: checkAregUrl,
+                                                method: 'GET',
+                                                data: {
+                                                    district_code: districtCode,
+                                                    taluk_code: talukCode,
+                                                    village_code: villageCode,
+                                                    survey_number: surveyNumber,
+                                                    sub_division_number: 'jjj'
+                                                },
+                                                headers: { 'X-APP-NAME': 'demo' },
+                                                dataType: 'json'
+                                            });
 
-                                        populateDropdown('sub-division-dropdown', subdivResponse, {
-                                            defaultText: 'Select Sub Division',
-                                            valueKey: 'subdiv_no',
-                                            textKey: 'subdiv_no',
-                                            errorCallback: (message) => showToast('error', message),
-                                            preselectValue: subdivision,
-                                            triggerChange: !!subdivision
-                                        });
-                                    }
-                                });
-                            }
-                        });
+                                            populateDropdown('sub-division-dropdown', subdivResponse, {
+                                                defaultText: 'Select Sub Division',
+                                                valueKey: 'subdiv_no',
+                                                textKey: 'subdiv_no',
+                                                errorCallback: (message) => showToast('error', message),
+                                                preselectValue: subdivision,
+                                                triggerChange: !!subdivision
+                                            });
+                                        }
+                                    });
+                                }
+                            });
+
+                        } else if (areaType === 'urban') {
+                            const townResponse = await ajaxPromise({
+                                url: `${BASE_URL}/v2/admin_master_revenue_town`,
+                                method: 'GET',
+                                data: { request_type: 'town', district_code: districtCode, taluk_code: talukCode },
+                                headers: { 'X-APP-NAME': 'demo' },
+                                dataType: 'json'
+                            });
+
+                            populateDropdown('town-dropdown', townResponse, {
+                                defaultText: 'Select Town',
+                                valueKey: 'town_code',
+                                textKey: 'town_english_name',
+                                errorCallback: (message) => showToast('error', message),
+                                preselectValue: townCode,
+                                triggerChange: !!townCode,
+                                onComplete: async () => {
+                                    if (!townCode) return;
+
+                                    const wardResponse = await ajaxPromise({
+                                        url: `${BASE_URL}/v2/admin_master_revenue_ward`,
+                                        method: 'GET',
+                                        data: { request_type: 'ward', district_code: districtCode, taluk_code: talukCode, town_code: townCode },
+                                        headers: { 'X-APP-NAME': 'demo' },
+                                        dataType: 'json'
+                                    });
+
+                                    populateDropdown('ward-dropdown', wardResponse, {
+                                        defaultText: 'Select Ward',
+                                        valueKey: 'ward_code',
+                                        textKey: 'ward_english_name',
+                                        errorCallback: (message) => showToast('error', message),
+                                        preselectValue: wardCode,
+                                        triggerChange: !!wardCode,
+                                        onComplete: async () => {
+                                            if (!wardCode) return;
+
+                                            const blockResponse = await ajaxPromise({
+                                                url: `${BASE_URL}/v2/admin_master_revenue_block`,
+                                                method: 'GET',
+                                                data: {
+                                                    request_type: 'revenue_block',
+                                                    district_code: districtCode,
+                                                    taluk_code: talukCode,
+                                                    town_code: townCode,
+                                                    ward_code: wardCode
+                                                },
+                                                headers: { 'X-APP-NAME': 'demo' },
+                                                dataType: 'json'
+                                            });
+
+                                            populateDropdown('block-dropdown', blockResponse, {
+                                                defaultText: 'Select Block',
+                                                valueKey: 'block_code',
+                                                textKey: 'block_english_name',
+                                                errorCallback: (message) => showToast('error', message),
+                                                preselectValue: blockCode,
+                                                triggerChange: !!blockCode,
+                                                onComplete: async () => {
+                                                    if (!blockCode) return;
+
+                                                    const surveyResponse = await ajaxPromise({
+                                                        url: `${BASE_URL}/v2/admin_master_survey_number`,
+                                                        method: 'GET',
+                                                        data: {
+                                                            request_type: 'survey_number',
+                                                            district_code: districtCode,
+                                                            taluk_code: talukCode,
+                                                            town_code: townCode,
+                                                            ward_code: wardCode,
+                                                            block_code: blockCode,
+                                                            area_type: areaType
+                                                        },
+                                                        headers: { 'X-APP-NAME': 'demo' },
+                                                        dataType: 'json'
+                                                    });
+
+                                                    populateDropdown('urban-survey-number-dropdown', surveyResponse, {
+                                                        defaultText: 'Select Survey Number',
+                                                        valueKey: 'survey_number',
+                                                        textKey: 'survey_number',
+                                                        errorCallback: (message) => showToast('error', message),
+                                                        preselectValue: surveyNumber,
+                                                        triggerChange: !!surveyNumber,
+                                                        onComplete: async () => {
+                                                            if (!surveyNumber) return;
+
+                                                            const subdivResponse = await ajaxPromise({
+                                                                url: checkAregUrl,
+                                                                method: 'GET',
+                                                                data: {
+                                                                    district_code: districtCode,
+                                                                    taluk_code: talukCode,
+                                                                    town_code: townCode,
+                                                                    ward_code: wardCode,
+                                                                    block_code: blockCode,
+                                                                    survey_number: surveyNumber,
+                                                                    sub_division_number: 'jjj'
+                                                                },
+                                                                headers: { 'X-APP-NAME': 'demo' },
+                                                                dataType: 'json'
+                                                            });
+
+                                                            populateDropdown('sub-division-dropdown', subdivResponse, {
+                                                                defaultText: 'Select Sub Division',
+                                                                valueKey: 'subdiv_no',
+                                                                textKey: 'subdiv_no',
+                                                                errorCallback: (message) => showToast('error', message),
+                                                                preselectValue: subdivision,
+                                                                triggerChange: !!subdivision
+                                                            });
+                                                        }
+                                                    });
+                                                }
+                                            });
+                                        }
+                                    });
+                                }
+                            });
+                        }
                     }
                 });
             }
         });
+
     } catch (error) {
         console.error('Async Error:', error);
         showToast('error', error);
     }
 }
+
 
 
 
@@ -3056,7 +3588,32 @@ function openECnfo(){
     document.getElementById('JSB-info-container')?.remove();
     document.getElementById('fmb-sketch-info-panel')?.remove();
     document.getElementById('thematic-info-container')?.remove();
+    document.getElementById('facility-info-container')?.remove();
     $(".error-message").empty().text('Encumbrance certificate - coming soon').show();
+}
+function adangalView(){
+    clearVertexLabels();
+    $(".error-message").empty().hide();
+    document.getElementById('areg-tab-container')?.remove();
+    document.getElementById('vertex-info-container')?.remove();
+    document.getElementById('igr-info-container')?.remove();
+    document.getElementById('JSB-info-container')?.remove();
+    document.getElementById('fmb-sketch-info-panel')?.remove();
+    document.getElementById('thematic-info-container')?.remove();
+    document.getElementById('facility-info-container')?.remove();
+    $(".error-message").empty().text('Crop - coming soon').show();
+}
+function masterPlanView(){
+    clearVertexLabels();
+    $(".error-message").empty().hide();
+    document.getElementById('areg-tab-container')?.remove();
+    document.getElementById('facility-info-container')?.remove();
+    document.getElementById('vertex-info-container')?.remove();
+    document.getElementById('igr-info-container')?.remove();
+    document.getElementById('JSB-info-container')?.remove();
+    document.getElementById('fmb-sketch-info-panel')?.remove();
+    document.getElementById('thematic-info-container')?.remove();
+    $(".error-message").empty().text('Master Plan - coming soon').show();
 }
 
 function addSpaceBeforeCaps(str) {
@@ -3192,3 +3749,40 @@ function closever(){
     clearVertexLabels();
 }
 
+function siteVisitorsCount(){
+    $.ajax({
+        url: `${BASE_URL}/v2/site_visitors_track`,
+        method: 'GET',
+        success: function (response) {
+            var responseDetails = response.stats;
+            $(".total_visitors").html("Total Visitors: "+responseDetails.total_visitors);
+            $(".online_viewer").html("Online: "+responseDetails.currently_online);
+        },
+        error: function (xhr, status, error) {
+            console.error('Error in fetching AREG - ', error);
+        }
+    });
+}
+
+const generateLink = (coordinates) => {
+    let link = "https://www.google.com/maps/dir/?api=1&origin=";
+    coordinates.forEach((coordinate, index) => {
+        if (index === 0) {
+            link += `${coordinate[1]},${coordinate[0]}`;
+        } else {
+            link += `&destination=${coordinate[1]},${coordinate[0]}`;
+        }
+    });
+    return link;
+};
+function clearVectorSourceData() {
+    
+    geojsonSource.clear();
+}
+$("#district-icon").on("click", function() {
+    // First remove 'active' class from all images inside #district-icon
+    $("#district-icon img").removeClass('active');
+    
+    // Then add 'active' class to the clicked one
+    $(this).find("img").addClass('district-icon-active');
+});

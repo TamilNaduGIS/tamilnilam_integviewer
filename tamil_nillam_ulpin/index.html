@@ -450,7 +450,12 @@
         <div class="ps-2 copyrights">
             <a class="text-white px-2 txt-aligns" data-bs-toggle="modal" data-bs-target=".disclaimer"
                 style="cursor: pointer;"><span><i class="bi bi-eye"></i> Disclaimer</span></a>
-            <span>Copyright © Designed and developed by <a href="https://tnega.tn.gov.in/" target="_blank">TNeGA&nbsp;<img src="assets/logo/tnega-logo.png" alt="TNGIS Logo" title="TNeGA Logo" class="logo_tnega"></a></div>
+            <span>Copyright © Designed and developed by <a href="https://tnega.tn.gov.in/" target="_blank">TNeGA&nbsp;<img src="assets/logo/tnega-logo.png" alt="TNGIS Logo" title="TNeGA Logo" class="logo_tnega"></a></span>
+        </div>
+        <div class="ps-2 copyrights">
+            <span class="total_visitors"></span>
+            <span class="online_viewer"></span>
+        </div>
         <div>
             <span class="text-white">Owned and supported by <a href="https://tnlandsurvey.tn.gov.in/"
                     title="Survey and Settlement Department" target="_blank">Survey and Settlement Department</a> & <a
@@ -594,7 +599,7 @@
             let offsetY = 0;
             let $currentDialog = null;
 
-            $(document).on('mousedown', '.modal-header, .modal-content', function (e) {
+            $(document).on('mousedown', '.modal-header,', function (e) {
                 $currentDialog = $(this).closest('.modal').find('.modal-dialog');
 
                 isDragging = true;
@@ -888,11 +893,11 @@
     <script>
     $(document).ready(function () {
         $("#year").text(new Date().getFullYear());
-        $(".district-icon").on("click", function(){
-            $('.district-icon').removeClass('active'); // Remove from all
-            $(this).addClass('active'); 
-        })
+        
+
+        
     }); 
+    
     </script>
     
 </body>
