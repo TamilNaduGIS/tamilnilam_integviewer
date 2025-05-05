@@ -119,6 +119,7 @@ function changeBasemap(type, basemap) {
 
 var layerConfig = {};
 var geojsonSource = new ol.source.Vector();
+var selectionGeojsonSource = new ol.source.Vector(); // Create new source
 var geojsonFormat = new ol.format.GeoJSON();
 var geojsonLayer = new ol.layer.Vector({
     name: "Buffer Circle",
@@ -136,6 +137,24 @@ var geojsonLayer = new ol.layer.Vector({
         }),
     }),
 });
+
+var boundarygeojsonLayer = new ol.layer.Vector({
+    name: "Selection Layer",
+    source: selectionGeojsonSource,
+    type: 'vector',
+    zIndex: 11, // Higher than Buffer Circle layer
+    visible: true,
+    style: new ol.style.Style({
+        fill: new ol.style.Fill({
+            color: 'rgba(0, 0, 255, 0.1)'
+        }),
+        stroke: new ol.style.Stroke({
+            color: "rgb(39, 7, 169)",
+            width: 4
+        }),
+    }),
+});
+map.addLayer(boundarygeojsonLayer);
 
 // UnMatched with Spatial
 var cadastral_with_ulpin_source = new ol.source.TileWMS({
@@ -214,6 +233,21 @@ const markerLayer = new ol.layer.Vector({
 });
 map.addLayer(markerLayer);
 
+
+const facilitiesMarkerSource = new ol.source.Vector();
+const facilitiesMarkerLayer = new ol.layer.Vector({
+    source: facilitiesMarkerSource,
+    style: new ol.style.Style({
+        image: new ol.style.Icon({
+            anchor: [0.5, 1],
+            src: 'https://maps.google.com/mapfiles/kml/paddle/red-circle.png', // you can replace with your own icon
+            scale: 0.7,
+        }),
+    }),
+    zIndex: 9999999999999999,
+});
+map.addLayer(facilitiesMarkerLayer);
+
 // document.addEventListener('click', function (event) {
 //     const menu = document.getElementById('menu');
 //     const navbar = document.getElementById('navbar');
@@ -260,6 +294,7 @@ map.on('singleclick', function (evt) {
     // Add click listener to map to close the panel when clicking on the map
     geojsonSource.clear();
     map.removeLayer(vertexLayer);
+    clearVectorBoundarySourceData();
     // simplifiedHidePanel();
     closeAregPanel();
     closeFMBSketchPanel();
@@ -392,6 +427,7 @@ $(document).ready(function () {
         const JSBCardElement = document.querySelector('.JSB-icon-card');
         const layerCode = this.getAttribute('layer_id');
         const priorityOrder = this.getAttribute('priority_order');
+        const selectedTitle = this.getAttribute('title');
         const layerType = this.getAttribute('layer_type');
         const lat = $("#latitude").val();
         const long = $("#longitude").val();
@@ -431,6 +467,9 @@ $(document).ready(function () {
                     // Create a list of facilities
                     const list = $('<ul class="facility-list" style="font-size:0.875rem;list-style:none; padding:0; margin:0;"></ul>');
                     if(layerType == 'assets'){
+                        $("#selected-facilities").html("Nearby Facilities Information For <span style='font-size:10px'>("+selectedTitle+ ")</span");
+
+                        clearVectorBoundarySourceData();
                         facilities.forEach(facility => {
                             var coordinates = [
                                 [long, lat],
@@ -457,19 +496,55 @@ $(document).ready(function () {
                         $('#facility-info-container').append(detailDiv);
                         $(".error-message").empty().hide();
                     }else{
-                        clearVectorSourceData();
+                        clearVectorBoundarySourceData();
                         let infoDetailes = '';
+                        
+                        $("#selected-boundary").html("Jurisdiction Boundaries Information For (<span style='font-size:10px'>"+selectedTitle+ ")</span");
                         facilities.forEach(facility => {
                             // Generate HTML content for key-value pairs
                             let infoDetails = '';
                             const excludedKeys = ['geometry', 'object_id', 'layer_id', 'district_name', 'taluk_name','district_code','e_district_code','ed_taluk_code','district_lgd_code','block_lgd_code','village_lgd_code'];
 
+                            // Define pairs of code-name keys to merge
+                            const mergeFields = {
+                                region_code: 'region_name',
+                                circle_code: 'circle_name',
+                                division_code: 'division_name',
+                                subdivision_code: 'subdivision_name',
+                                section_code: 'section_name',
+                                police_station_code: 'police_station_name',
+                                assembly_constituency_code: 'assembly_constituency_name',
+                                parliamentary_constituency_code: 'parliamentary_constituency_name'
+                            };
+                            
                             for (const [key, value] of Object.entries(facility.data)) {
                                 if (!excludedKeys.includes(key) && typeof value !== 'object') {
-                                    const label = formatKeyName(key);
-                                    infoDetails += `<div><strong>${label}:</strong> ${value}</div>`;
+                                    let label = formatKeyName(key);
+                                    if(key == 'village_name'){
+                                        label = 'Panchayat Village';
+                                    }
+                                    let displayValue = value;
+                            
+                                    // If this is a code and its corresponding name exists, merge and skip name later
+                                    if (mergeFields[key] && facility.data[mergeFields[key]]) {
+                                        displayValue = `${value} - ${facility.data[mergeFields[key]]}`;
+                                        label = formatKeyName(mergeFields[key]); // Use the name's label
+                                    }
+                            
+                                    // If this is a name key and its corresponding code has already been handled, skip it
+                                    else if (Object.values(mergeFields).includes(key)) {
+                                        const codeKey = Object.keys(mergeFields).find(code => mergeFields[code] === key);
+                                        if (facility.data[codeKey]) {
+                                            continue; // Already displayed with code
+                                        }
+                                    }
+                            
+                                    infoDetails += `<div><strong>${label}:</strong> ${displayValue}</div>`;
                                 }
                             }
+                            
+
+                            
                             // Create list item with the generated content
                             const listItem = $(`
                                 <li class="facility-item" style="margin-bottom: 3px;">
@@ -485,7 +560,7 @@ $(document).ready(function () {
                             if (layerType === 'boundary') {
                                 const boundary = geojsonFormat.readFeature(facility.data.geometry);
                                 boundary.getGeometry().transform('EPSG:4326', 'EPSG:3857');
-                                geojsonSource.addFeature(boundary);
+                                selectionGeojsonSource.addFeature(boundary);
                             } else {
                                 nearest_feature_source.addFeatures(features);
                             }
@@ -493,13 +568,13 @@ $(document).ready(function () {
                             // Map view fit
                             const padding = [10, 0, 10, 0];
                             if (layerType === 'boundary') {
-                                map.getView().fit(geojsonLayer.getSource().getExtent(), {
+                                map.getView().fit(boundarygeojsonLayer.getSource().getExtent(), {
                                     size: map.getSize(),
                                     duration: 2000,
                                     maxZoom: 12,
                                     padding: padding
                                 });
-                                geojsonLayer.setVisible(true);
+                                boundarygeojsonLayer.setVisible(true);
                             } else {
                                 map.getView().fit(nearest_feature_layer.getSource().getExtent(), {
                                     size: map.getSize(),
@@ -774,8 +849,8 @@ function displaySimplifiedInfo(data, lat, long) {
         <div><strong>District:</strong> <br />${data.district_name ? data.district_name : '-'} / ${data.district_tamil_name ? data.district_tamil_name: '-'}</div>
         <div><strong>Taluk:</strong> <br /> ${data.taluk_name ? data.taluk_name: '-'} / ${data.taluk_tamil_name ? data.taluk_tamil_name : '-'}</div>
         <div><strong>Town:</strong> <br /> ${data.revenue_town_name ? data.revenue_town_name: '-'} / ${data.revenue_town_tamil_name ? data.revenue_town_tamil_name: '-'}</div>
-        <div><strong>Ward:</strong> <br /> ${data.revenue_ward_name ? data.revenue_ward_name: '-'} / ${data.revenue_ward_tamil_name ? data.revenue_ward_tamil_name: '-'}</div>
-        <div><strong>Block:</strong> <br /> ${data.revenue_block_name ? data.revenue_block_name: '-'} / ${data.revenue_block_name ? data.revenue_block_name: '-'}</div>
+        <div><strong>R.Ward:</strong> <br /> ${data.revenue_ward_name ? data.revenue_ward_name: '-'} / ${data.revenue_ward_tamil_name ? data.revenue_ward_tamil_name: '-'}</div>
+        <div><strong>R.Block:</strong> <br /> ${data.revenue_block_name ? data.revenue_block_name: '-'} / ${data.revenue_block_name ? data.revenue_block_name: '-'}</div>
     `; 
     }
     
@@ -931,42 +1006,32 @@ function addGeoJsonLayer(geojson) {
 
     // Get the map's size and calculate the polygon's bounding box (extent)
     var mapSize = map.getSize();
-    var extentWidth = extent[2] - extent[0];  // Max X - Min X
-    var extentHeight = extent[3] - extent[1]; // Max Y - Min Y
+    var extentWidth = extent[2] - extent[0];
+    var extentHeight = extent[3] - extent[1];
 
-    // Calculate the aspect ratio of the extent (width/height)
     var extentRatio = extentWidth / extentHeight;
 
-    // Calculate zoom level based on extent size (aspect ratio and bounding box size)
     let zoomLevel;
-
-    // Basic condition for zooming (you can adjust these thresholds as needed)
     if (extentWidth < mapSize[0] && extentHeight < mapSize[1]) {
-        zoomLevel = 19;  // Adjust zoom as needed (higher number for zoomed-in view)
+        zoomLevel = 18.4;
     } else if (extentWidth < mapSize[0] * 2 && extentHeight < mapSize[1] * 2) {
         zoomLevel = 17;
     } else if (extentWidth < mapSize[0] * 3 && extentHeight < mapSize[1] * 3) {
-        zoomLevel = 15;
+        zoomLevel = 16;
     } else {
-        zoomLevel = 13;
+        zoomLevel = 14;
     }
-
-    console.log('Selected Zoom Level: ', zoomLevel);
 
     // Fit the map to the extent and apply the selected zoom level
     map.getView().fit(extent, {
         duration: 4000,
-        maxZoom: zoomLevel,  // Use the dynamically selected zoom level
+        maxZoom: zoomLevel,
         padding: [18, 18, 18, 18]
     });
 
-    // Enable drag and drop interaction (in case it was disabled)
-    const dragPan = new ol.interaction.DragPan();  // Enable drag/pan
-    map.addInteraction(dragPan);
-
-    // Set the visibility of the GeoJSON layer
     geojsonLayer.setVisible(true);
 }
+    
 
 
 $("#info-close").on("click", function(){
@@ -2234,42 +2299,44 @@ function loadThematicIconsFromJson() {
             data.forEach(category => {
                 category.layers.forEach(layer => {
                     hasValidData = true;
+                    console.log(layer);
+                    if(layer.name != "Contours"){
+                        const card = document.createElement("div");
+                        card.classList.add("thematic-icon-card", "p-2", "border", "rounded", "d-flex", "flex-column", "align-items-center");
+                        card.style.background = "#fff";
+                        card.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
+                        card.style.width = "50px";
+                        card.style.height = "50px";
+                        card.style.fontSize = "10px";
+                        card.style.display = "flex";
+                        card.style.flexDirection = "column";
+                        card.title = layer.title; 
+                        card.style.justifyContent = "center";
+                        card.style.alignItems = "center";
+                        card.style.textAlign = "center";
 
-                    const card = document.createElement("div");
-                    card.classList.add("thematic-icon-card", "p-2", "border", "rounded", "d-flex", "flex-column", "align-items-center");
-                    card.style.background = "#fff";
-                    card.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
-                    card.style.width = "50px";
-                    card.style.height = "50px";
-                    card.style.fontSize = "10px";
-                    card.style.display = "flex";
-                    card.style.flexDirection = "column";
-                    card.title = layer.title; 
-                    card.style.justifyContent = "center";
-                    card.style.alignItems = "center";
-                    card.style.textAlign = "center";
+                        const iconSpan = document.createElement("span");
 
-                    const iconSpan = document.createElement("span");
+                        // Check if icon is emoji or image path
+                        if (layer.icon?.endsWith('.png') || layer.icon?.endsWith('.jpg') || layer.icon?.includes('/')) {
+                            const img = document.createElement("img");
+                            img.src = layer.icon;
+                            img.alt = layer.title;
+                            img.style.width = "25px";
+                            img.style.height = "25px";
+                            iconSpan.appendChild(img);
+                        } else {
+                            iconSpan.style.fontSize = "16px";
+                            iconSpan.innerText = layer.icon || "📌";
+                        }
 
-                    // Check if icon is emoji or image path
-                    if (layer.icon?.endsWith('.png') || layer.icon?.endsWith('.jpg') || layer.icon?.includes('/')) {
-                        const img = document.createElement("img");
-                        img.src = layer.icon;
-                        img.alt = layer.title;
-                        img.style.width = "25px";
-                        img.style.height = "25px";
-                        iconSpan.appendChild(img);
-                    } else {
-                        iconSpan.style.fontSize = "16px";
-                        iconSpan.innerText = layer.icon || "📌";
+                        const textDiv = document.createElement("div");
+                        textDiv.innerHTML = `<strong>${layer.name}</strong>`;
+
+                        card.appendChild(iconSpan);
+                        card.appendChild(textDiv);
+                        contentDiv.appendChild(card);
                     }
-
-                    const textDiv = document.createElement("div");
-                    textDiv.innerHTML = `<strong>${layer.name}</strong>`;
-
-                    card.appendChild(iconSpan);
-                    card.appendChild(textDiv);
-                    contentDiv.appendChild(card);
                 });
             });
 
@@ -2307,7 +2374,7 @@ function JSBIconInfo(data, lat, long) {
 
     const panelTitle = document.createElement('div');
     panelTitle.className = 'd-flex justify-content-between align-items-center';
-    panelTitle.innerHTML = `<h6 class="m-0">Jurisdiction Boundaries Information For</h6>`;
+    panelTitle.innerHTML = `<h6 class="m-0" id="selected-boundary">Jurisdiction Boundaries Information For</h6>`;
 
     const closeButton = document.createElement('button');
     closeButton.innerHTML = '&times;';
@@ -2369,12 +2436,13 @@ function JSBIconInfo(data, lat, long) {
         .then(data => {
             let hasValidData = false;
             data.forEach(field => {
-                if (field.status === 'active' && field.type === 'boundary') {
+                if (field.status === 'active' && field.type === 'boundary' && field.layer_code != '1008' && field.layer_code != '1262') {
                     hasValidData = true;
                     const card = document.createElement("div");
                     card.classList.add("JSB-icon-card", "rounded");
                     card.setAttribute('layer_id', field.layer_code);
                     card.setAttribute('priority_order', field.priority_order);
+                    card.setAttribute('title', field.layer_display_name);
                     card.setAttribute('layer_type', field.type);
                     Object.assign(card.style, {
                         // background: "#5982a5",
@@ -2397,7 +2465,7 @@ function JSBIconInfo(data, lat, long) {
                     const img = document.createElement('img');
                     img.src = imageUrl;
                     Object.assign(img.style, {
-                        width: "auto",
+                        width: "40px",
                         height: "40px",
                         objectFit: "contain",
                         marginBottom: "8px"
@@ -2446,7 +2514,7 @@ function JSBIconInfo(data, lat, long) {
         });
 }
 
-function nearByView(data, lat, long) {
+function nearByView() {
     clearVertexLabels();
     $(".error-message").empty().hide();
     ['areg-tab-container','facility-info-container', 'vertex-info-container', 'igr-info-container', 'thematic-info-container', 'fmb-sketch-info-panel', 'JSB-info-container']
@@ -2465,7 +2533,7 @@ function nearByView(data, lat, long) {
 
     const panelTitle = document.createElement('div');
     panelTitle.className = 'd-flex justify-content-between align-items-center';
-    panelTitle.innerHTML = `<h6 class="m-0">Nearby Facilities Information For</h6>`;
+    panelTitle.innerHTML = `<h6 class="m-0" id="selected-facilities">Nearby Facilities Information For</h6>`;
 
     const closeButton = document.createElement('button');
     closeButton.innerHTML = '&times;';
@@ -2533,6 +2601,7 @@ function nearByView(data, lat, long) {
                     card.classList.add("JSB-icon-card", "rounded");
                     card.setAttribute('layer_id', field.layer_code);
                     card.setAttribute('priority_order', field.priority_order);
+                    card.setAttribute('title', field.layer_display_name);
                     card.setAttribute('layer_type', field.type);
                     Object.assign(card.style, {
                         // background: "#5982a5",
@@ -3755,8 +3824,10 @@ function siteVisitorsCount(){
         method: 'GET',
         success: function (response) {
             var responseDetails = response.stats;
-            $(".total_visitors").html("Total Visitors: "+responseDetails.total_visitors);
-            $(".online_viewer").html("Online: "+responseDetails.currently_online);
+            let totalVisitors = formatIndianNumber(responseDetails.total_visitors);
+            let OnlineUsers = formatIndianNumber(responseDetails.currently_online);
+            $(".total_visitors").html("Total Unique users (IP): "+totalVisitors);
+            $(".online_viewer").html("Online: "+OnlineUsers);
         },
         error: function (xhr, status, error) {
             console.error('Error in fetching AREG - ', error);
@@ -3778,6 +3849,10 @@ const generateLink = (coordinates) => {
 function clearVectorSourceData() {
     
     geojsonSource.clear();
+}
+function clearVectorBoundarySourceData() {
+    
+    selectionGeojsonSource.clear();
 }
 $("#district-icon").on("click", function() {
     // First remove 'active' class from all images inside #district-icon

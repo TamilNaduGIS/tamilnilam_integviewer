@@ -1712,7 +1712,9 @@ filter: invert(100%);
     transition: all 0.1s ease-in-out;
 }
 .JSB-icon-card-active{
-    background: linear-gradient(to right, rgb(39 94 222), rgb(0 71 184)) !important;
+    background: #d83157 !important;
+    filter: drop-shadow(1px 1px 4px #000000);
+    border-radius: 300px !important;
 }
 .JSB-icon-card-active:focus {
     outline: none; /* Removes default focus outline */

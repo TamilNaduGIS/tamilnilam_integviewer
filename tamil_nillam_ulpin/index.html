@@ -563,12 +563,12 @@
 
     <script>
         $(document).on({
-            ajaxStart: function () {
-                showSpinner();
-            },
-            ajaxStop: function () {
-                hideSpinner();
-            },
+            // ajaxStart: function () {
+            //     showSpinner();
+            // },
+            // ajaxStop: function () {
+            //     hideSpinner();
+            // },
         });
 
         // Function to show spinner
@@ -599,7 +599,7 @@
             let offsetY = 0;
             let $currentDialog = null;
 
-            $(document).on('mousedown', '.modal-header,', function (e) {
+            $(document).on('mousedown', '.modal-header', function (e) {
                 $currentDialog = $(this).closest('.modal').find('.modal-dialog');
 
                 isDragging = true;
