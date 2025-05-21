@@ -156,6 +156,30 @@ var boundarygeojsonLayer = new ol.layer.Vector({
 });
 map.addLayer(boundarygeojsonLayer);
 
+let isVisible = true;
+
+// Blinking blue circle icon style
+const locationIconStyle = new ol.style.Style({
+  zIndex: 9999999999999999999,
+  image: new ol.style.Circle({
+    radius: 8,
+    fill: new ol.style.Fill({ color: 'blue' }),
+    stroke: new ol.style.Stroke({ color: 'white', width: 2 }),
+  }),
+});
+
+const locationFeature = new ol.Feature();
+const locationLayer = new ol.layer.Vector({
+  source: new ol.source.Vector({ features: [locationFeature] }),
+  style: () => {
+    locationIconStyle.getImage().setOpacity(isVisible ? 1 : 0);
+    return locationIconStyle;
+  },
+});
+
+map.addLayer(locationLayer);
+
+
 // UnMatched with Spatial
 var cadastral_with_ulpin_source = new ol.source.TileWMS({
     url: `${GEOSERVER_URL}`,
@@ -244,7 +268,7 @@ const facilitiesMarkerLayer = new ol.layer.Vector({
             scale: 0.7,
         }),
     }),
-    zIndex: 9999999999999999,
+    zIndex: 99999999999999999,
 });
 map.addLayer(facilitiesMarkerLayer);
 
@@ -285,8 +309,7 @@ function hidePanel() {
 loadDistrict();
 siteVisitorsCount();
 // Click event listener on the map
-var currentRequest = null;
-var allowRequest = null;
+
 $("#longitude").val('');
 $("#latitude").val('');
 map.on('singleclick', function (evt) {
@@ -295,6 +318,9 @@ map.on('singleclick', function (evt) {
     geojsonSource.clear();
     map.removeLayer(vertexLayer);
     clearVectorBoundarySourceData();
+    facilitiesMarkerSourceClear();
+    markerSource.clear();
+    facilitiesMarkerSourceClear();
     // simplifiedHidePanel();
     closeAregPanel();
     closeFMBSketchPanel();
@@ -305,7 +331,7 @@ map.on('singleclick', function (evt) {
     $("#longitude").val(lon.trim());
     $("#latitude").val(lat.trim());
     
-    $("#staticBackdropLabel").html(`Land Parcel Information (<span class='lpi-style'>${lat}, ${lon}</span>)`);
+    
 
     markerSource.clear();
     const markerFeature = new ol.Feature({
@@ -343,7 +369,15 @@ map.on('singleclick', function (evt) {
 
     // addGeoJsonLayer(responsess.data.geojson_geom)
     // displaySimplifiedInfo(responsess.data, lat, lon)
+    landDetailsShow(lat,lon);
     
+});
+
+
+function landDetailsShow(lat,lon){
+    $("#staticBackdropLabel").html(`Land Parcel Information (<span class='lpi-style'>${lat}, ${lon}</span>)`);
+    var currentRequest = null;
+    var allowRequest = null;
     if (currentRequest != null) {
         currentRequest.abort();
     }
@@ -358,23 +392,28 @@ map.on('singleclick', function (evt) {
             latitude: lat,
             longitude: lon,
         },
+        beforeSend:function(){
+            showSpinner();
+        },
         success: function (response) {
             $(".error-message").empty().hide();
             var responseMessage = '';
             if (response.success) {
                 if(response.success == 1){
                     var response_data = response.data;
-                    console.log(response_data);
                     let areaType = response_data.rural_urban;
                     if(areaType == 'rural'){
                         loadDistrict(response_data.district_code,response_data.taluk_code,response_data.village_code,response_data.survey_number,response_data.sub_division,areaType);
                         document.querySelector('input[name="area-type"][value="rural"]').checked = true;
                         document.querySelector('input[name="area-type"][value="rural"]').dispatchEvent(new Event('change'));
 
-                    }else{
+                    }else if(areaType == 'urban'){
                         loadDistrict(response_data.district_code,response_data.taluk_code,response_data.village_code,response_data.survey_number,response_data.sub_division,areaType,response_data.revenue_town_code , response_data.firka_ward_number , response_data.urban_block_number); 
                         document.querySelector('input[name="area-type"][value="urban"]').checked = true;
                         document.querySelector('input[name="area-type"][value="urban"]').dispatchEvent(new Event('change'));
+                    }else{
+                        document.querySelector('input[name="area-type"][value="goto"]').checked = true;
+                        document.querySelector('input[name="area-type"][value="goto"]').dispatchEvent(new Event('change'));
                     }
                     addGeoJsonLayer(response_data.geojson_geom)
                     displaySimplifiedInfo(response_data, lat, lon)
@@ -388,6 +427,8 @@ map.on('singleclick', function (evt) {
                     document.getElementById('igr-info-container')?.remove();
                     document.getElementById('vertex-info-container')?.remove();
                     document.getElementById('facility-info-container')?.remove();
+                    document.getElementById('encumbrance-info-panel')?.remove();
+                    document.getElementById('masterplan-info-container')?.remove();
                     $(".error-message").empty().text(responseMessage).show();
                 }
                 
@@ -400,14 +441,16 @@ map.on('singleclick', function (evt) {
                 document.getElementById('igr-info-container')?.remove();
                 document.getElementById('vertex-info-container')?.remove();
                 document.getElementById('facility-info-container')?.remove();
+                document.getElementById('encumbrance-info-panel')?.remove();
+                document.getElementById('masterplan-info-container')?.remove();
             }else {
                 $(".error-message").empty().text(response.message).show();
             }
 
-            
+            hideSpinner();
         },
         error: function (xhr, status, error) {
-            
+            hideSpinner();
         }
     });
     document.getElementById('areg-tab-container')?.remove();
@@ -417,7 +460,9 @@ map.on('singleclick', function (evt) {
     document.getElementById('thematic-info-container')?.remove();
     document.getElementById('JSB-info-container')?.remove();
     document.getElementById('facility-info-container')?.remove();
-});
+    document.getElementById('encumbrance-info-panel')?.remove();
+    document.getElementById('masterplan-info-container')?.remove();
+}
 
 $(document).ready(function () {
     $(document).on('click', '.JSB-icon-card', function () {
@@ -427,7 +472,12 @@ $(document).ready(function () {
         const JSBCardElement = document.querySelector('.JSB-icon-card');
         const layerCode = this.getAttribute('layer_id');
         const priorityOrder = this.getAttribute('priority_order');
-        const selectedTitle = this.getAttribute('title');
+        let selectedTitle = this.getAttribute('title');
+        if(selectedTitle == 'TANGEDCO'){
+            selectedTitle = 'TNPDCL';
+        }else if(selectedTitle == 'Revenue Divisional Office'){
+            selectedTitle = 'District Revenue Officer';
+        }
         const layerType = this.getAttribute('layer_type');
         const lat = $("#latitude").val();
         const long = $("#longitude").val();
@@ -460,7 +510,13 @@ $(document).ready(function () {
             success: function (response) {
                 if (response[0].success == 1) {
                     const facilities = response[0].data[layerCode];
-        
+                    const iconUrls = [
+                        'assets/icons/marker1.svg',
+                        'assets/icons/marker2.svg',
+                        'assets/icons/marker3.svg',
+                        'assets/icons/marker4.svg',
+                        'assets/icons/marker5.svg',
+                      ];
                     // Create a container for the list
                     const detailDiv = $('<div class="detail mt-2 p-2 border rounded" style="background:#fff;color:#1a3d5b;"></div>');
         
@@ -468,20 +524,45 @@ $(document).ready(function () {
                     const list = $('<ul class="facility-list" style="font-size:0.875rem;list-style:none; padding:0; margin:0;"></ul>');
                     if(layerType == 'assets'){
                         $("#selected-facilities").html("Nearby Facilities Information For <span style='font-size:10px'>("+selectedTitle+ ")</span");
-
+                        facilitiesMarkerSourceClear();
                         clearVectorBoundarySourceData();
-                        facilities.forEach(facility => {
+                        facilities.forEach((facility, index) => {
                             var coordinates = [
                                 [long, lat],
                                 [facility.longitude, facility.latitude]
                             ];
                             var direction = generateLink(coordinates);
-            
+                        
+                            const feature = new ol.Feature({
+                                geometry: new ol.geom.Point(ol.proj.fromLonLat([facility.longitude, facility.latitude])),
+                                name: facility.label,
+                                object_id: facility.object_id,
+                                link: generateLink([
+                                    [long, lat],
+                                    [facility.longitude, facility.latitude]
+                                ])
+                            });
+                        
+                            const iconUrl = iconUrls[index % iconUrls.length]; // Now index is defined
+                        
+                            const style = new ol.style.Style({
+                                image: new ol.style.Icon({
+                                    anchor: [0.5, 1],
+                                    src: iconUrl,
+                                    scale: 0.02,
+                                    
+                                })
+                            });
+                        
+                            feature.setStyle(style);
+                            facilitiesMarkerSource.addFeature(feature);
+                        
                             const listItem = $(`
                                 <li class="facility-item" style="margin-bottom: 3px;">
                                     <div class="d-flex facilities-details">
-                                        <div class="facility-name">${facility.label}</div>
-                                        <div class="facility-distance">${facility.distance} ${facility.distance_unit}</div>
+                                        <div class="facility-serial" style="width: 18px;">${index + 1}.</div>
+                                        <div class="facility-name" style="flex: 1;">${facility.label ? facility.label: '-'}</div>
+                                        <div class="facility-distance">${facility.distance ? facility.distance: '-'} ${facility.distance_unit ? facility.distance_unit: '-'}</div>
                                         <div class="facility-action">
                                             <a href="${direction}" target="_blank">
                                                 <img src="assets/icons/direction.svg" class="info-icon-img-style" alt="">
@@ -491,19 +572,22 @@ $(document).ready(function () {
                                 </li>
                             `);
                             list.append(listItem);
+                            
                         });
+                        
                         detailDiv.append(list);
                         $('#facility-info-container').append(detailDiv);
                         $(".error-message").empty().hide();
                     }else{
                         clearVectorBoundarySourceData();
                         let infoDetailes = '';
+                        $("#selected-boundary").html("Boundary Information For <span style='font-size:10px'>("+selectedTitle+")</span");
                         
-                        $("#selected-boundary").html("Jurisdiction Boundaries Information For (<span style='font-size:10px'>"+selectedTitle+ ")</span");
+                       
                         facilities.forEach(facility => {
                             // Generate HTML content for key-value pairs
                             let infoDetails = '';
-                            const excludedKeys = ['geometry', 'object_id', 'layer_id', 'district_name', 'taluk_name','district_code','e_district_code','ed_taluk_code','district_lgd_code','block_lgd_code','village_lgd_code'];
+                            const excludedKeys = ['geometry', 'object_id', 'layer_id', 'district_name', 'taluk_name','district_code','e_district_code','ed_taluk_code','district_lgd_code','block_lgd_code','village_lgd_code','dcode'];
 
                             // Define pairs of code-name keys to merge
                             const mergeFields = {
@@ -516,15 +600,24 @@ $(document).ready(function () {
                                 assembly_constituency_code: 'assembly_constituency_name',
                                 parliamentary_constituency_code: 'parliamentary_constituency_name'
                             };
-                            
+                            let layerId = facility.data.layer_id;
                             for (const [key, value] of Object.entries(facility.data)) {
                                 if (!excludedKeys.includes(key) && typeof value !== 'object') {
                                     let label = formatKeyName(key);
                                     if(key == 'village_name'){
-                                        label = 'Panchayat Village';
+                                        label = 'Village Panchayat';
+                                    }
+                                    if(key == 'sro_name'){
+                                        label = 'Sub Registrar Office';
+                                    }
+                                    if(key == 'sro_district'){
+                                        label = 'District Registrar Office';
+                                    }
+                                    if(key == 'deo_jurisdiction'){
+                                        label = 'District Education Office';
                                     }
                                     let displayValue = value;
-                            
+                                    
                                     // If this is a code and its corresponding name exists, merge and skip name later
                                     if (mergeFields[key] && facility.data[mergeFields[key]]) {
                                         displayValue = `${value} - ${facility.data[mergeFields[key]]}`;
@@ -539,7 +632,31 @@ $(document).ready(function () {
                                         }
                                     }
                             
-                                    infoDetails += `<div><strong>${label}:</strong> ${displayValue}</div>`;
+                                    let imageTag = '';
+                                    if (key === 'beat_name' ) {
+                                        imageTag = `<img src="assets/icons/boundary-icons.svg" alt="Boundary" style="width:22px; height:22px; margin-left:5px;">`;
+                                    }else if(key === 'section_code' && layerId == '1553'){
+                                        imageTag = `<img src="assets/icons/boundary-icons.svg" alt="Boundary" style="width:22px; height:22px; margin-left:5px;">`;
+                                    }else if(key === 'region_boundary' && layerId == '1500'){
+                                        imageTag = `<img src="assets/icons/boundary-icons.svg" alt="Boundary" style="width:22px; height:22px; margin-left:5px;">`;
+                                    }else if(key === 'circle_name' && layerId == '1062'){
+                                        imageTag = `<img src="assets/icons/boundary-icons.svg" alt="Boundary" style="width:22px; height:22px; margin-left:5px;">`;
+                                    }else if(key === 'police_station_code' && layerId == '1050'){
+                                        imageTag = `<img src="assets/icons/boundary-icons.svg" alt="Boundary" style="width:22px; height:22px; margin-left:5px;">`;
+                                    }else if(key === 'village_name' && layerId == '1014'){
+                                        imageTag = `<img src="assets/icons/boundary-icons.svg" alt="Boundary" style="width:22px; height:22px; margin-left:5px;">`;
+                                    }else if(key === 'assembly_constituency_code' && layerId == '1025'){
+                                        imageTag = `<img src="assets/icons/boundary-icons.svg" alt="Boundary" style="width:22px; height:22px; margin-left:5px;">`;
+                                    }else if(key === 'sro_name'){
+                                        imageTag = `<img src="assets/icons/boundary-icons.svg" alt="Boundary" style="width:22px; height:22px; margin-left:5px;">`;
+                                    }else if(key === 'deo_jurisdiction'){
+                                        imageTag = `<img src="assets/icons/boundary-icons.svg" alt="Boundary" style="width:22px; height:22px; margin-left:5px;">`;
+                                    }
+                                    
+
+                                    infoDetails += `<div><strong>${label}:</strong> ${displayValue} ${imageTag}</div>`;
+
+                                    // infoDetails += `<div><strong>${label}:</strong> ${displayValue}</div>`;
                                 }
                             }
                             
@@ -605,10 +722,62 @@ $(document).ready(function () {
         
     });
 
-    
+    $('#current-location').on('click', function () {
+        if (!navigator.geolocation) {
+          alert("Geolocation is not supported by your browser.");
+          return;
+        }
+      
+        if (navigator.permissions) {
+          navigator.permissions.query({ name: 'geolocation' }).then(function (permissionStatus) {
+            if (permissionStatus.state === 'granted' || permissionStatus.state === 'prompt') {
+                map.once('rendercomplete', function () {
+                    locationLayer.setZIndex(999); // Set above other layers
+                    initializeLocation();
+                });
+            } else if (permissionStatus.state === 'denied') {
+              alert("Location permission denied. Please enable it in browser settings.");
+            }
+      
+            permissionStatus.onchange = function () {
+              if (permissionStatus.state === 'granted') {
+                map.once('rendercomplete', function () {
+                    locationLayer.setZIndex(999); // Set above other layers
+                    initializeLocation();
+                });
+              }
+            };
+          }).catch(() => {
+            map.once('rendercomplete', function () {
+                locationLayer.setZIndex(999); // Set above other layers
+                initializeLocation();
+            });
+          });
+        } else {
+            map.once('rendercomplete', function () {
+                locationLayer.setZIndex(999); // Set above other layers
+                initializeLocation();
+            });
+        }
+      });
+      
+      // Auto-locate if permission is already granted
+      if (navigator.permissions) {
+        navigator.permissions.query({ name: 'geolocation' }).then(function (status) {
+          if (status.state === 'granted') {
+            initializeLocation();
+          }
+        });
+      }
     
 });
 
+function initializeLocation() {
+    map.once('rendercomplete', function () {
+      locationLayer.setZIndex(999); // Ensure locationLayer is on top
+      getLocation();
+    });
+  }
 
 $(document).on("click", ".district-icon", function () {
     // Remove active class from all district icon images
@@ -621,6 +790,14 @@ $(document).on("click", ".district-icon", function () {
 $(document).on("click", ".JSB-icon-card", function () {
     // Remove active class from all district icon images
     $(".JSB-icon-card img").removeClass("JSB-icon-card-active");
+
+    // Add active class to the clicked button's image
+    $(this).find("img").addClass("JSB-icon-card-active");
+});
+
+$(document).on("click", ".masterplan-icon-card", function () {
+    // Remove active class from all district icon images
+    $(".masterplan-icon-card img").removeClass("JSB-icon-card-active");
 
     // Add active class to the clicked button's image
     $(this).find("img").addClass("JSB-icon-card-active");
@@ -646,7 +823,7 @@ $(document).on('click', '.thematic-icon-card', function () {
     let geoserverUrl='',layerName='';
     let grayIndexValue = '';
     geoserverUrl = "https://tngis.tn.gov.in/tngismaps/wms";
-    if(selectedLayerTitle != 'Population Theme'){
+    if(selectedLayerTitle != 'Population Theme' && selectedLayerTitle != 'TN-Land Type' && selectedLayerTitle != 'TN-Land Ownership'){
         if(selectedLayerTitle == 'Elevation'){
             layerName = "generic_viewer:elevation_raster";
         }else if(selectedLayerTitle == 'Slope'){
@@ -657,9 +834,21 @@ $(document).on('click', '.thematic-icon-card', function () {
             layerName = "generic_viewer:tn_contours";
         }else if(selectedLayerTitle == 'Geology'){
             layerName = "generic_viewer:geology";
-        }else if(selectedLayerTitle == 'Geomorphology'){
+        }else if(selectedLayerTitle == 'Geo morphology'){
             layerName = "generic_viewer:geomorphology";
-        }
+        }else if(selectedLayerTitle == 'Landuse 2006'){
+            layerName = "generic_viewer:landuse_2005_and_2006";
+        }else if(selectedLayerTitle == 'Landuse 2012'){
+            layerName = "generic_viewer:landuse_2011_and_2012";
+        }else if(selectedLayerTitle == 'Landuse 2016'){
+            layerName = "generic_viewer:landuse_2015_and _2016";
+        }else if(selectedLayerTitle == 'Landuse 2019'){
+            layerName = "generic_viewer:landuse _ sisdp";
+        }else if(selectedLayerTitle == 'Soil Map'){
+            layerName = "generic_viewer:soil";
+        }else if(selectedLayerTitle == 'Cattle Population'){
+            layerName = "generic_viewer:animal_population";
+        } 
         
         const coord = ol.proj.fromLonLat([lon, lat], 'EPSG:3857');
         // BBOX around the point
@@ -682,7 +871,7 @@ $(document).on('click', '.thematic-icon-card', function () {
         if (currentController) {
             currentController.abort(); // Abort previous request
         }
-        
+        $("#selected-thematic").html("Thematic Information For <span style='font-size:10px'>("+selectedLayerTitle+ ")</span");
         currentController = new AbortController(); // Create new controller for this request
         
         fetch(url, { signal: currentController.signal })
@@ -741,18 +930,43 @@ $(document).on('click', '.thematic-icon-card', function () {
                     grayIndexValue = 'No valid data found for selected layer.';
                 }
         
-                if (selectedLayerTitle === 'Geology' || selectedLayerTitle === 'Geomorphology') {
+                if (selectedLayerTitle === 'Geology' || selectedLayerTitle === 'Geo morphology' || selectedLayerTitle === 'Cattle Population') {
                     const propertyDiv = $('<div class="detail mt-2 p-2 border rounded bgcolordiv" style="color:#212529;"></div>');
+                    const excludedKeys = new Set(['tngis_id', 'layer_id', 'object_id', 'lith_code', 'gu_code','district_code','taluk_code','lgd_village','village_name','district_name','taluk_name','village_code','lgd_district','lgd_taluk','ogc_fid']);
+                    let contentInfo = '';
+                    if(selectedLayerTitle === 'Cattle Population'){
+                        let villageName = data.features[0].properties.village_name ? data.features[0].properties.village_name : '-';
+                        contentInfo = `<div style="text-align:center;">Cattle Population statistics for 2024 - <strong style='color:red'>${villageName} (Village)</strong></div>`;
+                        propertyDiv.append(contentInfo); 
+                    }
                     $.each(data.features[0].properties, function (key, value) {
-                        if (key !== 'tngis_id' && key !== 'layer_id' && key !== 'object_id' && key !== 'lith_code' && key != 'gu_code') {
-                            propertyDiv.append('<div><b>' + key.replace(/_/g, ' ').toUpperCase() + '</b>: ' + value + '</div>');
+                        if (!excludedKeys.has(key)) {
+                            const displayValue = (value == null || value === '') ? '-' : value;
+                            const formattedKey = key.replace(/_/g, ' ').toUpperCase();
+                            if(selectedLayerTitle === 'Cattle Population'){
+                                propertyDiv.append(`<div><b>${formattedKey}</b>: ${displayValue}</div>`);
+                            }else{
+                                propertyDiv.append(`<div><b>${formattedKey}</b>: ${displayValue}</div>`);
+                            }
                         }
                     });
+
                     $('#thematic-info-container .detail').remove();
                     $('#thematic-info-container').append(propertyDiv);
-                } else {
+                } else if(selectedLayerTitle === 'Landuse 2006' || selectedLayerTitle === 'Landuse 2012' || selectedLayerTitle === 'Landuse 2016' || selectedLayerTitle === 'Landuse 2019' || selectedLayerTitle === 'Soil Map'){
+                    const propertyDiv = $('<div class="detail mt-2 p-2 border rounded bgcolordiv" style="color:#212529;"></div>');
+                    $.each(data.features[0].properties, function (key, value) {
+                        if (key !== 'tngis_id' && key !== 'layer_id' && key !== 'object_id' && key !== 'lith_code' && key != 'gu_code' && key != 'lu_webcode' && key !='lc_code' && key !='soil_id') {
+                            let displayValue = (value === null || value === undefined || value === '') ? '-' : value;
+                            propertyDiv.append('<div><b>' + key.replace(/_/g, ' ').toUpperCase() + '</b>: ' + displayValue + '</div>');
+                        }
+                    });
+                    
                     $('#thematic-info-container .detail').remove();
-                    const detailDiv = $('<div class="detail mt-2 p-2 border rounded bgcolordiv" style="color: #212529;">Selected <b>' + selectedLayerTitle + '</b> of the property: ' + grayIndexValue + '</div>');
+                    $('#thematic-info-container').append(propertyDiv);
+                }else {
+                    $('#thematic-info-container .detail').remove();
+                    const detailDiv = $('<div class="detail mt-2 p-2 border rounded bgcolordiv" style="color: #212529;">Selected <b>' + selectedLayerTitle + '</b> of the point: ' + grayIndexValue + '</div>');
                     $('#thematic-info-container').append(detailDiv);
                 }
         
@@ -763,40 +977,78 @@ $(document).on('click', '.thematic-icon-card', function () {
                     return;
                 }
                 $('#thematic-info-container .detail').remove();
-                const errorDiv = $('<div class="detail mt-2 p-2 border rounded" style="background:#a94442;color: #fff;"><b>Error:</b> Failed to load ' + selectedLayerTitle + ' data.</div>');
+                const errorDiv = $('<div class="detail mt-2 p-2 border rounded" style="background:#a94442;color: #fff;"><b>Error:</b> No data found for selected ' + selectedLayerTitle + ' data.</div>');
                 $('#thematic-info-container').append(errorDiv);
             });
         
     }else{
+        let urbanParams = {};
+        let layerName = '';
+        let ApiURLS = '';
         $('#thematic-info-container .detail').remove();
-        let urbanParams = {
+        if(selectedLayerTitle == 'TN-Land Type'){
+            layerName = 'tamilnilam_land_tpe';
+            ApiURLS = IGR_URL;
+        }else if(selectedLayerTitle == 'TN-Land Ownership'){
+            layerName = 'tamilnilam_ownership';
+            ApiURLS = IGR_URL;
+        }else if(selectedLayerTitle == 'Population Theme'){
+            layerName = 'population';
+            ApiURLS = POPULATION_URL;
+        }
+        urbanParams = {
             latitude:lat,
             longitude:lon,
-            layer_name: 'population'
+            layer_name: layerName
         }
         // Abort the previous request if it's still in progress
         if (currentPopulationRequest && currentPopulationRequest.readyState !== 4) {
             currentPopulationRequest.abort();
         }
-
+        $("#selected-thematic").html("Thematic Information For <span style='font-size:10px'>("+selectedLayerTitle+ ")</span");
         currentPopulationRequest = $.ajax({
-            url: `${POPULATION_URL}`,
+            url: `${ApiURLS}`,
             method: 'POST',
             headers: { 'X-APP-ID': 'te$t' },
             data: urbanParams,
             success: function (response) {
                 if (response.success == 1) {
-                    var results = response.data[0];
-                    const card = $(`
-                        <div class="detail mt-2 p-2 border rounded bgcolordiv" style="color: #212529;">
-                            <div><strong>Total Population:</strong> ${results.tot_p}</div>
-                            <div><strong>No. of Households:</strong> ${results.no_hh}</div>
-                            <div><strong>Male Population:</strong> ${results.tot_m}</div>
-                            <div><strong>Female Population:</strong> ${results.tot_f}</div>
-                            
-                        </div>
-                    `);
-                    $('#thematic-info-container').append(card);
+                    var results = '';
+                    let cardContent = '';
+
+                    if (selectedLayerTitle === 'TN-Land Type') {
+                        results = response.data;
+                        cardContent = `
+                            <div><strong>Land Type:</strong> ${results.type_cate ? results.type_cate: '-'}</div>
+                        `;
+                    } else if (selectedLayerTitle === 'TN-Land Ownership') {
+                        results = response.data;
+                        cardContent = `
+                            <div><strong>Government Land Type:</strong> ${results.government_land_type ? results.government_land_type: '-'}</div>
+                            <div><strong>Classified Land Type:</strong> ${results.classified_land_type ? results.classified_land_type: '-'}</div>
+                        `;
+                    } else if (selectedLayerTitle === 'Population Theme') {
+                        results = response.data[0];
+                        cardContent = `
+                            <div class="text-center">
+                                <div>Population statistics for 2011 - <strong style='color:red'> ${results.vill_name} (${results.type})</strong></div>
+                            </div>
+                            <div><strong>Total Population:</strong> ${results.tot_p ? results.tot_p: '-'}</div>
+                            <div><strong>No. of Households:</strong> ${results.no_hh ? results.no_hh: '-'}</div>
+                            <div><strong>Male Population:</strong> ${results.tot_m ? results.tot_m : '-'}</div>
+                            <div><strong>Female Population:</strong> ${results.tot_f ? results.tot_f: '-'}</div>
+                        `;
+                    }
+
+                    if (cardContent !== '') {
+                        const card = $(`
+                            <div class="detail mt-2 p-2 border rounded bgcolordiv" style="color: #212529;">
+                                ${cardContent}
+                            </div>
+                        `);
+                        $('#thematic-info-container').append(card);
+                    }
+
                 } else {
                     console.error(response.message);
                     $(".error-message").empty().text(response.message).show();
@@ -927,7 +1179,7 @@ function displaySimplifiedInfo(data, lat, long) {
                 </button>
             </li>
             <li class="nav-item mx-1 mb-2" role="presentation">
-                <button class="nav-link district-icon" title="EC" id="nex-tab" type="button" 
+                <button class="nav-link district-icon" title="Encumbrance Certificate" id="nex-tab" type="button" 
                     data-bs-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false" 
                     onclick='openECnfo(${JSON.stringify(data)}, ${lat}, ${long})'>
                     <img src="assets/icons/EC-icon.svg" id="EC_logo" class="info-icon-img-style" alt="">
@@ -971,7 +1223,7 @@ function displaySimplifiedInfo(data, lat, long) {
                     data-bs-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false" 
                     onclick='nearByView(${JSON.stringify(data)}, ${lat}, ${long})'>
                     <img src="assets/icons/nearby-icon.svg" id="nearby_facilities" class="info-icon-img-style" alt="">
-                    <p class="font-size-9">Facility</p>
+                    <p class="font-size-9">N-Facility</p>
                 </button>
             </li>
         </ul>
@@ -1038,6 +1290,8 @@ $("#info-close").on("click", function(){
     clearVertexLabels();
     geojsonSource.clear();
     map.removeLayer(vertexLayer);
+    markerSource.clear();
+    facilitiesMarkerSourceClear();
 });
 
 // Global variable to hold reference to the vertex layer
@@ -1102,11 +1356,13 @@ function highlightVertices(sgeojsonGeom) {
 function displayVertexDetails(vertices) {
     $(".error-message").empty().hide();
     document.getElementById('areg-tab-container')?.remove();
+    document.getElementById('encumbrance-info-panel')?.remove();
     document.getElementById('fmb-sketch-info-panel')?.remove();
     document.getElementById('thematic-info-container')?.remove();
     document.getElementById('JSB-info-container')?.remove();
     document.getElementById('igr-info-container')?.remove();
     document.getElementById('facility-info-container')?.remove();
+    document.getElementById('masterplan-info-container')?.remove();
 
 
     // Select the .info-icons div
@@ -1146,6 +1402,7 @@ function displayVertexDetails(vertices) {
     // Close button event listener
     closeButton.addEventListener('click', () => {
         vertexContainer.remove();
+        $('.district-icon img').removeClass('district-icon-active');
     });
 
     // Append close button to title
@@ -1324,6 +1581,7 @@ function highlightVertex(coordinate) {
 /** Areg Info Panel Creation Start*/
 
 function openAregInfo(data) {
+    facilitiesMarkerSourceClear();
     $(".error-message").empty().hide();
     document.getElementById('vertex-info-container')?.remove();
     document.getElementById('fmb-sketch-info-panel')?.remove();
@@ -1331,7 +1589,9 @@ function openAregInfo(data) {
     document.getElementById('JSB-info-container')?.remove();
     document.getElementById('igr-info-container')?.remove();
     document.getElementById('facility-info-container')?.remove();
-
+    document.getElementById('encumbrance-info-panel')?.remove();
+    document.getElementById('masterplan-info-container')?.remove();
+    
     let sub_division_numbers = '';
     var lapad_district_codes = LpadAdding(data.district_code,'district');
     var lapad_taluk_codes = LpadAdding(data.taluk_code,'taluk');
@@ -1402,14 +1662,117 @@ function openAregInfo(data) {
                             // Create a new span element
                             const span = document.createElement("span");
                             span.id = "subDivs";
+                            span.style.color = "red";
                             span.textContent = selectedValue !== "Select Subdivision" ? selectedValue : ""; // Set selected value
 
                             // Replace dropdown with span
                             dropdown.parentNode.replaceChild(span, dropdown);
-
+                            $(".error-message").empty().text('').hide();
                         }else{
                             // alert('Please select the sub division dropdown and get the result');
-                            showToast('info', `Please select the sub division dropdown and get the result`)
+                            // showToast('info', `Please select the sub division dropdown and get the result`)
+                            $("#subdivisionid #subDivs").remove();
+
+                            let dropdown = $("#subdivisionDropdown");
+                            dropdown.focus();
+
+                            // Add animation class
+                            dropdown.addClass("animated-border");
+
+                            // Remove animation after selection
+                            dropdown.on("change", function () {
+                                $(this).removeClass("animated-border");
+                            });
+                        }
+                    }
+                    
+                        
+                }
+            } else {
+                $(".error-message").empty().text('No sub divisions found in Areg for the selected location').show();
+            }
+        })
+        .catch(error => {
+            console.error("Request failed:", error);
+        });
+    } else {
+        
+        verifySubDivision(data)
+        .then(result => {
+            
+            $("#verifiedSubDivision").val('');
+            if (result.success == 1) {
+                if (result.data && result.data.length >= 1) {
+                    sub_division_numbers = data.is_fmb == 1 ? ($("#subDivs").text() != null ? $("#subDivs").text() : '-') : '-';
+                } else {
+                    sub_division_numbers = data.is_fmb == 1 ? ($("#subDivs").text() != null ? $("#subDivs").text() : '-') : '-';
+
+                    const urbanParams = {
+                        district_code: data.district_code,
+                        taluk_code: lapad_taluk_codes,
+                        town_code: data.revenue_town_code,
+                        ward_code: data.firka_ward_number ? data.firka_ward_number : 0,
+                        block_code: data.urban_block_number,
+                        survey_number: data.survey_number,
+                        // sub_division_number: data.is_fmb == 1 ? (data.sub_division != null ? data.sub_division : 0) : 0,
+                        sub_division_number: data.is_fmb == 1 ? ($("#subDivs").text() != null ? $("#subDivs").text() : '-') : '-',
+                        areaType: data.rural_urban
+                    };
+                    fetchAregForUrban(urbanParams);
+                }
+            } else if (result.success == 2) {
+                if (result.count > 0 && result.message == 'Sub division Details Found') {
+                    if(result.data.length == 1){
+                        $("#subDivs").text(result.data.subdiv_no);
+                        sub_division_numbers = data.is_fmb == 1 ? ($("#subDivs").text() != null ? $("#subDivs").text() : '-') : '-';
+
+                        const urbanParams = {
+                            district_code: data.district_code,
+                            taluk_code: lapad_taluk_codes,
+                            town_code: data.revenue_town_code,
+                            ward_code: data.firka_ward_number ? data.firka_ward_number : 0,
+                            block_code: data.urban_block_number,
+                            survey_number: data.survey_number,
+                            // sub_division_number: data.is_fmb == 1 ? (data.sub_division != null ? data.sub_division : 0) : 0,
+                            sub_division_number: data.is_fmb == 1 ? ($("#subDivs").text() != null ? $("#subDivs").text() : '-') : '-',
+                            areaType: data.rural_urban
+                        };
+                        fetchAregForUrban(urbanParams);
+                    }else{
+                        generateDropdown(result);
+                        $("#verifiedSubDivision").val('no_subdivision_areg');
+
+                        // Attach an event listener to wait for user selection
+                    
+                        sub_division_numbers = $("#subdivisionDropdown").val();
+                        if(sub_division_numbers != ''){
+                            const urbanParams = {
+                                district_code: data.district_code,
+                                taluk_code: lapad_taluk_codes,
+                                town_code: data.revenue_town_code,
+                                ward_code: data.firka_ward_number ? data.firka_ward_number : 0,
+                                block_code: data.urban_block_number,
+                                survey_number: data.survey_number,
+                                sub_division_number: sub_division_numbers,
+                                areaType: data.rural_urban
+                            };
+                            fetchAregForUrban(urbanParams);
+                            // Get reference to the dropdown and its parent
+                            const dropdown = document.getElementById("subdivisionDropdown");
+                            const selectedValue = dropdown.options[dropdown.selectedIndex].text; // or .value if needed
+
+                            // Create a new span element
+                            const span = document.createElement("span");
+                            span.id = "subDivs";
+                            span.style.color = "red";
+                            span.textContent = selectedValue !== "Select Subdivision" ? selectedValue : ""; // Set selected value
+
+                            // Replace dropdown with span
+                            dropdown.parentNode.replaceChild(span, dropdown);
+                            $(".error-message").empty().text('').hide();
+                        }else{
+                            // alert('Please select the sub division dropdown and get the result');
+                            // showToast('info', `Please select the sub division dropdown and get the result`)
                             $("#subdivisionid #subDivs").remove();
 
                             let dropdown = $("#subdivisionDropdown");
@@ -1435,34 +1798,9 @@ function openAregInfo(data) {
         .catch(error => {
             console.error("Request failed:", error);
         });
-    } else {
-        const urbanParams = {
-            district_code: data.district_code,
-            taluk_code: lapad_taluk_codes,
-            town_code: data.revenue_town_code,
-            ward_code: data.firka_ward_number ? data.firka_ward_number : 0,
-            block_code: data.urban_block_number,
-            survey_number: data.survey_number,
-            sub_division_number: data.is_fmb == 1 ? (data.sub_division != null ? data.sub_division : 0) : 0,
-        };
-        var landType = data.rural_urban;
-        $.ajax({
-            url: `${BASE_URL}/v1/tamil_nillam_urban_ownership`,
-            method: 'POST',
-            headers: { 'X-APP-NAME': 'demo' },
-            data: urbanParams,
-            success: function (response) {
-                if (response.success == 1) {
-                    populateInfoPanel(response,landType);
-                } else {
-                    console.error(response.message);
-                    $(".error-message").empty().text(response.message).show();
-                }
-            },
-            error: function (xhr, status, error) {
-                console.error('Error in fetching AREG - ', error);
-            }
-        });
+
+
+        
     }
 }
 
@@ -1473,11 +1811,15 @@ function fetchAreg(params){
     document.getElementById('JSB-info-container')?.remove();
     document.getElementById('igr-info-container')?.remove();
     document.getElementById('facility-info-container')?.remove();
+    document.getElementById('masterplan-info-container')?.remove();
     $.ajax({
         url: `${AREG_SEARCH_URL}`,
         method: 'POST',
         headers: { 'X-APP-NAME': 'demo' },
         data: params,
+        beforeSend: function(){
+            showSpinner();
+        },
         success: function (response) {
             if (response.success) {
                 if(response.success == 1){
@@ -1491,11 +1833,46 @@ function fetchAreg(params){
                 console.error(response.message);
                 $(".error-message").empty().text(response.message).show();
             }
+            hideSpinner();
         },
         error: function (xhr, status, error) {
             console.error('Error in fetching AREG - ', error);
+            hideSpinner();
         }
     });
+}
+
+
+function fetchAregForUrban(urbanParams){
+    document.getElementById('fmb-sketch-info-panel')?.remove();
+    document.getElementById('thematic-info-container')?.remove();
+    document.getElementById('JSB-info-container')?.remove();
+    document.getElementById('igr-info-container')?.remove();
+    document.getElementById('facility-info-container')?.remove();
+    document.getElementById('masterplan-info-container')?.remove();
+    var landType = urbanParams.areaType;
+        $.ajax({
+            url: `${BASE_URL}/v1/tamil_nillam_urban_ownership`,
+            method: 'POST',
+            headers: { 'X-APP-NAME': 'demo' },
+            data: urbanParams,
+            beforeSend: function(){
+                showSpinner();
+            },
+            success: function (response) {
+                if (response.success == 1) {
+                    populateInfoPanel(response,landType);
+                } else {
+                    console.error(response.message);
+                    $(".error-message").empty().text(response.message).show();
+                }
+                hideSpinner();
+            },
+            error: function (xhr, status, error) {
+                console.error('Error in fetching AREG - ', error);
+                hideSpinner();
+            }
+        });
 }
 
 function populateInfoPanel(response,landType) {
@@ -1506,10 +1883,8 @@ function populateInfoPanel(response,landType) {
     if(landType != 'urban'){
         if (response.success === 1) {
         
-            
             const landDetail = response.data.land_detail;
             const ownershipDetails = response.data.ownership_detail;
-
             // Select the .info-icons div
             const iconSection = document.querySelector('.info-icons');
 
@@ -1539,6 +1914,7 @@ function populateInfoPanel(response,landType) {
             // Close button event listener
             closeButton.addEventListener('click', () => {
                 tabContainer.remove();
+                $('.district-icon img').removeClass('district-icon-active');
             });
 
             // Create tab navigation
@@ -1555,6 +1931,12 @@ function populateInfoPanel(response,landType) {
                     <button class="nav-link" id="land-tab" data-bs-toggle="tab" 
                         data-bs-target="#land" type="button" role="tab" aria-controls="land" aria-selected="false">
                         Land Details
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="patta-download-tab" data-bs-toggle="tab" 
+                        data-bs-target="#patta" type="button" role="tab" aria-controls="patta" aria-selected="false" data-details='${JSON.stringify(landDetail)}' onclick='searchPattaNumber(this)'>
+                        Patta View
                     </button>
                 </li>
             `;
@@ -1575,7 +1957,7 @@ function populateInfoPanel(response,landType) {
             ownershipTabPane.innerHTML = `
                 <table class="table table-bordered table-striped mt-2">
                     <thead class="table-dark">
-                        <tr><th>#</th><th>Owner</th><th>Relation</th></tr>
+                        <tr><th>#</th><th>Owner</th><th>Relative</th><th>Relation</th></tr>
                     </thead>
                     <tbody id="ownership-details-table"></tbody>
                 </table>
@@ -1595,12 +1977,30 @@ function populateInfoPanel(response,landType) {
                 </table>
             `;
 
+            const pattaTabPane = document.createElement('div');
+            pattaTabPane.className = 'tab-pane fade';
+            pattaTabPane.id = 'patta';
+            pattaTabPane.role = 'tabpanel';
+            pattaTabPane.innerHTML = `
+                
+                    <div class="d-flex align-items-center pdfheader">
+                        <h6 class="m-0 px-2">Patta Document</h6>
+                        <button id="fullscreenPattaBtn" class="btn btn-sm btn-outline-secondary ms-2" style="border: none; background: transparent; cursor: pointer; font-size: 24px; left: 116px; position: relative;">
+                            ⛶
+                        </button>
+                        
+                    </div>
+                    <iframe id="pattaViewerFrame" style="width: 100%; height: 350px; border: none; object-fit: contain;" allowfullscreen></iframe>
+            `;
+
+
             // Append elements
             tabContainer.appendChild(closeButton); // Add close button to container
             tabContainer.appendChild(tabNav);
             tabContainer.appendChild(tabContent);
             tabContent.appendChild(ownershipTabPane);
             tabContent.appendChild(landTabPane);
+            tabContent.appendChild(pattaTabPane);
 
             // Insert the tab section below the .info-icons div
             iconSection.insertAdjacentElement('afterend', tabContainer);
@@ -1636,21 +2036,6 @@ function populateInfoPanel(response,landType) {
                         continue;
                     }
             
-                    // Special case: Govt Pri Code mapping
-                    // if (key === "govtPriCode") {
-                    //     let codeText = "-";
-                    //     if (value === "1" || value === 1) codeText = "Government";
-                    //     else if (value === "2" || value === 2) codeText = "Private";
-            
-                    //     const row = document.createElement("tr");
-                    //     row.innerHTML = `
-                    //         <td>Govt Pri Code</td>
-                    //         <td>${codeText}</td>
-                    //     `;
-                    //     landDetailsTable.appendChild(row);
-                    //     continue;
-                    // }
-            
                     // Default value formatting
                     let displayValue = "-";
                     if (typeof value === "boolean") {
@@ -1662,15 +2047,15 @@ function populateInfoPanel(response,landType) {
                     const formattedKey = addSpaceBeforeCaps(key);
             
                     const row = document.createElement("tr");
-                    row.innerHTML = `
-                        <td>${formattedKey}</td>
-                        <td>${displayValue}</td>
-                    `;
+                        row.innerHTML = `
+                            <td>${formattedKey}</td>
+                            <td>${displayValue}</td>
+                        `;
                     landDetailsTable.appendChild(row);
                 }
             }
             
-
+            
             // Populate Ownership Details Table
             const ownershipDetailsTable = document.getElementById("ownership-details-table");
             ownershipDetailsTable.innerHTML = ''; // Clear previous data
@@ -1686,7 +2071,8 @@ function populateInfoPanel(response,landType) {
                     row.innerHTML = `
                         <td>${index + 1}</td>
                         <td>${owner.Owner.trim()}</td>
-                        <td>${owner.Relative.trim()} அவர்களின் ${owner.Relation.trim()} </td>
+                        <td>${owner.Relative.trim()}</td>
+                        <td>${owner.Relation.trim()}</td>
                     `; 
                     ownershipDetailsTable.appendChild(row);
                 });
@@ -1733,6 +2119,7 @@ function populateInfoPanel(response,landType) {
             // Close button event listener
             closeButton.addEventListener('click', () => {
                 tabContainer.remove();
+                $('.district-icon img').removeClass('district-icon-active');
             });
 
             // Create tab navigation
@@ -1857,7 +2244,7 @@ function populateInfoPanel(response,landType) {
                 });
             }
         }else{
-            $(".error-message").empty().text('Land Detail is Not Found').show();
+            $(".error-message").empty().text('No Ownership Details Found for the Selected Land Parcel').show();
         }
         
     }
@@ -1890,7 +2277,8 @@ function closeAregPanel() {
 /** FMB Sketch Info Panel Creation Start*/
 
 function openFMBSketchInfo(data) {
-    clearVertexLabels()
+    clearVertexLabels();
+    facilitiesMarkerSourceClear();
     $(".error-message").empty().hide();
     document.getElementById('areg-tab-container')?.remove();
     document.getElementById('vertex-info-container')?.remove();
@@ -1898,6 +2286,8 @@ function openFMBSketchInfo(data) {
     document.getElementById('JSB-info-container')?.remove();
     document.getElementById('igr-info-container')?.remove();
     document.getElementById('facility-info-container')?.remove();
+    document.getElementById('encumbrance-info-panel')?.remove();
+    document.getElementById('masterplan-info-container')?.remove();
     var lapad_taluk_codes = LpadAdding(data.taluk_code,'taluk');
     var lapad_town_codes = LpadAdding(data.revenue_town_code,'town');
     var lapad_ward_codes = LpadAdding(data.firka_ward_number,'ward');
@@ -1930,6 +2320,9 @@ function openFMBSketchInfo(data) {
         url: `${FMB_SKETCH_URL}`,
         method: 'POST',
         data: params,
+        beforeSend: function(){
+            showSpinner();
+        },
         success: function (response) {
             if (response.success == 1) {
                 // Decode base64 data
@@ -1983,10 +2376,11 @@ function openFMBSketchInfo(data) {
                 // alert(response.message);
                 $(".error-message").empty().text(response.message).show();
             }
+            hideSpinner();
         },
         error: function (xhr, status, error) {
-            // alert('Unable to fetch data from NIC. ', error);
             $(".error-message").empty().text('Unable to fetch data from NIC. ', error).show();
+            hideSpinner();
         }
     });
 }
@@ -2025,6 +2419,7 @@ function displayFMBSketch(fmbSketchUrl) {
     // Close button event listener
     closeButton.addEventListener('click', () => {
         sketchContainer.remove();
+        $('.district-icon img').removeClass('district-icon-active');
     });
 
     // Fullscreen button
@@ -2044,8 +2439,9 @@ function displayFMBSketch(fmbSketchUrl) {
     sketchFrame.style.width = '100%';
     sketchFrame.style.height = '350px';
     sketchFrame.style.border = 'none';
-    sketchFrame.src = fmbSketchUrl;
+    sketchFrame.src = fmbSketchUrl+ '#view=FitH&zoom=page-fit&toolbar=1&navpanes=1&scrollbar=1';
     sketchFrame.allowFullscreen = true;
+    sketchFrame.style.objectFit = 'contain';
 
     // Function to enter fullscreen
     function enterFullscreen() {
@@ -2116,7 +2512,8 @@ function closeFMBSketchPanel() {
 
 /** IGR Info Panel */
 function openIGRInfo(data, lat, long) {
-    clearVertexLabels()
+    clearVertexLabels();
+    facilitiesMarkerSourceClear();
     $(".error-message").empty().hide();
     document.getElementById('areg-tab-container')?.remove();
     document.getElementById('vertex-info-container')?.remove();
@@ -2124,6 +2521,8 @@ function openIGRInfo(data, lat, long) {
     document.getElementById('thematic-info-container')?.remove();
     document.getElementById('JSB-info-container')?.remove();
     document.getElementById('facility-info-container')?.remove();
+    document.getElementById('encumbrance-info-panel')?.remove();
+    document.getElementById('masterplan-info-container')?.remove();
     if (data.rural_urban === "rural") {
         const params = {
             latitude: lat,
@@ -2136,6 +2535,9 @@ function openIGRInfo(data, lat, long) {
             method: 'POST',
             headers: { 'X-APP-ID': 'te$t' },
             data: params,
+            beforeSend: function(){
+                showSpinner();
+            },
             success: function (response) {
                 if (response.success) {
                     // Select the .info-icons div
@@ -2175,6 +2577,7 @@ function openIGRInfo(data, lat, long) {
                     // Close button event listener
                     closeButton.addEventListener('click', () => {
                         igrContainer.remove();
+                        $('.district-icon img').removeClass('district-icon-active');
                     });
 
                     // Append close button to panel title
@@ -2237,19 +2640,23 @@ function openIGRInfo(data, lat, long) {
                     console.error(response.message);
                     $(".error-message").empty().text(response.message).show();
                 }
+                hideSpinner();
             },
             error: function (xhr, status, error) {
                 console.error("Error in fetching IGR Land Value - ", error);
                 $(".error-message").empty().text("Error in fetching IGR Land Value - ", error).show();
+                hideSpinner();
             }
         });
     } else {
         $(".error-message").empty().text('Urban in Progress').show();
+        hideSpinner();
     }
 }
 
 function loadThematicIconsFromJson() {
     clearVertexLabels();
+    facilitiesMarkerSourceClear();
     $(".error-message").empty().hide();
     document.getElementById('areg-tab-container')?.remove();
     document.getElementById('vertex-info-container')?.remove();
@@ -2258,7 +2665,9 @@ function loadThematicIconsFromJson() {
     document.getElementById('fmb-sketch-info-panel')?.remove();
     document.getElementById('thematic-info-container')?.remove();
     document.getElementById('facility-info-container')?.remove();
-
+    document.getElementById('encumbrance-info-panel')?.remove();
+    document.getElementById('masterplan-info-container')?.remove();
+    
     const iconSection = document.querySelector('.info-icons');
 
     fetch(thematicJsonFilePath)
@@ -2275,7 +2684,7 @@ function loadThematicIconsFromJson() {
 
             const panelTitle = document.createElement('div');
             panelTitle.className = 'd-flex justify-content-between align-items-center';
-            panelTitle.innerHTML = `<h6 class="m-0">Thematic Information</h6>`;
+            panelTitle.innerHTML = `<h6 class="m-0" id="selected-thematic">Thematic Information For</h6>`;
 
             const closeButton = document.createElement('button');
             closeButton.innerHTML = '&times;';
@@ -2286,34 +2695,70 @@ function loadThematicIconsFromJson() {
             closeButton.style.cursor = 'pointer';
             closeButton.style.border = 'none';
             closeButton.style.background = 'transparent';
-            closeButton.addEventListener('click', () => { thematicContainer.remove(); });
+            closeButton.addEventListener('click', () => { 
+                thematicContainer.remove();
+                $('.district-icon img').removeClass('district-icon-active');
+             });
 
             panelTitle.appendChild(closeButton);
             thematicContainer.appendChild(panelTitle);
 
+            const scrollWrapper = document.createElement('div');
+            scrollWrapper.className = 'jsb-carousel-wrapper position-relative';
+            scrollWrapper.style.position = 'relative';
+            scrollWrapper.style.marginTop = '15px';
+
+            const leftBtn = document.createElement('button');
+            leftBtn.innerHTML = '&#10094;';
+            leftBtn.className = 'jsb-scroll-left';
+            Object.assign(leftBtn.style, {
+                position: 'absolute', left: '0', top: '50%', transform: 'translateY(-50%)', zIndex: '2',
+                border: 'none', background: '#42abff', color: '#fff', boxShadow: '0 0 5px rgba(0,0,0,0.2)',
+                borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer'
+            });
+
+            const rightBtn = document.createElement('button');
+            rightBtn.innerHTML = '&#10095;';
+            rightBtn.className = 'jsb-scroll-right';
+            Object.assign(rightBtn.style, {
+                position: 'absolute', right: '0', top: '50%', transform: 'translateY(-50%)', zIndex: '2',
+                border: 'none', background: '#42abff', color: '#fff', boxShadow: '0 0 5px rgba(0,0,0,0.2)',
+                borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer'
+            });
+
             const contentDiv = document.createElement('div');
-            contentDiv.className = 'thematic-icon-card-content mt-2 d-flex flex-wrap gap-2';
+            contentDiv.className = 'thematic-icon-card-content d-flex';
+            Object.assign(contentDiv.style, {
+                overflowX: 'auto',
+                scrollBehavior: 'smooth',
+                whiteSpace: 'nowrap',
+                padding: '0px 30px',
+                msOverflowStyle: 'none',
+                scrollbarWidth: 'none',
+                overflowY: 'hidden',
+                margin: '0px',
+                gap: '.2px'
+            });
+
+            contentDiv.addEventListener('wheel', e => {
+                e.preventDefault();
+                contentDiv.scrollLeft += e.deltaY;
+            });
 
             let hasValidData = false;
 
             data.forEach(category => {
                 category.layers.forEach(layer => {
                     hasValidData = true;
-                    console.log(layer);
-                    if(layer.name != "Contours"){
+                    if(layer.name != "Contours" && layer.name != "Land Type" && layer.name != "Land Anomolies" && layer.name != 'Proposed' && layer.name != 'existing' && layer.name != 'IGR Land Type' && layer.name != 'Soil Map'){
                         const card = document.createElement("div");
-                        card.classList.add("thematic-icon-card", "p-2", "border", "rounded", "d-flex", "flex-column", "align-items-center");
-                        card.style.background = "#fff";
-                        card.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
-                        card.style.width = "50px";
-                        card.style.height = "50px";
+                        card.classList.add("thematic-icon-card", "px-2", "d-flex", "flex-column", "align-items-center");
+                        card.style.background = "#e0e0e000";
                         card.style.fontSize = "10px";
-                        card.style.display = "flex";
-                        card.style.flexDirection = "column";
-                        card.title = layer.title; 
-                        card.style.justifyContent = "center";
+                        
                         card.style.alignItems = "center";
                         card.style.textAlign = "center";
+                        card.title = layer.title;
 
                         const iconSpan = document.createElement("span");
 
@@ -2322,8 +2767,7 @@ function loadThematicIconsFromJson() {
                             const img = document.createElement("img");
                             img.src = layer.icon;
                             img.alt = layer.title;
-                            img.style.width = "25px";
-                            img.style.height = "25px";
+                            img.style.width = "30px";
                             iconSpan.appendChild(img);
                         } else {
                             iconSpan.style.fontSize = "16px";
@@ -2331,7 +2775,7 @@ function loadThematicIconsFromJson() {
                         }
 
                         const textDiv = document.createElement("div");
-                        textDiv.innerHTML = `<strong>${layer.name}</strong>`;
+                        textDiv.innerHTML = `<strong class="font-size-9 p-a">${layer.name}</strong>`;
 
                         card.appendChild(iconSpan);
                         card.appendChild(textDiv);
@@ -2341,8 +2785,18 @@ function loadThematicIconsFromJson() {
             });
 
             if (hasValidData) {
-                thematicContainer.appendChild(contentDiv);
+                scrollWrapper.appendChild(leftBtn);
+                scrollWrapper.appendChild(contentDiv);
+                scrollWrapper.appendChild(rightBtn);
+                thematicContainer.appendChild(scrollWrapper);
                 iconSection.insertAdjacentElement('afterend', thematicContainer);
+
+                leftBtn.addEventListener('click', () => {
+                    contentDiv.scrollLeft -= 150;
+                });
+                rightBtn.addEventListener('click', () => {
+                    contentDiv.scrollLeft += 150;
+                });
             } else {
                 $(".error-message").text('No layer data available.').show();
             }
@@ -2357,8 +2811,9 @@ function loadThematicIconsFromJson() {
 
 function JSBIconInfo(data, lat, long) {
     clearVertexLabels();
+    facilitiesMarkerSourceClear();
     $(".error-message").empty().hide();
-    ['areg-tab-container', 'facility-info-container', 'vertex-info-container', 'igr-info-container', 'thematic-info-container', 'fmb-sketch-info-panel', 'JSB-info-container']
+    ['areg-tab-container', 'facility-info-container', 'vertex-info-container', 'igr-info-container', 'thematic-info-container', 'fmb-sketch-info-panel', 'JSB-info-container','encumbrance-info-panel','masterplan-info-container']
         .forEach(id => document.getElementById(id)?.remove());
 
     const iconSection = document.querySelector('.info-icons');
@@ -2374,7 +2829,7 @@ function JSBIconInfo(data, lat, long) {
 
     const panelTitle = document.createElement('div');
     panelTitle.className = 'd-flex justify-content-between align-items-center';
-    panelTitle.innerHTML = `<h6 class="m-0" id="selected-boundary">Jurisdiction Boundaries Information For</h6>`;
+    panelTitle.innerHTML = `<h6 class="m-0" id="selected-boundary">Boundary Information For</h6>`;
 
     const closeButton = document.createElement('button');
     closeButton.innerHTML = '&times;';
@@ -2385,7 +2840,10 @@ function JSBIconInfo(data, lat, long) {
     closeButton.style.cursor = 'pointer';
     closeButton.style.border = 'none';
     closeButton.style.background = 'transparent';
-    closeButton.addEventListener('click', () => { JSBContainer.remove(); });
+    closeButton.addEventListener('click', () => { 
+        JSBContainer.remove(); 
+        $('.district-icon img').removeClass('district-icon-active');
+    });
 
     panelTitle.appendChild(closeButton);
     JSBContainer.appendChild(panelTitle);
@@ -2393,7 +2851,7 @@ function JSBIconInfo(data, lat, long) {
     const scrollWrapper = document.createElement('div');
     scrollWrapper.className = 'jsb-carousel-wrapper position-relative';
     scrollWrapper.style.position = 'relative';
-    scrollWrapper.style.marginTop = '15px';
+    scrollWrapper.style.marginTop = '0px';
 
     const leftBtn = document.createElement('button');
     leftBtn.innerHTML = '&#10094;';
@@ -2414,16 +2872,18 @@ function JSBIconInfo(data, lat, long) {
     });
 
     const contentDiv = document.createElement('div');
-    contentDiv.className = 'JSB-icon-card-content d-flex gap-2';
+    contentDiv.className = 'JSB-icon-card-content d-flex';
     Object.assign(contentDiv.style, {
         overflowX: 'auto',
         scrollBehavior: 'smooth',
         whiteSpace: 'nowrap',
-        padding: '0px 30px',
+        padding: '0px 45px',
+        gap:'0.2px',
         msOverflowStyle: 'none',
         scrollbarWidth: 'none',
         overflowY: 'hidden',
-        margin: '0 -15px'
+        margin: '0 -15px',
+        // height:'100px'
     });
 
     contentDiv.addEventListener('wheel', e => {
@@ -2439,25 +2899,24 @@ function JSBIconInfo(data, lat, long) {
                 if (field.status === 'active' && field.type === 'boundary' && field.layer_code != '1008' && field.layer_code != '1262') {
                     hasValidData = true;
                     const card = document.createElement("div");
-                    card.classList.add("JSB-icon-card", "rounded");
+                    card.classList.add("JSB-icon-card", "rounded", "px-2", "d-flex", "flex-column", "align-items-center");
                     card.setAttribute('layer_id', field.layer_code);
                     card.setAttribute('priority_order', field.priority_order);
                     card.setAttribute('title', field.layer_display_name);
                     card.setAttribute('layer_type', field.type);
                     Object.assign(card.style, {
-                        // background: "#5982a5",
-                        // boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                        width: "68px",
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        textAlign: "center",
-                        overflow: "hidden",
-                        color: "#000000",
-                        padding: "10px 5px",
-                        flex: "0 0 auto",
-                        position: "relative"
+                        
+                        scrollBehavior: 'smooth',
+                        whiteSpace: 'nowrap',
+                        padding: '20px 30px',
+                        width:'max-content',
+                        justifyContent:'center',
+                        msOverflowStyle: 'none',
+                        scrollbarWidth: 'none',
+                        // overflowY: 'hidden',
+                        margin: '0px',
+                        gap: '.2px',
+                        position:'relative'
                     });
 
                     const imageUrl = (field.display_image_url || '') + (field.display_image_name || '');
@@ -2468,24 +2927,31 @@ function JSBIconInfo(data, lat, long) {
                         width: "40px",
                         height: "40px",
                         objectFit: "contain",
-                        marginBottom: "8px"
+                        // marginBottom: "8px"
                     });
 
-                    const title = document.createElement('div');
-                    title.textContent = field.layer_display_name || '';
+                    const imgWrapper = document.createElement('span');
+
+                    const titles = document.createElement('div');
+                    const title = document.createElement('strong');
+                    title.textContent = (field.layer_display_name == 'TANGEDCO') ? 'TNPDCL' : field.layer_display_name || '';
+                    title.className = 'p-a font-size-9';
                     Object.assign(title.style, {
-                        fontSize: "9px",
-                        wordBreak: "break-word",
-                        overflowWrap: "break-word",
-                        whiteSpace: "normal",
-                        textAlign: "center",
-                        width: "100%",
-                        lineHeight: "1.2",
-                        minHeight: "10px"
+                        // fontSize: "9px",
+                        // wordBreak: "break-word",
+                        // overflowWrap: "break-word",
+                        // whiteSpace: "normal",
+                        // textAlign: "center",
+                        // width: "100%",
+                        // lineHeight: "1.2",
+                        // minHeight: "10px"
                     });
 
-                    card.appendChild(img);
-                    card.appendChild(title);
+                    titles.appendChild(title); // Append <strong> inside <div>
+                    imgWrapper.appendChild(img);
+                    card.appendChild(imgWrapper);
+                    card.appendChild(titles);  // Append the full <div> that includes <strong>
+                    
 
                     contentDiv.appendChild(card);
                 }
@@ -2510,14 +2976,15 @@ function JSBIconInfo(data, lat, long) {
         })
         .catch(error => {
             console.error('Error fetching JSON:', error);
-            $(".error-message").empty().text('Failed to load jurisdiction data.').show();
+            $(".error-message").empty().text('Failed to load boundaries data.').show();
         });
 }
 
 function nearByView() {
     clearVertexLabels();
+    facilitiesMarkerSourceClear();
     $(".error-message").empty().hide();
-    ['areg-tab-container','facility-info-container', 'vertex-info-container', 'igr-info-container', 'thematic-info-container', 'fmb-sketch-info-panel', 'JSB-info-container']
+    ['areg-tab-container','facility-info-container', 'vertex-info-container', 'igr-info-container', 'thematic-info-container', 'fmb-sketch-info-panel', 'JSB-info-container','encumbrance-info-panel','masterplan-info-container']
         .forEach(id => document.getElementById(id)?.remove());
 
     const iconSection = document.querySelector('.info-icons');
@@ -2544,7 +3011,10 @@ function nearByView() {
     closeButton.style.cursor = 'pointer';
     closeButton.style.border = 'none';
     closeButton.style.background = 'transparent';
-    closeButton.addEventListener('click', () => { JSBContainer.remove(); });
+    closeButton.addEventListener('click', () => { 
+        JSBContainer.remove(); 
+        $('.district-icon img').removeClass('district-icon-active');
+    });
 
     panelTitle.appendChild(closeButton);
     JSBContainer.appendChild(panelTitle);
@@ -2552,7 +3022,7 @@ function nearByView() {
     const scrollWrapper = document.createElement('div');
     scrollWrapper.className = 'jsb-carousel-wrapper position-relative';
     scrollWrapper.style.position = 'relative';
-    scrollWrapper.style.marginTop = '15px';
+    scrollWrapper.style.marginTop = '8px';
 
     const leftBtn = document.createElement('button');
     leftBtn.innerHTML = '&#10094;';
@@ -2573,12 +3043,13 @@ function nearByView() {
     });
 
     const contentDiv = document.createElement('div');
-    contentDiv.className = 'JSB-icon-card-content d-flex gap-2';
+    contentDiv.className = 'JSB-icon-card-content d-flex';
     Object.assign(contentDiv.style, {
         overflowX: 'auto',
         scrollBehavior: 'smooth',
         whiteSpace: 'nowrap',
-        padding: '10px 30px',
+        gap: '0.2px',
+        padding: '10px 40px',
         msOverflowStyle: 'none',
         scrollbarWidth: 'none',
         overflowY: 'hidden',
@@ -2606,10 +3077,10 @@ function nearByView() {
                     Object.assign(card.style, {
                         // background: "#5982a5",
                         // boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                        width: "75px",
+                        width: "50px",
                         display: "flex",
                         flexDirection: "column",
-                        justifyContent: "center",
+                        justifyContent: "start",
                         alignItems: "center",
                         textAlign: "center",
                         overflow: "hidden",
@@ -2631,9 +3102,13 @@ function nearByView() {
                     });
 
                     const title = document.createElement('div');
-                    title.textContent = field.layer_display_name || '';
+                    if(field.layer_display_name == 'Revenue Divisional Office'){
+                        title.textContent = 'District Revenue Officer' || '';
+                    }else{
+                        title.textContent = field.layer_display_name || '';
+                    }
                     Object.assign(title.style, {
-                        fontSize: "9px",
+                        fontSize: "8.4px",
                         wordBreak: "break-word",
                         overflowWrap: "break-word",
                         whiteSpace: "normal",
@@ -2669,7 +3144,7 @@ function nearByView() {
         })
         .catch(error => {
             console.error('Error fetching JSON:', error);
-            $(".error-message").empty().text('Failed to load jurisdiction data.').show();
+            $(".error-message").empty().text('Failed to load boundaries data.').show();
         });
 }
 
@@ -2812,14 +3287,14 @@ fetch(thematicJsonFilePath)
                         ${category.category}
                     </button>
                 </h2>
-                <div id="${collapseId}" class="accordion-collapse collapse" aria-labelledby="${headerId}">
+                <div id="${collapseId}" class="accordion-collapse collapse" aria-labelledby="${headerId}" data-category="${category.category}">
                     <div class="accordion-body">
-                        <div class="listings"></div>
+                        <div class="thematic-listings row"></div>
                     </div>
                 </div>
             `;
 
-            const listings = accordionItem.querySelector('.listings');
+            const listings = accordionItem.querySelector('.thematic-listings');
 
             category.layers.forEach((layerInfo) => {
                 let layer;
@@ -2834,11 +3309,10 @@ fetch(thematicJsonFilePath)
                         opacity: layerInfo.defaultOpacity,
                         visible: layerInfo.defaultVisibility,
                         type: 'wms',
-                        title:layerInfo.title,
-                        layer_id:layerInfo.id,
-                        category:category.category,
-                        view:layerInfo.view
-
+                        title: layerInfo.title,
+                        layer_id: layerInfo.id,
+                        category: category.category,
+                        view: layerInfo.view
                     });
                 } else if (layerInfo.type === "xyz") {
                     layer = new ol.layer.Tile({
@@ -2853,27 +3327,81 @@ fetch(thematicJsonFilePath)
                 map.addLayer(layer);
                 layers[layerInfo.id] = layer;
 
-                const label = document.createElement('label');
-                label.className = 'd-block my-1';
+                const label = document.createElement('div');
+                label.className = 'col-4 col-md-3 col-lg-2 text-center';
 
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.id = layerInfo.id;
-                checkbox.checked = layerInfo.defaultVisibility;
+                const iconImg = document.createElement('img');
+                iconImg.src = layerInfo.icon;
+                iconImg.alt = layerInfo.title;
+                iconImg.width = 28;
+                iconImg.height = 28;
+                iconImg.style.cursor = 'pointer';
+                iconImg.style.border = layerInfo.defaultVisibility ? '2px solid #007bff' : '2px solid transparent';
+                iconImg.style.borderRadius = '6px';
+                iconImg.setAttribute('data-layer-id', layerInfo.id);
+                iconImg.setAttribute('data-category', category.category);
+                iconImg.setAttribute('title', layerInfo.title);
 
-                checkbox.addEventListener('change', (e) => {
-                    layer.setVisible(e.target.checked);
+                iconImg.addEventListener('click', (e) => {
+                    const selectedId = e.target.getAttribute('data-layer-id');
+                    let isSelectedLayerCurrentlyActive = false;
+                
+                    // First, check if the selected layer is currently active
+                    jsonData.forEach(cat => {
+                        cat.layers.forEach(l => {
+                            if (l.id === selectedId) {
+                                isSelectedLayerCurrentlyActive = layers[l.id].getVisible();
+                            }
+                        });
+                    });
+                
+                    // Now apply the toggle logic
+                    jsonData.forEach(cat => {
+                        cat.layers.forEach(l => {
+                            const isSelected = l.id === selectedId;
+                            const shouldBeVisible = isSelected ? !isSelectedLayerCurrentlyActive : false;
+                
+                            layers[l.id].setVisible(shouldBeVisible);
+                
+                            const iconElem = document.querySelector(`img[data-layer-id="${l.id}"]`);
+                            if (iconElem) {
+                                iconElem.style.border = shouldBeVisible ? '2px solid #007bff' : '2px solid transparent';
+                            }
+                        });
+                    });
+                
                     updateAllLegends(jsonData);
                 });
 
-                label.appendChild(checkbox);
-                label.appendChild(document.createTextNode(` ${layerInfo.title}`));
+                const caption = document.createElement('div');
+                caption.textContent = layerInfo.name;
+                caption.style.fontSize = '0.50rem';
 
+                label.appendChild(iconImg);
+                label.appendChild(caption);
                 listings.appendChild(label);
             });
 
+            // Collapse event: Reset icons and hide layers on collapse close
+            const collapseEl = accordionItem.querySelector('.accordion-collapse');
+            collapseEl.addEventListener('hidden.bs.collapse', () => {
+                const closedCategory = category.category;
+
+                category.layers.forEach(l => {
+                    if (layers[l.id]) {
+                        layers[l.id].setVisible(false);
+
+                        const iconElem = document.querySelector(`img[data-layer-id="${l.id}"]`);
+                        if (iconElem) {
+                            iconElem.style.border = '2px solid transparent';
+                        }
+                    }
+                });
+
+                updateAllLegends(jsonData);
+            });
+
             layerControlThematic.appendChild(accordionItem);
-            
         });
         updateAllLegends(jsonData);
     })
@@ -3008,7 +3536,7 @@ async function loadDistrict(districtCode, talukCode = null, villageCode = null, 
             defaultText: 'Select District',
             valueKey: 'district_code',
             textKey: 'district_english_name',
-            errorCallback: (message) => showToast('error', message),
+            errorCallback: (message) =>console.log(message),
             preselectValue: districtCode,
             triggerChange: !!districtCode,
             onComplete: async () => {
@@ -3026,7 +3554,7 @@ async function loadDistrict(districtCode, talukCode = null, villageCode = null, 
                     defaultText: 'Select Taluk',
                     valueKey: 'taluk_code',
                     textKey: 'taluk_english_name',
-                    errorCallback: (message) => showToast('error', message),
+                    errorCallback: (message) =>console.log(message),
                     preselectValue: talukCode,
                     triggerChange: !!talukCode,
                     onComplete: async () => {
@@ -3049,7 +3577,7 @@ async function loadDistrict(districtCode, talukCode = null, villageCode = null, 
                                 defaultText: 'Select Village',
                                 valueKey: 'village_code',
                                 textKey: 'village_english_name',
-                                errorCallback: (message) => showToast('error', message),
+                                errorCallback: (message) =>console.log(message),
                                 preselectValue: villageCode,
                                 triggerChange: !!villageCode,
                                 onComplete: async () => {
@@ -3074,7 +3602,7 @@ async function loadDistrict(districtCode, talukCode = null, villageCode = null, 
                                         defaultText: 'Select Survey Number',
                                         valueKey: 'survey_number',
                                         textKey: 'survey_number',
-                                        errorCallback: (message) => showToast('error', message),
+                                        errorCallback: (message) =>console.log(message),
                                         preselectValue: surveyNumber,
                                         triggerChange: !!surveyNumber,
                                         onComplete: async () => {
@@ -3088,7 +3616,8 @@ async function loadDistrict(districtCode, talukCode = null, villageCode = null, 
                                                     taluk_code: talukCode,
                                                     village_code: villageCode,
                                                     survey_number: surveyNumber,
-                                                    sub_division_number: 'jjj'
+                                                    sub_division_number: 'jjj',
+                                                    area_type:'rural'
                                                 },
                                                 headers: { 'X-APP-NAME': 'demo' },
                                                 dataType: 'json'
@@ -3098,7 +3627,7 @@ async function loadDistrict(districtCode, talukCode = null, villageCode = null, 
                                                 defaultText: 'Select Sub Division',
                                                 valueKey: 'subdiv_no',
                                                 textKey: 'subdiv_no',
-                                                errorCallback: (message) => showToast('error', message),
+                                                errorCallback: (message) =>console.log(message),
                                                 preselectValue: subdivision,
                                                 triggerChange: !!subdivision
                                             });
@@ -3120,7 +3649,7 @@ async function loadDistrict(districtCode, talukCode = null, villageCode = null, 
                                 defaultText: 'Select Town',
                                 valueKey: 'town_code',
                                 textKey: 'town_english_name',
-                                errorCallback: (message) => showToast('error', message),
+                                errorCallback: (message) =>console.log(message),
                                 preselectValue: townCode,
                                 triggerChange: !!townCode,
                                 onComplete: async () => {
@@ -3138,7 +3667,7 @@ async function loadDistrict(districtCode, talukCode = null, villageCode = null, 
                                         defaultText: 'Select Ward',
                                         valueKey: 'ward_code',
                                         textKey: 'ward_english_name',
-                                        errorCallback: (message) => showToast('error', message),
+                                        errorCallback: (message) =>console.log(message),
                                         preselectValue: wardCode,
                                         triggerChange: !!wardCode,
                                         onComplete: async () => {
@@ -3162,7 +3691,7 @@ async function loadDistrict(districtCode, talukCode = null, villageCode = null, 
                                                 defaultText: 'Select Block',
                                                 valueKey: 'block_code',
                                                 textKey: 'block_english_name',
-                                                errorCallback: (message) => showToast('error', message),
+                                                errorCallback: (message) =>console.log(message),
                                                 preselectValue: blockCode,
                                                 triggerChange: !!blockCode,
                                                 onComplete: async () => {
@@ -3188,7 +3717,7 @@ async function loadDistrict(districtCode, talukCode = null, villageCode = null, 
                                                         defaultText: 'Select Survey Number',
                                                         valueKey: 'survey_number',
                                                         textKey: 'survey_number',
-                                                        errorCallback: (message) => showToast('error', message),
+                                                        errorCallback: (message) =>console.log(message),
                                                         preselectValue: surveyNumber,
                                                         triggerChange: !!surveyNumber,
                                                         onComplete: async () => {
@@ -3204,7 +3733,8 @@ async function loadDistrict(districtCode, talukCode = null, villageCode = null, 
                                                                     ward_code: wardCode,
                                                                     block_code: blockCode,
                                                                     survey_number: surveyNumber,
-                                                                    sub_division_number: 'jjj'
+                                                                    sub_division_number: 'jjj',
+                                                                    area_type:'urban'
                                                                 },
                                                                 headers: { 'X-APP-NAME': 'demo' },
                                                                 dataType: 'json'
@@ -3214,7 +3744,7 @@ async function loadDistrict(districtCode, talukCode = null, villageCode = null, 
                                                                 defaultText: 'Select Sub Division',
                                                                 valueKey: 'subdiv_no',
                                                                 textKey: 'subdiv_no',
-                                                                errorCallback: (message) => showToast('error', message),
+                                                                errorCallback: (message) =>console.log(message),
                                                                 preselectValue: subdivision,
                                                                 triggerChange: !!subdivision
                                                             });
@@ -3234,7 +3764,7 @@ async function loadDistrict(districtCode, talukCode = null, villageCode = null, 
 
     } catch (error) {
         console.error('Async Error:', error);
-        showToast('error', error);
+        // showToast('error', error);
     }
 }
 
@@ -3261,7 +3791,7 @@ $('#district-dropdown').change(async function () {
                 defaultText: 'Select Taluk',
                 valueKey: 'taluk_code',
                 textKey: 'taluk_english_name',
-                errorCallback: (message) => showToast('error', message),
+                errorCallback: (message) =>console.log(message),
                 triggerChange: false
             });
             fetchGeometry('district', districtCode, null, null,null,null);
@@ -3270,7 +3800,7 @@ $('#district-dropdown').change(async function () {
         }
     } catch (error) {
         console.error('Async Error:', error);
-        showToast('error', error)
+        // showToast('error', error)
     }
 })
 
@@ -3289,7 +3819,7 @@ $('#taluk-dropdown').change(async function () {
         fetchGeometry('taluk', district_code, taluk_code, null,null);
     } catch (error) {
         console.error('Async Error:', error);
-        showToast('error', `${error}`)
+        // showToast('error', `${error}`)
     }
 });
 
@@ -3308,12 +3838,12 @@ async function loadTown(district_code,taluk_code) {
             defaultText: 'Select Town',
             valueKey: 'town_code',
             textKey: 'town_english_name',
-            errorCallback: (message) => showToast('error', message),
+            errorCallback: (message) =>console.log(message),
             triggerChange: false
         });
     } catch (error) {
         console.error('Async Error:', error);
-        showToast('error', response.message);
+        // showToast('error', response.message);
     }
 }
 $('#town-dropdown').change(async function () {
@@ -3331,7 +3861,7 @@ $('#town-dropdown').change(async function () {
         fetchGeometryUrban('revenue_town', district_code, taluk_code, town_code,null);
     } catch (error) {
         console.error('Async Error:', error);
-        showToast('error', `${error}`)
+        // showToast('error', `${error}`)
     }
 });
 
@@ -3350,12 +3880,12 @@ async function urbanWardRevenueCode(district_code, taluk_code,town_code,area_typ
             defaultText: 'Select Ward',
             valueKey: 'ward_code',
             textKey: 'ward_english_name',
-            errorCallback: (message) => showToast('error', message),
+            errorCallback: (message) =>console.log(message),
             triggerChange: false
         });
     } catch (error) {
         console.error('Async Error:', error);
-        showToast('error', response.message);
+        // showToast('error', response.message);
     }
 }
 
@@ -3375,7 +3905,7 @@ $('#ward-dropdown').change(async function () {
         fetchGeometryUrban('revenue_ward', district_code, taluk_code, town_code,ward_code);
     } catch (error) {
         console.error('Async Error:', error);
-        showToast('error', `${error}`)
+        // showToast('error', `${error}`)
     }
 });
 
@@ -3394,12 +3924,12 @@ async function urbanBlockRevenueCode(district_code, taluk_code,town_code,ward_co
             defaultText: 'Select Block',
             valueKey: 'block_code',
             textKey: 'block_english_name',
-            errorCallback: (message) => showToast('error', message),
+            errorCallback: (message) =>console.log(message),
             triggerChange: false
         });
     } catch (error) {
         console.error('Async Error:', error);
-        showToast('error', response.message);
+        // showToast('error', response.message);
     }
 }
 
@@ -3420,7 +3950,7 @@ $('#block-dropdown').change(async function () {
         fetchGeometryUrban('revenue_block', district_code, taluk_code, town_code,ward_code,block_code);
     } catch (error) {
         console.error('Async Error:', error);
-        showToast('error', `${error}`)
+        // showToast('error', `${error}`)
     }
 });
 
@@ -3439,12 +3969,12 @@ async function urbanSurveyNumberRevenueCode(district_code, taluk_code,town_code,
             defaultText: 'Select Survey Number',
             valueKey: 'survey_number',
             textKey: 'survey_number',
-            errorCallback: (message) => showToast('error', message),
+            errorCallback: (message) =>console.log(message),
             triggerChange: false
         });
     } catch (error) {
         console.error('Async Error:', error);
-        showToast('error', response.message);
+        // showToast('error', response.message);
     }
 }
 $('#urban-survey-number-dropdown').change(async function () {
@@ -3465,7 +3995,7 @@ $('#urban-survey-number-dropdown').change(async function () {
         fetchGeometrySurvey('survey_number',area_type, district_code, taluk_code, town_code,ward_code,block_code,survey_number);
     } catch (error) {
         console.error('Async Error:', error);
-        showToast('error', `${error}`)
+        // showToast('error', `${error}`)
     }
 });
 async function loadRevenueVillage(district_code, taluk_code, area_type) {
@@ -3483,7 +4013,7 @@ async function loadRevenueVillage(district_code, taluk_code, area_type) {
                 defaultText: 'Select Village',
                 valueKey: 'village_code',
                 textKey: 'village_english_name',
-                errorCallback: (message) => showToast('error', message),
+                errorCallback: (message) =>console.log(message),
                 triggerChange: true
             });
         } else {
@@ -3492,22 +4022,10 @@ async function loadRevenueVillage(district_code, taluk_code, area_type) {
         }
     } catch (error) {
         console.error('Async Error:', error);
-        showToast('error', error)
+        // showToast('error', error)
     }
 }
 
-// function loadTown(district_code, taluk_code, area_type) {
-//     try {
-//         if (district_code && taluk_code) {
-//             showToast('warning', "Urban in Progress");
-//         } else {
-//             // showToast('warning', 'Select District & Taluk Dropdown')
-//         }
-//     } catch (error) {
-//         console.error('Async Error:', error);
-//         showToast('error', error)
-//     }
-// }
 
 // Update Survey Numbers based on Village
 $('#village-dropdown').change(async function () {
@@ -3530,7 +4048,7 @@ $('#village-dropdown').change(async function () {
                 defaultText: 'Select Survey Number',
                 valueKey: 'survey_number',
                 textKey: 'survey_number',
-                errorCallback: (message) => showToast('error', message),
+                errorCallback: (message) =>console.log(message),
                 triggerChange: true
             });
             // var villageCode = village_code.replace(/^0+/, '');
@@ -3540,7 +4058,7 @@ $('#village-dropdown').change(async function () {
         }
     } catch (error) {
         console.error('Async Error:', error);
-        showToast('error', error)
+        // showToast('error', error)
     }
 });
 
@@ -3566,7 +4084,7 @@ $('#village-dropdown').change(async function () {
 //                 defaultText: 'Select Sub Division',
 //                 valueKey: 'sub_division',
 //                 textKey: 'sub_division',
-//                 errorCallback: (message) => showToast('error', message),
+//                 errorCallback: (message) =>console.log(message),
 //                 triggerChange: true
 //             });
 //             // var villageCode = village_code.replace(/^0+/, '');
@@ -3593,7 +4111,7 @@ $('#survey-number-dropdown').change(async function () {
             const response = await ajaxPromise({
                 url: checkAregUrl,
                 method: 'GET',
-                data: { 'district_code': district_code, 'taluk_code': taluk_code, 'village_code': village_code, 'survey_number': survey_number, 'sub_division_number':'jjj' },
+                data: { 'district_code': district_code, 'taluk_code': taluk_code, 'village_code': village_code, 'survey_number': survey_number, 'sub_division_number':'jjj',area_type:area_type },
                 headers: { 'X-APP-NAME': 'demo' },
                 dataType: 'json'
             });
@@ -3602,7 +4120,7 @@ $('#survey-number-dropdown').change(async function () {
                 defaultText: 'Select Sub Division',
                 valueKey: 'subdiv_no',
                 textKey: 'subdiv_no',
-                errorCallback: (message) => showToast('error', message),
+                errorCallback: (message) =>console.log(message),
                 triggerChange: true
             });
             // var villageCode = village_code.replace(/^0+/, '');
@@ -3612,7 +4130,24 @@ $('#survey-number-dropdown').change(async function () {
         }
     } catch (error) {
         console.error('Async Error:', error);
-        showToast('error', error)
+        // showToast('error', error)
+    }
+});
+
+$('#sub-division-dropdown').change(async function () {
+    try {
+        var district_code = $("#district-dropdown").val();
+        var taluk_code = $("#taluk-dropdown").val();
+        var village_code = $("#village-dropdown").val();
+        var survey_number = $("#survey-number-dropdown").val();
+        var sub_division_number = $(this).val();
+        
+        
+        fetchGeometry('sub_division_number', district_code, taluk_code, village_code,survey_number,sub_division_number);
+       
+    } catch (error) {
+        console.error('Async Error:', error);
+        // showToast('error', error)
     }
 });
 
@@ -3648,20 +4183,157 @@ navButtons.forEach(button => {
 });
 
 
-function openECnfo(){
+function openECnfo(data){
+    var result = data;
     clearVertexLabels();
+    facilitiesMarkerSourceClear();
     $(".error-message").empty().hide();
-    document.getElementById('areg-tab-container')?.remove();
-    document.getElementById('vertex-info-container')?.remove();
-    document.getElementById('igr-info-container')?.remove();
-    document.getElementById('JSB-info-container')?.remove();
-    document.getElementById('fmb-sketch-info-panel')?.remove();
-    document.getElementById('thematic-info-container')?.remove();
-    document.getElementById('facility-info-container')?.remove();
-    $(".error-message").empty().text('Encumbrance certificate - coming soon').show();
+    ['areg-tab-container','facility-info-container', 'vertex-info-container', 'igr-info-container', 'thematic-info-container', 'fmb-sketch-info-panel', 'JSB-info-container','encumbrance-info-panel','masterplan-info-container']
+        .forEach(id => document.getElementById(id)?.remove());
+    
+    $.ajax({
+        url: GI_VIEWER_API_URL + '/encumbrance_certificate',
+        type: "POST",
+        headers: { 'X-APP-NAME': 'demo' },
+        dataType: 'json', // Expected response type
+        contentType: 'application/json', // Tell server you're sending JSON
+        data: JSON.stringify({
+            revDistrictCode: result.district_code,
+            revTalukCode: result.taluk_code,
+            revVillageCode: result.village_code,
+            survey_number: result.survey_number,
+            sub_division_number: $("#subDivs").text() ? $("#subDivs").text() : 'jjjj'
+        }),
+        beforeSend:function(){
+            showSpinner();
+        },
+        success: function(response) {
+            if(response.status == 'success'){
+                let ECBase64String = response.EC.Base64String;
+                let ec_status = response.EC.statusCode;
+                if(ec_status == 100){
+                    displayEncumbranceCertificate(ECBase64String);
+                }else{
+                    $(".error-message").empty().text('No Encumbrance Certificate data found for selected survey/subdivision').show();
+                }
+            }
+            hideSpinner();
+        },
+        error: function(xhr, status, error) {
+            console.log(error);
+            hideSpinner();
+        }
+    });
+    
+
+}
+
+function displayEncumbranceCertificate(base64String) {
+    // Remove existing panel if any
+    document.getElementById('encumbrance-info-panel')?.remove();
+
+    const iconSection = document.querySelector('.info-icons');
+
+    const ecContainer = document.createElement('div');
+    ecContainer.id = 'encumbrance-info-panel';
+    ecContainer.className = 'mt-2 p-3 border rounded position-relative bg-white';
+    ecContainer.style.maxHeight = '400px';
+    ecContainer.style.overflow = 'hidden';
+    ecContainer.style.border = '1px solid #ddd';
+    ecContainer.style.borderRadius = '15px!important';
+    ecContainer.style.setProperty('border-radius', '15px', 'important');
+
+
+    const panelTitle = document.createElement('div');
+    panelTitle.className = 'd-flex align-items-center pdfheader';
+    panelTitle.innerHTML = `<h6 class="m-0">Encumbrance Certificate</h6>`;
+
+    const closeButton = document.createElement('button');
+    closeButton.innerHTML = '&times;';
+    closeButton.className = 'btn-close vertex-close position-absolute';
+    closeButton.style.top = '0px';
+    closeButton.style.right = '4px';
+    closeButton.style.cursor = 'pointer';
+    closeButton.style.border = 'none';
+    closeButton.style.background = 'transparent';
+    closeButton.style.fontSize = '30px';
+    closeButton.addEventListener('click', () => {
+        ecContainer.remove();
+        $('.district-icon img').removeClass('district-icon-active');
+    });
+
+    const fullscreenButton = document.createElement('button');
+    fullscreenButton.innerHTML = '⛶';
+    fullscreenButton.className = 'btn btn-sm btn-outline-secondary ms-2';
+    fullscreenButton.style.border = 'none';
+    fullscreenButton.style.background = 'transparent';
+    fullscreenButton.style.cursor = 'pointer';
+    fullscreenButton.style.fontSize = '24px';
+    fullscreenButton.style.left = '30px';
+    fullscreenButton.style.position = 'relative';
+
+    const ecFrame = document.createElement('iframe');
+    ecFrame.id = 'pdf-frame';
+    ecFrame.style.width = '100%';
+    ecFrame.style.height = '350px';
+    ecFrame.style.border = 'none';
+    ecFrame.src = `data:application/pdf;base64,${base64String}#toolbar=0&navpanes=1&scrollbar=1&page=1&view=FitH`;
+    ecFrame.allowFullscreen = true;
+
+    function enterFullscreen() {
+        if (ecFrame.requestFullscreen) {
+            ecFrame.requestFullscreen();
+        } else if (ecFrame.mozRequestFullScreen) {
+            ecFrame.mozRequestFullScreen();
+        } else if (ecFrame.webkitRequestFullscreen) {
+            ecFrame.webkitRequestFullscreen();
+        } else if (ecFrame.msRequestFullscreen) {
+            ecFrame.msRequestFullscreen();
+        }
+    }
+
+    function exitFullscreen() {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+            document.mozCancelFullScreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        }
+    }
+
+    fullscreenButton.addEventListener('click', enterFullscreen);
+
+    document.addEventListener('fullscreenchange', () => {
+        if (document.fullscreenElement === ecFrame) {
+            // Adjust to fullscreen size
+            ecFrame.style.width = '100vw';
+            ecFrame.style.height = '100vh';
+            ecFrame.style.border = 'none';
+        } else {
+            // Restore original size
+            ecFrame.style.width = '100%';
+            ecFrame.style.height = '350px';
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && document.fullscreenElement) {
+            exitFullscreen();
+        }
+    });
+
+    panelTitle.appendChild(fullscreenButton);
+    panelTitle.appendChild(closeButton);
+    ecContainer.appendChild(panelTitle);
+    ecContainer.appendChild(ecFrame);
+    iconSection.insertAdjacentElement('afterend', ecContainer);
 }
 function adangalView(){
     clearVertexLabels();
+    facilitiesMarkerSourceClear();
     $(".error-message").empty().hide();
     document.getElementById('areg-tab-container')?.remove();
     document.getElementById('vertex-info-container')?.remove();
@@ -3670,20 +4342,174 @@ function adangalView(){
     document.getElementById('fmb-sketch-info-panel')?.remove();
     document.getElementById('thematic-info-container')?.remove();
     document.getElementById('facility-info-container')?.remove();
+    document.getElementById('encumbrance-info-panel')?.remove();
+    document.getElementById('masterplan-info-container')?.remove();
     $(".error-message").empty().text('Crop - coming soon').show();
 }
-function masterPlanView(){
+function masterPlanView() {
     clearVertexLabels();
+    facilitiesMarkerSourceClear();
     $(".error-message").empty().hide();
-    document.getElementById('areg-tab-container')?.remove();
-    document.getElementById('facility-info-container')?.remove();
-    document.getElementById('vertex-info-container')?.remove();
-    document.getElementById('igr-info-container')?.remove();
-    document.getElementById('JSB-info-container')?.remove();
-    document.getElementById('fmb-sketch-info-panel')?.remove();
-    document.getElementById('thematic-info-container')?.remove();
-    $(".error-message").empty().text('Master Plan - coming soon').show();
+    let currentController = null;
+
+    // Remove other info panels
+    [
+        'areg-tab-container', 'facility-info-container', 'vertex-info-container',
+        'igr-info-container', 'JSB-info-container', 'fmb-sketch-info-panel',
+        'thematic-info-container', 'encumbrance-info-panel', 'masterplan-info-container'
+    ].forEach(id => document.getElementById(id)?.remove());
+
+    const iconSection = document.querySelector('.info-icons');
+
+    // Create info panel container
+    const masterContainer = document.createElement('div');
+    masterContainer.id = 'masterplan-info-container';
+    masterContainer.className = 'mt-2 p-3 border rounded position-relative bg-white';
+    masterContainer.style.maxHeight = '400px';
+    masterContainer.style.overflow = 'hidden';
+    masterContainer.style.border = '1px solid #ddd';
+    masterContainer.style.borderRadius = '15px';
+    masterContainer.style.marginBottom = '8px';
+    iconSection.insertAdjacentElement('afterend', masterContainer);
+
+    // Add centered heading
+    const heading = $('<h5>')
+        .addClass('text-center mb-2 font12')
+        .text('Master Plan Information for selected point');
+    $(masterContainer).append(heading);
+
+    const lat = parseFloat($("#latitude").val());
+    const lon = parseFloat($("#longitude").val());
+    const coord = ol.proj.fromLonLat([lon, lat], 'EPSG:3857');
+
+    const resolution = 10;
+    const halfSize = 50 * resolution;
+    const minX = coord[0] - halfSize;
+    const minY = coord[1] - halfSize;
+    const maxX = coord[0] + halfSize;
+    const maxY = coord[1] + halfSize;
+
+    const geoserverUrl = "https://tngis.tnega.org/geoserver/wms";
+    const layers = [
+        { name: "generic_viewer:lpa_boundary_compined_dept", label: "LPA Boundary" },
+        { name: "generic_viewer:proposed_master_plan_all_dept", label: "Proposed Master Plan" },
+        { name: "generic_viewer:existing_master_plan_all_dept", label: "Existing Master Plan" }
+    ];
+
+    if (currentController) currentController.abort();
+    currentController = new AbortController();
+
+    const masterPlanFields = [
+        'landuse', 'lpa_name', 'planning_authority',
+        'type_of_master_plan', 'status', 'year', 'source'
+    ];
+
+    const labelMap = {
+        landuse: 'Land Use',
+        lpa_name: 'LPA Name',
+        planning_authority: 'Planning Authority',
+        type_of_master_plan: 'Type of Master Plan',
+        status: 'Status',
+        year: 'Year',
+        source: 'Source'
+    };
+
+    const fetchLayer = (layer, onSuccess, onFailure) => {
+        const url = `${geoserverUrl}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo` +
+            `&FORMAT=image/png&TRANSPARENT=true` +
+            `&QUERY_LAYERS=${layer.name}&LAYERS=${layer.name}` +
+            `&INFO_FORMAT=application/json` +
+            `&I=50&J=50&WIDTH=101&HEIGHT=101` +
+            `&CRS=EPSG:3857&BBOX=${minX},${minY},${maxX},${maxY}`;
+
+        fetch(url, { signal: currentController.signal })
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+                return res.json();
+            })
+            .then(data => {
+                if (data.features && data.features.length > 0) {
+                    onSuccess(data.features[0].properties || {});
+                } else {
+                    onFailure();
+                }
+            })
+            .catch(err => {
+                if (err.name === 'AbortError') {
+                    console.warn('Request aborted');
+                } else {
+                    console.error(`Error fetching ${layer.name}:`, err);
+                    onFailure();
+                }
+            });
+    };
+
+    // Step 1: Check if point is inside LPA Boundary
+    fetchLayer(layers[0],
+        () => {
+            // Proceed to fetch Proposed and Existing Master Plan
+            let dataFound = false;
+            let responsesReceived = 0;
+
+            [1, 2].forEach(i => {
+                fetchLayer(layers[i],
+                    (props) => {
+                        dataFound = true;
+
+                        $('<div>')
+                            .addClass('fw-bold mt-2 mb-2 text-primary')
+                            .text(layers[i].label)
+                            .appendTo(masterContainer);
+
+                        masterPlanFields.forEach(key => {
+                            const value = props[key];
+                            let displayValue = '';
+
+                            if (value !== null && value !== undefined) {
+                                displayValue = typeof value === 'object'
+                                    ? (value.name || value.label || JSON.stringify(value))
+                                    : value;
+                            }
+
+                            const itemRow = $('<div>')
+                                .addClass('masterplan-item mb-1')
+                                .html(`<span class="fw-bold">${labelMap[key]}:</span> ${displayValue}`);
+
+                            $(masterContainer).append(itemRow);
+                        });
+
+                        responsesReceived++;
+                        if (responsesReceived === 2 && !dataFound) {
+                            const noDataMsg = $('<div>')
+                                .addClass('.alert-danger text-center p-3')
+                                .text('No data found for the selected point.');
+                            $(masterContainer).append(noDataMsg);
+                        }
+                    },
+                    () => {
+                        responsesReceived++;
+                        if (responsesReceived === 2 && !dataFound) {
+                            const noDataMsg = $('<div>')
+                                .addClass('alert-danger text-center p-3')
+                                .text('No data found for the selected point.');
+                            $(masterContainer).append(noDataMsg);
+                        }
+                    }
+                );
+            });
+        },
+        () => {
+            // Not inside LPA Boundary — don't fetch further
+            const noDataMsg = $('<div>')
+                .addClass('alert-danger text-center p-3')
+                .text('Not covered master plan for the selected point.');
+            $(masterContainer).append(noDataMsg);
+        }
+    );
 }
+
+
+
 
 function addSpaceBeforeCaps(str) {
     return str
@@ -3715,17 +4541,33 @@ document.querySelector(".rotation-left").addEventListener("click", function () {
 });
 
 function verifySubDivision(response) {
+    let Paramas = {};
+    if(response.rural_urban == 'rural'){
+        Paramas = {
+            district_code: response.district_code,
+            taluk_code: response.taluk_code,
+            village_code: response.village_code,
+            survey_number: response.survey_number,
+            sub_division_number: $("#subDivs").text() ? $("#subDivs").text() : 'jjjj',
+            area_type: response.rural_urban
+        } 
+    }else{
+        Paramas = {
+            district_code: response.district_code,
+            taluk_code: response.taluk_code,
+            town_code:response.revenue_town_code,
+            ward_code:response.firka_ward_number,
+            block_code:response.urban_block_number,
+            survey_number: response.survey_number,
+            sub_division_number: $("#subDivs").text() ? $("#subDivs").text() : 'jjjj',
+            area_type: response.rural_urban
+        } 
+    }
     return new Promise((resolve, reject) => {
         $.ajax({
             url: checkAregUrl,
             type: "GET",
-            data: {
-                district_code: response.district_code,
-                taluk_code: response.taluk_code,
-                village_code: response.village_code,
-                survey_number: response.survey_number,
-                sub_division_number: $("#subDivs").text() ? $("#subDivs").text() : 'jjjj'
-            },
+            data: Paramas,
             success: function(data) {
                 resolve(data); // Return the data
             },
@@ -3777,6 +4619,7 @@ function generateDropdown(result) {
 
     // Append the dropdown to the container
     container.appendChild(select);
+    $(".error-message").empty().text('For the selected location, The map contents are not updated. Please select the Survey/Sub division from the dropdown (land records) & proceed further.').show();
 }
 
 
@@ -3820,20 +4663,33 @@ function closever(){
 
 function siteVisitorsCount(){
     $.ajax({
-        url: `${BASE_URL}/v2/site_visitors_track`,
+        url: `${GI_VIEWER_API_URL}/site_visitors_track`,
         method: 'GET',
         success: function (response) {
             var responseDetails = response.stats;
             let totalVisitors = formatIndianNumber(responseDetails.total_visitors);
             let OnlineUsers = formatIndianNumber(responseDetails.currently_online);
             $(".total_visitors").html("Total Unique users (IP): "+totalVisitors);
-            $(".online_viewer").html("Online: "+OnlineUsers);
+            // $(".online_viewer").html("Online: "+OnlineUsers);
         },
         error: function (xhr, status, error) {
             console.error('Error in fetching AREG - ', error);
         }
     });
 }
+
+async function updateOnlineCount() {
+    try {
+      const res = await fetch(GI_VIEWER_API_URL+'/gi_viewer_online_user');
+      const data = await res.json();
+      let OnlineUsers = formatIndianNumber(data.currently_online);
+      $(".online_viewer").html("Online: "+OnlineUsers);
+    } catch {
+      document.getElementById('onlineCount').textContent = 'Error';
+    }
+  }
+  updateOnlineCount();
+  setInterval(updateOnlineCount, 30000);
 
 const generateLink = (coordinates) => {
     let link = "https://www.google.com/maps/dir/?api=1&origin=";
@@ -3851,8 +4707,10 @@ function clearVectorSourceData() {
     geojsonSource.clear();
 }
 function clearVectorBoundarySourceData() {
-    
     selectionGeojsonSource.clear();
+}
+function facilitiesMarkerSourceClear() {
+    facilitiesMarkerSource.clear();
 }
 $("#district-icon").on("click", function() {
     // First remove 'active' class from all images inside #district-icon
@@ -3861,3 +4719,208 @@ $("#district-icon").on("click", function() {
     // Then add 'active' class to the clicked one
     $(this).find("img").addClass('district-icon-active');
 });
+
+function goToLocation() {
+    const latInput = document.getElementById('latitude_div').value.trim();
+    const lngInput = document.getElementById('longitude_div').value.trim();
+
+    // Check for empty input
+    if (!latInput || !lngInput) {
+        showToast('warning', 'Latitude and Longitude cannot be empty');
+        return;
+    }
+
+    // Check if input is a valid number
+    const lat = parseFloat(latInput);
+    const lng = parseFloat(lngInput);
+
+    if (isNaN(lat) || isNaN(lng)) {
+        showToast('warning', 'Latitude and Longitude must be valid numbers');
+        return;
+    }
+
+    // Check global latitude/longitude range
+    if (lat < -90 || lat > 90) {
+        showToast('warning', 'Latitude must be between -90 and 90');
+        return;
+    }
+
+    if (lng < -180 || lng > 180) {
+        showToast('warning', 'Longitude must be between -180 and 180');
+        return;
+    }
+
+    // Tamil Nadu boundary check (approximate bounding box)
+    const tnLatMin = 8.0, tnLatMax = 13.5;
+    const tnLngMin = 76.0, tnLngMax = 80.5;
+
+    if (lat < tnLatMin || lat > tnLatMax || lng < tnLngMin || lng > tnLngMax) {
+        showToast('warning', 'Location is outside Tamil Nadu boundary');
+        return;
+    }
+
+    // Clear existing markers
+    markerSource.clear();
+
+    // Project coordinates and create marker
+    const coord = ol.proj.fromLonLat([lng, lat]);
+    const markerFeature = new ol.Feature({
+        geometry: new ol.geom.Point(coord)
+    });
+
+    markerSource.addFeature(markerFeature);
+
+    // Call function to load land details
+    landDetailsShow(lat, lng);
+}
+  
+
+function getLocation() {
+    if (!navigator.geolocation) {
+        alert("Geolocation is not supported by your browser.");
+        return;
+      }
+    
+      navigator.geolocation.getCurrentPosition(
+        function (position) {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          const accuracy = position.coords.accuracy;
+    
+          console.log("GPS Location:", lat, lon, `Accuracy: ${accuracy} meters`);
+    
+          const coords = ol.proj.fromLonLat([lon, lat]);
+          locationFeature.setGeometry(new ol.geom.Point(coords));
+          map.getView().animate({ center: coords, zoom: 18 });
+    
+          if (window.blinkInterval) clearInterval(window.blinkInterval);
+          window.blinkInterval = setInterval(() => {
+            isVisible = !isVisible;
+            locationLayer.changed();
+          }, 400);
+        },
+        function (error) {
+          console.warn("Geolocation failed:", error.message);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0
+        }
+      );
+  }
+  
+  
+
+  function searchPattaNumber(el){
+    const responseData = JSON.parse(el.getAttribute('data-details'));
+    let pattaNo = responseData.pattaNo;
+    $.ajax({
+    url: TAMIL_NILAM_API_URL + '/pattacopy',
+    type: 'POST',
+    headers: {
+        'X-APP-USER-ID': 12,
+    },
+    data: {
+        district_code: responseData.districtCode,
+        taluk_code: responseData.talukCode,
+        village_code: responseData.villCode,
+        patta_number: pattaNo
+    },
+    beforeSend: function () {
+        // showSpinner("Fetching data from NIC... Please wait...!");
+    },
+    complete: function () {
+        // hideSpinner();
+    },
+    success: function (response) {
+        if (typeof response === 'string') {
+        try {
+            response = JSON.parse(response);
+        } catch (e) {
+            console.error("Failed to parse response JSON:", e);
+            return;
+        }
+        }
+
+        $('.mb-4.hidden').removeClass('hidden');
+
+        if (response.success === '1') {
+        const base64String = response.data;
+
+        if (base64String && typeof base64String === 'string') {
+            try {
+            // Convert base64 to byte array
+            const base64PDF = base64String; // must not include the data prefix
+            const fullscreenBtn = document.getElementById("fullscreenPattaBtn");
+            const pattaContainer = document.getElementById("patta");
+            const iframe = document.getElementById("pattaViewerFrame");
+
+            // Replace this with your actual base64 PDF string (without prefix)
+            const pdfOptions = "#toolbar=0&navpanes=1&scrollbar=1&page=1&view=FitH";
+            // Load the clean PDF view into the iframe
+            const pdfViewerHTML = `
+                <html>
+                <body style="margin:0;padding:0;overflow:hidden;">
+                    <embed src="data:application/pdf;base64,${base64PDF}${pdfOptions}" type="application/pdf" width="100%" height="100%"/>
+                </body>
+                </html>
+            `;
+
+            iframe.src = "data:text/html;base64," + btoa(pdfViewerHTML);
+
+            // Fullscreen trigger
+            fullscreenBtn.addEventListener("click", () => {
+                if (iframe.requestFullscreen) {
+                iframe.requestFullscreen();
+                } else if (iframe.webkitRequestFullscreen) {
+                iframe.webkitRequestFullscreen();
+                } else if (iframe.mozRequestFullScreen) {
+                iframe.mozRequestFullScreen();
+                } else if (iframe.msRequestFullscreen) {
+                iframe.msRequestFullscreen();
+                } else {
+                alert("Fullscreen not supported by this browser.");
+                }
+            });
+            
+            } catch (e) {
+            console.error("Error processing base64 PDF string: ", e);
+            }
+        } else {
+            console.error("Invalid base64 string.");
+        }
+        } else if (response.success === '2') {
+        Swal.fire({
+            icon: 'error',
+            title: 'Patta Details Not Found',
+            text: response.message || 'Please check the patta number and try again.',
+            confirmButtonText: 'OK'
+        }).then(() => {
+            $('#patta_info_container').empty();
+            $('#patta_number_search').val('');
+        });
+        } else if (response.success === '3') {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Inappropriate API Response',
+            text: response.message || 'The API returned an inappropriate response.',
+            confirmButtonText: 'OK'
+        }).then(() => {
+            $('#patta_info_container').empty();
+            $('#patta_number_search').val('');
+        });
+        } else {
+        console.error("Unexpected response:", response);
+        }
+    },
+    error: function (xhr, status, error) {
+        // hideSpinner();
+        console.error('Error:', error);
+        console.error('Status:', status);
+        console.error('Response Text:', xhr.responseText);
+    }
+    });
+  
+  }
+  

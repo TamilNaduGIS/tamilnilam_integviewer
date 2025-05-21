@@ -1,12 +1,14 @@
 const BASE_URL = "https://tngis.tnega.org/generic_api";
+const GI_VIEWER_API_URL = "https://tngis.tnega.org/gi_viewer_api/api";
 const GEOSERVER_URL = 'https://tngis.tnega.org/geoserver/wms';
 const checkAregUrl = 'https://tngis.tnega.org/generic_api/v1/check_Areg';
 const ADMIN_CODE_TYPE = 'revenue';
 const AREG_SEARCH_TYPE = 'survey_number';
 const AREG_SEARCH_URL = 'https://tngis.tnega.org/tamilnilam_api/v1/tamil_nillam_ownership';
+const TAMIL_NILAM_API_URL = 'https://tngis.tnega.org/tamilnilam_api/v1';
 const FMB_SKETCH_URL = 'https://tngis.tnega.org/generic_api/v1/fmb_sketch';
 const IGR_SERVICE_LAYER_NAME = 'Thematic_XYZ';
-const IGR_URL = 'https://tngis.tnega.org/thematic_viewer_api/v1/getfeatureInfo'
+const IGR_URL = 'https://tngis.tn.gov.in/apps/thematic_viewer_api/v1/getfeatureInfo'
 const POPULATION_URL = 'https://tngis.tnega.org/thematic_viewer_api/v1/getfeatureinfo_population'
 const jsonFilePath = './assets/js/layerConfig.json';
 const thematicJsonFilePath = './assets/js/thematicLayerConfig.json';
@@ -121,11 +123,6 @@ function populateDropdown(dropdownId, response, config) {
     }
 }
 
-
-
-
-
-
 function resetDropdown(dropdownId, defaultText) {
     const selectElement = document.getElementById(dropdownId);
     if (!selectElement) {
@@ -142,8 +139,6 @@ function resetDropdown(dropdownId, defaultText) {
     });
     selectElement.dispatchEvent(event);
 }
-
 function formatIndianNumber(number) {
     return new Intl.NumberFormat('en-IN').format(number);
   }
-  

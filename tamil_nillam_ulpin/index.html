@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="robots" content="noindex, nofollow">
-      <!-- Favicons -->
+    <!-- Favicons -->
     <link href="assets/logo/tn-logo.png" rel="icon">
     <link href="assets/logo/tn-logo.png" rel="apple-touch-icon">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,16 +19,16 @@
     <link rel="stylesheet" href="assets/css/toastr.min.css">
 
     <style>
-      .jsb-carousel-wrapper::-webkit-scrollbar {
-    height: 6px;
-}
-.jsb-carousel-wrapper::-webkit-scrollbar-thumb {
-    background: #aaa;
-    border-radius: 5px;
-}
-.jsb-carousel-wrapper::-webkit-scrollbar-track {
-    background: transparent;
-}
+        .jsb-carousel-wrapper::-webkit-scrollbar {
+            height: 6px;
+        }
+        .jsb-carousel-wrapper::-webkit-scrollbar-thumb {
+            background: #aaa;
+            border-radius: 5px;
+        }
+        .jsb-carousel-wrapper::-webkit-scrollbar-track {
+            background: transparent;
+        }
 
         #tngisLogo{
             width: 35px!important;
@@ -36,10 +36,10 @@
             margin-top: 3rem;
             background: none!important;
         }
-        
+
         /* Tooltip container */
         .tooltip {
-                position: relative;
+            position: relative;
         }
 
         /* Tooltip text */
@@ -63,7 +63,7 @@
             visibility: visible;
         }
         /* Spinner overlay container */
-        
+
         .backdrop-loader {
             position: absolute;
             top: 0;
@@ -78,29 +78,24 @@
             backdrop-filter: blur(2px); /* optional blur effect */
         }
         .loader {
-        border: 6px solid #f3f3f3;
-        border-top: 6px solid #3498db;
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        animation: spin 1s linear infinite;
-        margin: auto;
-        position: absolute;
-        top: 32%;
-        left: 44%;
-        transform: translate(-50%, -50%);
-        z-index: 9999;
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: auto;
+            position: absolute;
+            top: 32%;
+            left: 44%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
         }
 
         @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
-
-
-        
-
-        
     </style>
 </head>
 
@@ -131,87 +126,93 @@
         <div class="offcanvas-body">
             <div class="accordion" id="accordionPanelsLayers">
                 <div class="accordion-item">
-                  <h2 class="accordion-header" id="panelsStayOpen-headingOne">
-                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseOne" aria-expanded="true" aria-controls="panelsStayOpen-collapseOne">
-                        Basemaps
-                    </button>
-                  </h2>
-                  <div id="panelsStayOpen-collapseOne" class="accordion-collapse collapse show" aria-labelledby="panelsStayOpen-headingOne">
-                    <div class="accordion-body">
-                      <div class="basemap-control my-1">
-                        <label class="maptype">
-                            <input type="radio" class="basemap-btn" name="basemap" value="osm"  onclick="changeBasemap('basemap', 'osm')">Street Map
-                        </label>
-                        <label class="maptype">
-                            <input type="radio" class="basemap-btn" name="basemap" value="satellite"  checked onclick="changeBasemap('basemap', 'satellite')"> Satellite
-                        </label>
-                        <label class="maptype">
-                            <input type="radio" class="basemap-btn" name="basemap" value="terrain"  onclick="changeBasemap('basemap', 'terrain')"> Terrain
-                        </label>
-                        <label class="maptype">
-                            <input type="radio" class="basemap-btn" name="basemap" value="nomap"  onclick="changeBasemap('basemap', 'nomap')"> No Map
-                        </label>
-                        
+                    <h2 class="accordion-header" id="panelsStayOpen-headingOne">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseOne" aria-expanded="true" aria-controls="panelsStayOpen-collapseOne">
+                            Basemaps
+                        </button>
+                    </h2>
+                    <div id="panelsStayOpen-collapseOne" class="accordion-collapse collapse show" aria-labelledby="panelsStayOpen-headingOne">
+                        <div class="accordion-body">
+                            <div class="basemap-control my-1">
+                                <label class="maptype">
+                                    <input type="radio" class="basemap-btn" name="basemap" value="osm"  onclick="changeBasemap('basemap', 'osm')">Street Map
+                                </label>
+                                <label class="maptype">
+                                    <input type="radio" class="basemap-btn" name="basemap" value="satellite"  checked onclick="changeBasemap('basemap', 'satellite')"> Satellite
+                                </label>
+                                <label class="maptype">
+                                    <input type="radio" class="basemap-btn" name="basemap" value="terrain"  onclick="changeBasemap('basemap', 'terrain')"> Terrain
+                                </label>
+                                <label class="maptype">
+                                    <input type="radio" class="basemap-btn" name="basemap" value="nomap"  onclick="changeBasemap('basemap', 'nomap')"> No Map
+                                </label>
+
+                            </div>
+                        </div>
                     </div>
-                    </div>
-                  </div>
                 </div>
                 <div class="accordion-item">
                     <h2 class="accordion-header" id="panelsStayOpen-headingThree">
-                      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseThree" aria-expanded="false" aria-controls="panelsStayOpen-collapseThree">
-                        Thematic Map
-                      </button>
-                    </h2>
-                    <div id="panelsStayOpen-collapseThree" class="accordion-collapse collapse" aria-labelledby="panelsStayOpen-headingThree">
-                      <div class="accordion-body">
-                        <div id="thematic-layer-control" class="my-1">
-                            <div class="accordion" id="accordionPanelsStayOpenExampleThematic"></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="panelsStayOpen-headingTwo">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseTwo" aria-expanded="false" aria-controls="panelsStayOpen-collapseTwo">
-                        Layers
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#panelsStayOpen-collapseThree" aria-expanded="false"
+                            aria-controls="panelsStayOpen-collapseThree">
+                            Thematic Map
                         </button>
                     </h2>
-                    <div id="panelsStayOpen-collapseTwo" class="accordion-collapse collapse" aria-labelledby="panelsStayOpen-headingTwo">
+                    <div id="panelsStayOpen-collapseThree" class="accordion-collapse collapse"
+                        aria-labelledby="panelsStayOpen-headingThree">
                         <div class="accordion-body">
-                        <div id="layer-control" class="my-1">
-                            <!-- Layers will be dynamically added here -->
-                            <div class="accordion" id="accordionPanelsStayOpenExample"></div>
-                        </div>
+                            <div id="thematic-layer-control" class="my-1">
+                                <div class="accordion" id="accordionPanelsStayOpenExampleThematic"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                
-              </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="panelsStayOpen-headingTwo">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#panelsStayOpen-collapseTwo" aria-expanded="false"
+                            aria-controls="panelsStayOpen-collapseTwo">
+                            Layers
+                        </button>
+                    </h2>
+                    <div id="panelsStayOpen-collapseTwo" class="accordion-collapse collapse"
+                        aria-labelledby="panelsStayOpen-headingTwo">
+                        <div class="accordion-body">
+                            <div id="layer-control" class="my-1">
+                                <!-- Layers will be dynamically added here -->
+                                <div class="accordion" id="accordionPanelsStayOpenExample"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-            
-            
+            </div>
+
+
+
         </div>
     </div>
-    
+
     <div class="gears text-center">
         <!-- Reset to Default Rotation Button -->
         <button id="legend" class="layer-btns" type="button" data-bs-toggle="modal" data-bs-target="#legendmodal" title="Legend"><i class="bi bi-card-list"></i></button>
-        
-       <!-- Modal -->
+
+        <!-- Modal -->
         <div class="modal fade" id="legendmodal" data-bs-backdrop="false" data-bs-keyboard="false" tabindex="-1" aria-labelledby="legendmodaldropLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                <h1 class="modal-title fs-5" id="legendmodaldropLabel">Legend</h1>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="legendmodaldropLabel">Legend</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="legend-content"></div>
+                    </div>
                 </div>
-                <div class="modal-body">
-                    <div id="legend-content"></div>
-                </div>
-            </div>
             </div>
         </div>
-        
+
         <div class="rotation layer-btns" title="Map Rotation">
             <a id="resetRotation">
                 <img src="assets/logo/north-arrow-svg.svg" class="north" alt="North Arrow">
@@ -226,14 +227,16 @@
             </div>
 
         </div>
-        
+
         <!-- <button id="fullscreenBtn" class="layer-btns"><i class="bi bi-arrows-fullscreen"></i></button> -->
-       <button id="zoom-to-extent-btn" class="layer-btns" title="Extent"><i class="bi bi-arrow-counterclockwise"></i></button>
+        <button id="zoom-to-extent-btn" class="layer-btns" title="Extent"><i class="bi bi-arrow-counterclockwise"></i></button>
         <!-- <button id="currentLocationBtn" class="layer-btns"><i class="bi bi-crosshair"></i></button> -->
         <button id="zoom-in-btn" class="layer-btns" title="zoom-in"><i class="bi bi-plus-circle-fill"></i></button>
         <button id="zoom-out-btn" class="layer-btns" title="Zoom-out"><i class="bi bi-dash-circle-fill"></i></button>
+        <button id="current-location" class="layer-btns" title="Current Location"><i
+                class="bi bi-crosshair"></i></button>
         <a href="https://tngis.tnega.org/" title="TNGIS" target="_blank"><img class="layer-btns" src="assets/logo/gis-logo-white.png" id="tngisLogo" alt="TNGIS-logo" srcset=""></a>
-        
+
     </div>
     <div class="offcanvas offcanvas-end menu" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="offcanvasScrolling-right" aria-labelledby="offcanvasScrollingLabel">
         <div class="offcanvas-header">
@@ -301,12 +304,60 @@
                     </select>
                 </div>
                 <div id="goto-fields">
-                    <p>Goto option Coming soon</p>
+                    <div class="container py-2" style="max-width: 360px;">
+                        
+                        <div class=" card p-3 shadow-sm rounded-4 location_search_by_name">
+                            <div class="search-title">Enter your place name</div>
+                            <div class="input-group search-input-group">
+                                <input type="search" class="form-control" placeholder="Enter place name..."
+                                       onkeypress="if(event.keyCode==13) { searchlocation(); }"
+                                       id="search_query_text"
+                                       oninput="this.value = this.value.replace(/[^0-9a-z ]/gi, '')"
+                                       maxlength="20" autocomplete="off">
+                                <button class="btn btn-search" type="button" onclick="searchlocation()">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"
+                                         class="bi bi-search search-icon" viewBox="0 0 16 16">
+                                        <path fill-rule="evenodd"
+                                              d="M11 6a5 5 0 1 1-10 0 5 5 0 0 1 10 0zM15.7 14.3l-3.9-3.9a6 6 0 1 0-1.4 1.4l3.9 3.9a1 1 0 0 0 1.4-1.4z"/>
+                                    </svg>
+                                </button>
+                                <ul class="search-results d-none" id="result_search"></ul>
+                            </div>
+                        </div>
+                        <div class="my-2"style="text-align: center;">
+                            <label>(OR)</label>
+                        </div>
+                        <div class="card p-3 shadow-sm rounded-4 gotolocation">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-12">
+                                    <label for="latitude_div"
+                                        class="form-label small mb-1 latitude_lable"><strong>Latitude:</strong> <span
+                                            style="color:red">(in Decimal Degree)</span></label>
+                                    <input type="text" id="latitude_div" class="form-control latlongdiv" value=""
+                                        placeholder="Enter latitude">
+                                </div>
+                                <div class="col-12">
+                                    <label for="longitude_div"
+                                        class="form-label small mb-1 latitude_lable"><strong>Longitude:</strong> <span
+                                            style="color:red">(in Decimal Degree)</span></label>
+                                    <input type="text" id="longitude_div" class="form-control latlongdiv" value=""
+                                        placeholder="Enter longitude">
+                                </div>
+                                <div class="col-12 d-grid mt-2">
+                                    <button class="btn btn-primary btn-sm" onclick="goToLocation()">Go To</button>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+
+
                 </div>
             </div>
         </div>
     </div>
-    
+
     <!-- Modal -->
     <div class="modal fade" id="staticBackdrop" data-bs-backdrop="false" data-bs-keyboard="false" focus="false"
         tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
@@ -318,9 +369,9 @@
                 </div>
                 <div class="modal-body lpi-modal-body" id="lpi-container">
                     <div class="backdrop-loader" style="display: none;">
-                          <div class="loader"></div>
-                          <p style="color: #fff; text-align: center; margin-top: 30px;">Loading...</p>
-                      </div>
+                        <div class="loader"></div>
+                        <p style="color: #fff; text-align: center; margin-top: 30px;">Loading...</p>
+                    </div>
                     <!-- <div class="loading-message">Data loading<span class="dots"></span></div> -->
 
                     <div class="info-section p-0 px-2" id="lpi-content">
@@ -329,17 +380,17 @@
                             <div><strong>Taluk:</strong> <br> - / -</div>
                             <div><strong>Village:</strong> <br> - / -</div>
                         </div>
-                        
+
                         <div class="lgd-codes p-0 px-1">
                             <div><strong>Village LGD Code:</strong> - </div>
                         </div>
-                        
+
                         <div class="info-survey-section">
                             <div><strong>ULPIN:</strong><br> - </div>
                             <div><strong>Centroid:</strong><br>-</div>
                             <div><strong>Survey No:</strong><br> -/-</div>
                         </div>
-                           
+
                         <div class="info-icons">
 
                             <!-- uldabba buttons -->
@@ -389,27 +440,34 @@
                                     <button class="nav-link district-icon" id="nex-tab" type="button"
                                         data-target="#nex-tab-pane" aria-controls="nex-tab-pane" aria-selected="false">
                                         <b>Thematic</b>
-                                        
+
                                     </button>
                                 </li>
                             </ul>
                         </div>
                     </div>
                     <div class="alert alert-danger error-message animate__animated animate__fadeInDown" role="alert"></div>
+                    <div class="alert alert-info animate__animated animate__fadeInDown d-none" id="apiStatus"
+                        role="alert">
+                        Loading<span id="loadingDots"></span>
+                    </div>
+
+
                 </div>
             </div>
         </div>
     </div>
     <script>
-        
+
     </script>
 
     <div id="menu" class="hidden">
-        
+
         <h3>Change Background Map</h3>
         <div class="background-options">
             <button class="basemap-btn" id="osm-btn" onclick="changeBasemap('basemap', 'osm')">OpenStreetMap</button>
-            <button class="basemap-btn" id="satellite-btn" onclick="changeBasemap('basemap', 'satellite')">Satellite</button>
+            <button class="basemap-btn" id="satellite-btn"
+                onclick="changeBasemap('basemap', 'satellite')">Satellite</button>
             <button class="basemap-btn" id="terrain-btn" onclick="changeBasemap('basemap', 'terrain')">Terrain</button>
         </div>
     </div>
@@ -439,18 +497,22 @@
             }
         </style>
         <div id="map-icons">
-            
+
             <div class="map-footer">
-                <p class="mousePosition mb-2"><i class="bi bi-geo-alt-fill"></i><span id="lat">7.325413164844948</span> ,
-                    <span id="lon">76.133061568552585282</span></p>
-                
+                <p class="mousePosition mb-2"><i class="bi bi-geo-alt-fill"></i><span id="lat">7.325413164844948</span>
+                    ,
+                    <span id="lon">76.133061568552585282</span>
+                </p>
+
             </div>
         </div>
- 
+
         <div class="ps-2 copyrights">
             <a class="text-white px-2 txt-aligns" data-bs-toggle="modal" data-bs-target=".disclaimer"
                 style="cursor: pointer;"><span><i class="bi bi-eye"></i> Disclaimer</span></a>
-            <span>Copyright © Designed and developed by <a href="https://tnega.tn.gov.in/" target="_blank">TNeGA&nbsp;<img src="assets/logo/tnega-logo.png" alt="TNGIS Logo" title="TNeGA Logo" class="logo_tnega"></a></span>
+            <span>Copyright © Designed and developed by <a href="https://tnega.tn.gov.in/"
+                    target="_blank">TNeGA&nbsp;<img src="assets/logo/tnega-logo.png" alt="TNGIS Logo" title="TNeGA Logo"
+                        class="logo_tnega"></a></span>
         </div>
         <div class="ps-2 copyrights">
             <span class="total_visitors"></span>
@@ -461,10 +523,10 @@
                     title="Survey and Settlement Department" target="_blank">Survey and Settlement Department</a> & <a
                     href='https://tnreginet.gov.in/' title="IGR" target="_blank">IGR</a> - GoTN</span>
         </div>
-        
-        
+
+
         <!-- <div>Powered by TNeGA</div> -->
-        
+
 
 
     </div>
@@ -492,7 +554,7 @@
     </div>
 
     <!-- HTML Structure for Areg Info Panel -->
-    
+
 
     <!-- FMB Sketch Panel -->
     <div id="fmb-sketch-info-panel" style="display: none;">
@@ -527,35 +589,50 @@
             <!-- Card content will be added dynamically -->
         </div>
     </div>
-
+    
 
 
     <!-- disclamier -->
     <div class="modal fade disclaimer" tabindex="-1" aria-labelledby="disclaimer" aria-modal="true" role="dialog">
-      <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header py-2">
-            <h1 id="disclaimer" class="modal-title fs-5 txt-blue"><i class="bi bi-exclamation-circle"></i><span class="ps-2">Disclaimer</span></h1>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body" style="font-size: 12px;">       
-            <p id="d1"><i class="bi bi-check2-circle"></i> All boundaries displayed are indicative boundaries. The map boundaries shall not be used for any legal purposes.</p>
-            <p id="d2"><i class="bi bi-check2-circle"></i> There are possibilities of FMB sketches not updated in this application wherein the FMB sketches might have got created digitally and may be available in downloads section.</p>
-            <p id="d3"><i class="bi bi-check2-circle"></i> If FMB sketches are not available or not updated, contact the respective Taluka surveyor and get them updated in collabland software.</p>
-            <p id="d4"><i class="bi bi-check2-circle"></i> In case of any wrong depiction of available FMB sketches, please contact the respective Taluka surveyor for updation.</p>
-            <p id="d5"><i class="bi bi-check2-circle"></i> The ownership information displayed are as available in Tamil Nilam database maintained and shared by NIC through API's.</p>
-            <p id="d6"><i class="bi bi-check2-circle"></i> Correction / objection to the ownership records or the maps therein should be represented to Department of Survey and Settlements only.</p>
-            <p id="d7"><i class="bi bi-check2-circle"></i> The Government, Department nor any Officer of Govt and its representatives can't be held responsible for any loss / damage happened due to the utility / effectiveness of usage of the app and its data contents.</p>
-            <p id="d8"><i class="bi bi-check2-circle"></i> The contents are made available to general public as part of its transparency and data utility to general public not for commercial uses.</p>
-            <p id="d9"><i class="bi bi-check2-circle"></i> Any commercial use from the data of this app and its derivatives is strictly prohibited.</p>
-          </div>
+        <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h1 id="disclaimer" class="modal-title fs-5 txt-blue"><i class="bi bi-exclamation-circle"></i><span
+                            class="ps-2">Disclaimer</span></h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="font-size: 12px;">
+                    <p id="d1"><i class="bi bi-check2-circle"></i> All boundaries displayed are indicative boundaries.
+                        The map boundaries shall not be used for any legal purposes.</p>
+                    <p id="d2"><i class="bi bi-check2-circle"></i> There are possibilities of FMB sketches not updated
+                        in this application wherein the FMB sketches might have got created digitally and may be
+                        available in downloads section.</p>
+                    <p id="d3"><i class="bi bi-check2-circle"></i> If FMB sketches are not available or not updated,
+                        contact the respective Taluka surveyor and get them updated in collabland software.</p>
+                    <p id="d4"><i class="bi bi-check2-circle"></i> In case of any wrong depiction of available FMB
+                        sketches, please contact the respective Taluka surveyor for updation.</p>
+                    <p id="d5"><i class="bi bi-check2-circle"></i> The ownership information displayed are as available
+                        in Tamil Nilam database maintained and shared by NIC through API's.</p>
+                    <p id="d6"><i class="bi bi-check2-circle"></i> Correction / objection to the ownership records or
+                        the maps therein should be represented to Department of Survey and Settlements only.</p>
+                    <p id="d7"><i class="bi bi-check2-circle"></i> The Government, Department nor any Officer of Govt
+                        and its representatives can't be held responsible for any loss / damage happened due to the
+                        utility / effectiveness of usage of the app and its data contents.</p>
+                    <p id="d8"><i class="bi bi-check2-circle"></i> The contents are made available to general public as
+                        part of its transparency and data utility to general public not for commercial uses.</p>
+                    <p id="d9"><i class="bi bi-check2-circle"></i> Any commercial use from the data of this app and its
+                        derivatives is strictly prohibited.</p>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
     <!-- disclaimer -->
-    
-    <script src="assets/js/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-    <script src="assets/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+
+    <script src="assets/js/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+        crossorigin="anonymous"></script>
+    <script src="assets/js/bootstrap.bundle.min.js"
+        integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+        crossorigin="anonymous"></script>
     <script src="assets/js/toastr.min.js"></script>
     <script src="vendor/openlayer/dist/ol.js"></script>
     <script src="assets/js/config.js"></script>
@@ -576,7 +653,7 @@
             // Show spinner
             $(".backdrop-loader").show();
             // $(".loading-message").show();
-            
+
         }
 
         // Function to hide spinner
@@ -593,36 +670,29 @@
             // districtDropDown();
             // Initial check for visibility
             updateWMSLayerVisibility();
-
             let isDragging = false;
             let offsetX = 0;
             let offsetY = 0;
             let $currentDialog = null;
-
             $(document).on('mousedown', '.modal-header', function (e) {
                 $currentDialog = $(this).closest('.modal').find('.modal-dialog');
-
                 isDragging = true;
                 offsetX = e.clientX - $currentDialog.offset().left;
                 offsetY = e.clientY - $currentDialog.offset().top;
-
                 $currentDialog.css('cursor', 'grabbing');
                 // Optional: set position to fixed so dragging feels natural
                 $currentDialog.css('position', 'fixed');
             });
-
             $(document).on('mousemove', function (e) {
                 if (isDragging && $currentDialog) {
                     const left = e.clientX - offsetX;
                     const top = e.clientY - offsetY;
-
                     $currentDialog.css({
                         left: left + 'px',
                         top: top + 'px'
                     });
                 }
             });
-
             $(document).on('mouseup', function () {
                 if (isDragging && $currentDialog) {
                     isDragging = false;
@@ -630,12 +700,9 @@
                     $currentDialog = null;
                 }
             });
-
-
             $('.nav-link').on('click', function () {
                 const target = $(this).data('target');
                 const content = $(target);
-
                 // If the clicked tab is already active, hide it
                 if ($(this).hasClass('active')) {
                     $(this).removeClass('active').attr('aria-selected', 'false');
@@ -644,14 +711,11 @@
                     // Deactivate all tabs and content
                     $('.nav-link').removeClass('active').attr('aria-selected', 'false');
                     $('.tab-pane').removeClass('show active');
-
                     // Activate the clicked tab and content
                     $(this).addClass('active').attr('aria-selected', 'true');
                     content.addClass('show active');
                 }
             });
-
-            
         })
 
         function populateSelect(selector, data, codeField, nameField, label) {
@@ -668,7 +732,7 @@
             geojsonLayer.setVisible(false);
         }
 
-        function fetchGeometry(caseType, districtCode, talukCode, villageCode,survey_number) {
+        function fetchGeometry(caseType, districtCode, talukCode, villageCode, survey_number,sub_division_number) {
             $.ajax({
                 url: `${BASE_URL}/v1/get_geom`,
                 method: 'POST',
@@ -681,7 +745,8 @@
                     district_code: districtCode,
                     taluk_code: talukCode,
                     village_code: villageCode,
-                    survey_number:survey_number,
+                    survey_number: survey_number,
+                    sub_division_number: sub_division_number,
                 },
                 success: function (response) {
                     if (response.success) {
@@ -698,7 +763,7 @@
 
                         map.getView().fit(extent, {
                             duration: 4000,
-                            maxZoom: 15,
+                            maxZoom: 18,
                             padding: [20, 20, 20, 20]
                         });
                         geojsonLayer.setVisible(true);
@@ -713,7 +778,7 @@
             });
         }
 
-        function fetchGeometryUrban(caseType, districtCode, talukCode, town_code,ward_code,block_code) {
+        function fetchGeometryUrban(caseType, districtCode, talukCode, town_code, ward_code, block_code) {
             $.ajax({
                 url: `${BASE_URL}/v1/get_geom`,
                 method: 'POST',
@@ -724,9 +789,9 @@
                     case: caseType,
                     code_type: 'revenue',
                     district_code: districtCode,
-                    taluk_code: talukCode  || 0,
-                    town_code: town_code  || 0,
-                    ward_code: ward_code  || 0,
+                    taluk_code: talukCode || 0,
+                    town_code: town_code || 0,
+                    ward_code: ward_code || 0,
                     block_code: block_code || 0,
 
                 },
@@ -745,7 +810,7 @@
 
                         map.getView().fit(extent, {
                             duration: 4000,
-                            maxZoom: 15,
+                            maxZoom: 18,
                             padding: [20, 20, 20, 20]
                         });
                         geojsonLayer.setVisible(true);
@@ -761,7 +826,7 @@
         }
 
 
-        function fetchGeometrySurvey(caseType, admin_type,districtCode, talukCode, villageCode,townCode,wardCode,blockCode,surveyNumber) {
+        function fetchGeometrySurvey(caseType, admin_type, districtCode, talukCode, villageCode, townCode, wardCode, blockCode, surveyNumber) {
             $.ajax({
                 url: `${BASE_URL}/v1/get_geom`,
                 method: 'POST',
@@ -774,11 +839,11 @@
                     district_code: districtCode,
                     taluk_code: talukCode,
                     village_code: villageCode,
-                    admin_type:admin_type,
-                    town_code:townCode,
-                    ward_code:wardCode,
-                    block_code:blockCode,
-                    survey_number:surveyNumber
+                    admin_type: admin_type,
+                    town_code: townCode,
+                    ward_code: wardCode,
+                    block_code: blockCode,
+                    survey_number: surveyNumber
                 },
                 success: function (response) {
                     if (response.success) {
@@ -810,7 +875,7 @@
             });
         }
 
-        
+
 
         // script for urban and rural switching
         document.addEventListener("DOMContentLoaded", function () {
@@ -885,21 +950,99 @@
                 });
             });
         });
-        function comingsoon(){
-            alert("Coming soon");
+
+
+        $(document).ready(function () {
+            $("#year").text(new Date().getFullYear());
+
+            const modal = new bootstrap.Modal(document.getElementById('staticBackdrop'), {
+                backdrop: 'static',
+                keyboard: true,
+                focus: false
+            });
+
+            $('#search_query_text').on('input', function () {
+                if ($(this).val().length >= 3) {
+                    //$('#search_location').removeClass('d-none');
+                    $('.loaderGif').removeClass('d-none');
+                    searchTimeout = setTimeout(searchlocation, 2000);
+                }
+                else {
+                    //$('#search_location').addClass('d-none');
+                    $('#result_search').empty();
+                    $('#result_search').addClass('d-none');
+                }
+            });
+
+        });
+        $('#latitude_div').on('click', function () {
+            $(this).focus();
+            $('#latitude_div').css('pointer-events', 'auto');
+
+        });
+    let searchTimeout;
+
+    function searchlocation() {
+        clearTimeout(searchTimeout);
+        let search_query = $('#search_query_text').val().trim();
+        $('#result_search').empty().addClass('d-none');
+
+        if (search_query.length >= 3) {
+            let data = {
+                "format": "json",
+                "countrycodes": "IN",
+                "addressdetails": 1,
+                "q": search_query
+            };
+
+            $.ajax({
+                method: "GET",
+                url: "https://tngis.tnega.org/nominatim/search.php",
+                data: data
+            }).done(function (msg) {
+                if (msg.length > 0) {
+                    let result_elements = '';
+                    for (let i = 0; i < msg.length; i++) {
+                        result_elements += `<li class="search-result-item" data-lat="${msg[i].lat}" data-lon="${msg[i].lon}">
+                            ${msg[i].display_name}</li>`;
+                    }
+                    $('#result_search').html(result_elements).removeClass('d-none');
+                } else {
+                    $('#result_search').html('<li class="search_noresult">No Result Found</li>').removeClass('d-none');
+                }
+            });
         }
+    }
 
-    </script>
-    <script>
-    $(document).ready(function () {
-        $("#year").text(new Date().getFullYear());
+    // Click on result item
+    $(document).on('click', '.search-result-item', function () {
+        let lat = $(this).data('lat');
+        let lon = $(this).data('lon');
+        let name = $(this).text().trim();
+        $('#search_query_text').val(name); // fill input box
+        $('#result_search').addClass('d-none');
         
+        markerSource.clear();
 
-        
-    }); 
+        // Project coordinates and create marker
+        const coord = ol.proj.fromLonLat([lon, lat]);
+        const markerFeature = new ol.Feature({
+            geometry: new ol.geom.Point(coord)
+        });
+
+        markerSource.addFeature(markerFeature);
+        landDetailsShow(lat,lon);
+    });
+
+    // Hide list if clicked outside
+    $(document).on('click', function (e) {
+        if (!$(e.target).closest('.search-input-group').length) {
+            $('#result_search').addClass('d-none');
+        }
+    });
     
     </script>
-    
+
 </body>
 
 </html>

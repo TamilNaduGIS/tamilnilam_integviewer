@@ -15,7 +15,7 @@
                     "LAYERS": "generic_viewer:elevation_raster",
                     "STYLES": ""
                 },
-                "icon":"assets/logo/thema-icons/elevation.png",
+                "icon":"assets/logo/thema-icons/elevation.svg",
                 "view":"thematic_view"
             },
             {
@@ -30,7 +30,7 @@
                     "LAYERS": "generic_viewer:tn_slope",
                     "STYLES": ""
                 },
-                "icon":"assets/logo/thema-icons/slope.png",
+                "icon":"assets/logo/thema-icons/slope.svg",
                 "view":"thematic_view"
             },
             {
@@ -45,7 +45,7 @@
                     "LAYERS": "generic_viewer:tn_aspect",
                     "STYLES": ""
                 },
-                "icon":"assets/logo/thema-icons/aspect.png",
+                "icon":"assets/logo/thema-icons/aspect.svg",
                 "view":"thematic_view"
             },
             {
@@ -60,7 +60,7 @@
                     "LAYERS": "generic_viewer:tn_contours",
                     "STYLES": ""
                 },
-                "icon":"assets/logo/thema-icons/contour.png",
+                "icon":"assets/logo/thema-icons/contour.svg",
                 "view":"thematic_view"
             }
             
@@ -81,7 +81,22 @@
                     "LAYERS": "cadastral_analysis:population",
                     "STYLES": ""
                 },
-                "icon":"assets/logo/thema-icons/demography.png",
+                "icon":"assets/logo/thema-icons/demography.svg",
+                "view":"thematic_view"
+            },
+            {
+                "id": "Cattle_Population",
+                "name": "Cattle Population",
+                "title": "Cattle Population",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:animal_population",
+                    "STYLES": ""
+                },
+                "icon":"assets/logo/thema-icons/demography.svg",
                 "view":"thematic_view"
             }
         ]
@@ -101,13 +116,13 @@
                     "LAYERS": "generic_viewer:geology",
                     "STYLES": ""
                 },
-                "icon":"assets/logo/thema-icons/geology.png",
+                "icon":"assets/logo/thema-icons/geology.svg",
                 "view":"thematic_view"
             },
             {
                 "id": "geomorphology_id",
-                "name": "G-morphology",
-                "title": "Geomorphology",
+                "name": "Geo morphology",
+                "title": "Geo morphology",
                 "type": "wms",
                 "defaultOpacity": 1,
                 "defaultVisibility": false,
@@ -116,9 +131,158 @@
                     "LAYERS": "generic_viewer:geomorphology",
                     "STYLES": ""
                 },
-                "icon":"assets/logo/thema-icons/geomorphology.png",
+                "icon":"assets/logo/thema-icons/geomorphology.svg",
+                "view":"thematic_view"
+            },
+            {
+                "id": "landuse_2005_and_2006",
+                "name": "Landuse 2006",
+                "title": "Landuse 2006",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:landuse_2005_and_2006",
+                    "STYLES": ""
+                },
+                "icon":"assets/logo/thema-icons/geomorphology.svg",
+                "view":"thematic_view"
+            },
+            {
+                "id": "landuse_2011_and_2012",
+                "name": "Landuse 2012",
+                "title": "Landuse 2012",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:landuse_2011_and_2012",
+                    "STYLES": ""
+                },
+                "icon":"assets/logo/thema-icons/geomorphology.svg",
+                "view":"thematic_view"
+            },
+            {
+                "id": "landuse_2015_and_2016",
+                "name": "Landuse 2016",
+                "title": "Landuse 2016",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:landuse_2015_and _2016",
+                    "STYLES": ""
+                },
+                "icon":"assets/logo/thema-icons/geomorphology.svg",
+                "view":"thematic_view"
+            },
+            {
+                "id": "landuse_sisdp_gis",
+                "name": "Landuse 2019",
+                "title": "Landuse 2019",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:landuse _ sisdp",
+                    "STYLES": ""
+                },
+                "icon":"assets/logo/thema-icons/geomorphology.svg",
+                "view":"thematic_view"
+            },
+            {
+                "id": "sp_aed_soil_gis",
+                "name": "Soil Map",
+                "title": "Soil Map",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:soil",
+                    "STYLES": ""
+                },
+                "icon":"assets/logo/thema-icons/geomorphology.svg",
                 "view":"thematic_view"
             }
+        ]
+    },
+    {
+        "category": "Land Resource",
+        "layers": [
+            {
+                "id": "guideline_value_based_land_type",
+                "name": "IGR Land Type",
+                "title": "GR Land Type",
+                "type": "xyz",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tn.gov.in/data/xyz_tiles/igr_land_type/{z}/{x}/{y}.png",
+                "icon":"assets/logo/thema-icons/geology.svg",
+                "view":"thematic_view"
+            },
+            {
+                "id": "TN_Land_Type",
+                "name": "TN-Land Type",
+                "title": "TN-Land Type",
+                "type": "xyz",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tn.gov.in/data/xyz_tiles/areg_land_type/{z}/{x}/{y}.png",
+                "icon":"assets/logo/thema-icons/geology.svg",
+                "view":"thematic_view"
+            },
+            {
+                "id": "TN_Land_Ownership",
+                "name": "TN-Land Ownership",
+                "title": "TN-Land Ownership",
+                "type": "xyz",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tn.gov.in/data/xyz_tiles/areg_ownership/{z}/{x}/{y}.png",
+                "icon":"assets/logo/thema-icons/geology.svg",
+                "view":"thematic_view"
+            }
+        ]
+    },
+    {
+        "category": "Master Plan",
+        "layers": [
+            {
+                "id": "proposed",
+                "name": "Proposed",
+                "title": "Proposed",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:proposed_master_plan_all_dept",
+                    "STYLES": ""
+                },
+                "icon":"https://tngis.tnega.org/en_arukil/assets/img/tn.png",
+                "view":"thematic_view"
+            },
+            {
+                "id": "existing",
+                "name": "existing",
+                "title": "existing",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:existing_master_plan_all_dept",
+                    "STYLES": ""
+                },
+                "icon":"https://tngis.tnega.org/en_arukil/assets/img/tn.png",
+                "view":"thematic_view"
+            }
+
         ]
     }
     
