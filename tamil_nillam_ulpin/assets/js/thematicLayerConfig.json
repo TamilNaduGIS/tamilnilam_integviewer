@@ -135,30 +135,15 @@
                 "view":"thematic_view"
             },
             {
-                "id": "landuse_2005_and_2006",
-                "name": "Landuse 2006",
-                "title": "Landuse 2006",
+                "id": "landuse_sisdp_gis",
+                "name": "Landuse 2019",
+                "title": "Landuse 2019",
                 "type": "wms",
                 "defaultOpacity": 1,
                 "defaultVisibility": false,
                 "url": "https://tngis.tnega.org/geoserver/wms",
                 "params": {
-                    "LAYERS": "generic_viewer:landuse_2005_and_2006",
-                    "STYLES": ""
-                },
-                "icon":"assets/logo/thema-icons/geomorphology.svg",
-                "view":"thematic_view"
-            },
-            {
-                "id": "landuse_2011_and_2012",
-                "name": "Landuse 2012",
-                "title": "Landuse 2012",
-                "type": "wms",
-                "defaultOpacity": 1,
-                "defaultVisibility": false,
-                "url": "https://tngis.tnega.org/geoserver/wms",
-                "params": {
-                    "LAYERS": "generic_viewer:landuse_2011_and_2012",
+                    "LAYERS": "generic_viewer:landuse _ sisdp",
                     "STYLES": ""
                 },
                 "icon":"assets/logo/thema-icons/geomorphology.svg",
@@ -180,15 +165,30 @@
                 "view":"thematic_view"
             },
             {
-                "id": "landuse_sisdp_gis",
-                "name": "Landuse 2019",
-                "title": "Landuse 2019",
+                "id": "landuse_2011_and_2012",
+                "name": "Landuse 2012",
+                "title": "Landuse 2012",
                 "type": "wms",
                 "defaultOpacity": 1,
                 "defaultVisibility": false,
                 "url": "https://tngis.tnega.org/geoserver/wms",
                 "params": {
-                    "LAYERS": "generic_viewer:landuse _ sisdp",
+                    "LAYERS": "generic_viewer:landuse_2011_and_2012",
+                    "STYLES": ""
+                },
+                "icon":"assets/logo/thema-icons/geomorphology.svg",
+                "view":"thematic_view"
+            },
+            {
+                "id": "landuse_2005_and_2006",
+                "name": "Landuse 2006",
+                "title": "Landuse 2006",
+                "type": "wms",
+                "defaultOpacity": 1,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:landuse_2005_and_2006",
                     "STYLES": ""
                 },
                 "icon":"assets/logo/thema-icons/geomorphology.svg",

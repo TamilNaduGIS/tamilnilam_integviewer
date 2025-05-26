@@ -63,6 +63,19 @@
                     "LAYERS": "generic_viewer:revenue_villages",
                     "STYLES": ""
                 }
+            },
+            {
+                "id": "lpa_boundary",
+                "name": "LPA Boundary",
+                "title": "LPA Boundary",
+                "type": "wms",
+                "defaultOpacity": 0.7,
+                "defaultVisibility": false,
+                "url": "https://tngis.tnega.org/geoserver/wms",
+                "params": {
+                    "LAYERS": "generic_viewer:lpa_boundary_compined_dept",
+                    "STYLES": ""
+                }
             }
             
             

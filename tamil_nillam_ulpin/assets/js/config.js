@@ -12,6 +12,7 @@ const IGR_URL = 'https://tngis.tn.gov.in/apps/thematic_viewer_api/v1/getfeatureI
 const POPULATION_URL = 'https://tngis.tnega.org/thematic_viewer_api/v1/getfeatureinfo_population'
 const jsonFilePath = './assets/js/layerConfig.json';
 const thematicJsonFilePath = './assets/js/thematicLayerConfig.json';
+// const grains_api_url = "https://tngis.tnega.org/tngis_api/api/";
 
 // Configuration
 toastr.options = {

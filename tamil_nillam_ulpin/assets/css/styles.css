@@ -2064,3 +2064,14 @@ font-size: 0.8rem !important;
     border: none;
     object-fit: contain;
 }
+
+.icon-disabled {
+    opacity: 0.5;
+    cursor: not-allowed !important;
+    filter: brightness(0.5);
+    cursor: no-drop;
+}
+.icon-disabled:hover {
+    cursor: not-allowed !important;
+    cursor: no-drop;
+}

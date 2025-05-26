@@ -10,13 +10,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tamil Nilam GI Viewer</title>
     <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="assets/css/userbasedstyle.css">
     <link rel="stylesheet" href="vendor/openlayer/ol.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <link href="assets/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/mdi/css/materialdesignicons.min.css">
+    <link rel="stylesheet" href="assets/css/toastr.min.css">
     <link href="assets/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
     <link href="assets/css/font-gis.css" rel="stylesheet" />
-    <link rel="stylesheet" href="assets/css/toastr.min.css">
+    <link rel="stylesheet" href="assets/css/fontawesome.css">
+    
 
     <style>
         .jsb-carousel-wrapper::-webkit-scrollbar {
@@ -96,9 +100,23 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        #bottom-left-container{
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-content: center;
+            padding: 5px 3rem;
+        }
+        #bottom-left-container a{
+            text-decoration: underline;
+            font-weight: 600;
+            color: rgb(255, 255, 255);
+        }
+        #bottom-left-container a:hover{
+            text-shadow: 2px 2px 5px white;
+        }
     </style>
 </head>
-
 <body>
     <header>
         <div class="row">
@@ -107,6 +125,17 @@
                 <div id="title" class="mx-3">Tamil Nilam - GI Viewer</div>
             </div>
             <div class="col-sm-6 d-flex justify-content-end">
+            <a type="button" id="homeIcon" class="btn text-white" style="cursor: pointer;"><i class="mdi mdi-home"></i></a>
+            <div class="header-menu-icons">
+              <div class="mt-1" style="display: flex; flex-direction: column;">
+                <button id="userButton" class="user-menu"  type="button"><i class="mdi mdi-account"></i></button>
+                <h4 id="userSpan">Guest</h4>
+              </div>
+              <div id="submenu" style="display: none; position: absolute; top: 100%; z-index: 999;">
+                <a id="submenuLink" href="#" class="text-danger d-block"><i class="mdi mdi-logout"></i>Logout</a>
+              </div>
+            </div>
+        <!-- <a type="button" data-bs-toggle="modal" data-bs-target="#feedBackModal" data-bs-whatever="@mdo" class="toggle-menu" style="font-size: 23px;"><i class="bi bi-chat-left-text"></i></a> -->
                 <button class="toggle-menu" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasScrolling" aria-controls="offcanvasScrolling"><i class="bi bi-list"></i></button>
                 <button class="filter-menu" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasScrolling-right" aria-controls="offcanvasScrolling"><i class="bi bi-funnel-fill"></i></button>
             </div>
@@ -115,6 +144,331 @@
             <input type="hidden" id="longitude" value="">
         </div>
     </header>
+
+<!-- ==========Login Module============== -->
+
+<div class="modal fade loginModal" id="loginModal" tabindex="-1" aria-labelledby="loginModal" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-1">
+        <div class="modal-content" x-data="transButtonComponent()">
+            <div class="modal-body">
+                <button type="button" class="btn-close custom-close float-end" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <ul class="nav nav-tabs mb-2" id="appsTabs1" role="tablist">
+                      <li class="nav-item" role="presentation">
+                        <a class="login_tab nav-link active" id="home-tab1" data-bs-toggle="tab" href="#home1" role="tab" aria-controls="home-tab1" aria-selected="true"> <span x-text="$t('official_login')">Official Login</span></a>
+                      </li>
+                      <!-- <li class="nav-item" role="presentation">
+                        <a class="login_tab nav-link" id="profile-tab1" data-bs-toggle="tab" href="#profile1" role="tab" aria-controls="profile-tab1" aria-selected="false"><span x-text="$t('public_login')">Public Login</span></a>
+                      </li> -->
+                    </ul>
+                <div class="tab-content" id="myLoginTabContent">
+                    <div class="tab-pane show active" id="home1" role="tabpanel" aria-labelledby="home-tab1">
+                        <form name="login_official" id="login_official" method="POST" autocomplete="off">
+                            <div class="input-group mb-3">
+                              <input type="text" name="login_check_value" id="uname" class="form-control" oninput="this.value = this.value.replace(/[^0-9a-z @.-_]/gi, '')" placeholder="User ID" aria-describedby="emailHelp"  required>
+                              <span class="input-group-text input-button-group" id="emailHelp"><i class="mdi mdi-account"></i></span>
+                            </div>
+                            <div class="input-group mb-3">
+                              <input type="password" name="password" id="pass" class="form-control" placeholder="Password" required>
+                              <span class="input-group-text toggle-password input-button-group" id="emailHelp" style="cursor:pointer;"><i class="mdi mdi-eye-off"></i></span>
+                            </div>
+                            <input type="hidden" name="case" value="login">
+                            <input type="hidden" id="login_check_column" name="login_check_column" value="user_id">
+                            <input type="hidden" name="app_id" value="3">
+                            <input type="hidden" name="login_using" value="password">
+                            <input type="hidden" id="check_value" name="check_value" value="loginCheck">
+                            <input type="hidden" id="enc_check" name="is_enc" value="1">
+                            <input type="hidden" id="category" name="category" value="2">
+                            <div class="" id="captcha-container" x-data="transButtonComponent()">
+                                <div class="col-5" style="display: flex;">
+                                    <span id="captcha-g"><span class="" id="captcha">Captcha</span>
+                                        <a class="text-center ms-2" id="refresh" style="display: flex;align-items: center;justify-content: start;"><i class="fa fa-refresh" aria-hidden="true"></i></a>
+                                    </span>  
+                                </div>
+                                <div class="col-5">
+                                  <input type="text" class="form-control" id="textBox" x-bind:placeholder="$t('captcha')" placeholder="Enter Captcha" aria-label="Captcha" aria-describedby="textBox" name="captcha" required>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col">
+                                  <span class="text-danger p-1 mt-1 mv-1" id="output"></span>
+                                </div>
+                            </div>
+                            <button id="submit" class="btn btn-bg mt-1 custom-btn"><span x-text="$t('login')">Login <i class="mdi mdi-login"></i></span></button>
+                        </form> 
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+  
+  <div class="modal fade" id="logoutModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-1">
+      <div class="modal-content p-4">
+        <h5>Are you sure you want to logout?</h5>
+        <div class="text-end mt-3">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <a id="confirmLogout" href="#" class="btn btn-danger">Logout</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  
+  <!-- ===============END================== -->
+<!-- =================Statistics Offcanvas Dashboard Summary and Charts -->
+<div class="offcanvas offcanvas-end" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="offcanvasScrolling_dashboard" aria-labelledby="offcanvasScrollingDashboardLabel">
+    <div class="high d-flex justify-content-between">
+        <button type="button" class="btn btn-link text-dark ms-2 expand-btn" title="Expand"><i class="bi bi-arrows-angle-expand"></i></button>
+        <h5 class="offcanvas-title" id="offcanvasScrollingDashboardLabel">Statistics</h5>
+        <div class="d-flex justify-content-between align-items-center">
+            <button id="logoutbutton" type="button" class="btn" data-bs-toggle="modal" data-bs-target="#logoutModal"><i class="mdi mdi-logout"></i></button>
+            <button type="button" class="btn-close me-2" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+    </div>
+    <div class="d-flex gap-1 selectedContainer">
+        <div class="highlightarea"><span class="selectedLabel">District:<span id="selecteddistrictvalue">All</span></span></div>
+        <div class="highlightarea"><span class="selectedLabel">Taluk:<span id="selectedtalukvalue">All</span></span></div>
+        <div class="highlightarea"><span class="selectedLabel">Village:<span id="selectedvillagevalue">All</span></span></div>
+    </div>
+    <div class="offcanvas-body" id="category_group">
+        <div class="statistics-content">
+            <div class="panel-header" onclick="togglePanel('tamilnilamstatistics')">
+                <span>Tamil Nilam Statistics</span><i class="bi bi-chevron-down"></i>
+            </div>
+            <div id="tamilnilamstatistics" class="panel-content" style="display: none;">
+                <div class="custom-panel">
+                    <div class="panel-header submenu-dropdown" onclick="togglePanel('landOwnership')">
+                        <span>Land Ownership Summary</span><i class="bi bi-chevron-down"></i>
+                    </div>
+                    <div id="landOwnership" class="panel-content" style="display: none;">
+                        <div class="row g-2 pb-3">
+                            <!-- Total count of govt private and others -->
+                            <div class="col-6">
+                                <div class="card h-100">
+                                    <div class="card-body bg-light-pink text-center">
+                                        <h6>Total</h6>
+                                        <p class="mb-0" id="total_land_count">-</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="card h-100">
+                                    <div class="card-body bg-light-green text-center">
+                                        <h6>Government</h6>
+                                        <p class="mb-0" id="total_govt_land_count">-</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="card h-100">
+                                    <div class="card-body bg-light-yellow text-center">
+                                        <h6>Private</h6>
+                                        <p class="mb-0" id="total_private_land_count">-</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="card h-100">
+                                    <div class="card-body bg-light-purple text-center">
+                                        <h6>Others</h6>
+                                        <p class="mb-0" id="total_others_land_count">-</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div> 
+                <div class="custom-panel">
+                    <div class="panel-header" onclick="togglePanel('pattaStatuslandOwnership')">
+                        <span>Patta Status Land Ownership</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </div>
+                    <div id="pattaStatuslandOwnership" class="panel-content" style="display: none;">
+                        <div class="row g-2 pb-3">
+                              <!-- Government Land with patta summary-->
+                            <div class="col-6 col-expanded-3">
+                                <div class="card h-100">
+                                    <div class="card-body bg-light-green text-center">
+                                        <small class="text-muted d-block">Government Land</small>
+                                        <h6>With Patta</h6>
+                                        <p class="mb-0" id="govt_land_with_patta_count"></p>
+                                    </div>
+                                </div>
+                            </div>
+                             <!-- Government Land without patta summary-->
+                            <div class="col-6 col-expanded-3">
+                                <div class="card h-100">
+                                    <div class="card-body bg-light-green text-center">
+                                        <small class="text-muted d-block">Government Land</small>
+                                        <h6>Without Patta</h6>
+                                        <p class="mb-0" id="govt_land_without_patta_count"></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Private Land  with patta summary-->
+                            <div class="col-6 col-expanded-3">
+                                <div class="card h-100">
+                                    <div class="card-body bg-light-yellow text-center">
+                                        <small class="text-muted d-block">Private Land</small>
+                                        <h6>With Patta</h6>
+                                        <p class="mb-0" id="private_land_with_patta_count"></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Private Land  without patta summary-->
+                            <div class="col-6 col-expanded-3">
+                                <div class="card h-100">
+                                    <div class="card-body bg-light-yellow text-center">
+                                        <small class="text-muted d-block">Private Land</small>
+                                        <h6>Without Patta</h6>
+                                        <p class="mb-0" id="private_land_without_patta_count"></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Other Land with patta summary-->
+                            <div class="col-6 col-expanded-3">
+                              <div class="card h-100">
+                                  <div class="card-body bg-light-purple text-center">
+                                      <small class="text-muted d-block">Other Land</small>
+                                      <h6>With Patta</h6>
+                                      <p class="mb-0" id="others_land_with_patta_count"></p>
+                                  </div>
+                              </div>
+                            </div>
+                             <!-- Other Land without patta summary-->
+                            <div class="col-6 col-expanded-3">
+                                <div class="card h-100">
+                                    <div class="card-body bg-light-purple text-center">
+                                        <small class="text-muted d-block">Other Land</small>
+                                        <h6>Without Patta</h6>
+                                        <p class="mb-0" id="others_land_without_patta_count"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Land Type patta without-patta ownership Chart Dropdown -->
+                <div class="custom-panel">
+                    <div class="panel-header" onclick="togglePanel('landTypeDistribution')">
+                        <span>Charts</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </div>
+                    <div id="landTypeDistribution" class="panel-content" style="display: none;">
+                        <ul class="nav nav-tabs" id="chartTabs1" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="tab1-tab" data-bs-toggle="tab" data-bs-target="#tab1" type="button" role="tab">Land Type</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="tab2-tab" data-bs-toggle="tab" data-bs-target="#tab2" type="button" role="tab">Patta Land</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="tab3-tab" data-bs-toggle="tab" data-bs-target="#tab3" type="button" role="tab">Without Patta</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="tab4-tab" data-bs-toggle="tab" data-bs-target="#tab4" type="button" role="tab">Ownership Land</button>
+                            </li>
+                        </ul>
+                        <div class="tab-content" id="chartTabContent2">
+                            <div class="tab-pane fade show active" id="tab1" role="tabpanel">
+                                <div class="chart-container" style="position: relative; height:300px; width:100%; padding: 10px;">
+                                    <canvas id="landTypeChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="tab2" role="tabpanel">
+                                <div class="chart-container" style="position: relative; height:300px; width:100%; padding: 10px;">
+                                    <canvas id="landWithPatta"></canvas>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="tab3" role="tabpanel">
+                                <div class="chart-container" style="position: relative; height:300px; width:100%; padding: 10px;">
+                                    <canvas id="landWithoutPatta"></canvas>
+                                </div> 
+                            </div>
+                            <div class="tab-pane fade" id="tab4" role="tabpanel">
+                                <div class="chart-container" style="position: relative; height:350px; width:100%; padding: 10px;">
+                                    <canvas id="landOwnershipChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Land Area and Land owners charts -->
+                <div class="custom-panel">
+                    <div class="panel-header" onclick="togglePanel('landTypeOwnersDistribution')">
+                        <span>Distribution of Land for Owners Chart</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </div>
+                    <div id="landTypeOwnersDistribution" class="panel-content" style="display: none;">
+                        <ul class="nav nav-tabs" id="chartTabs2" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="tab5-tab" data-bs-toggle="tab" data-bs-target="#tab5" type="button" role="tab">Owners By Land Type</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="tab6-tab" data-bs-toggle="tab" data-bs-target="#tab6" type="button" role="tab">Area By Land Type & Ownership</button>
+                            </li>
+                        </ul>
+                      <div class="tab-content" id="chartTabContent1">
+                            <div class="tab-pane fade show active" id="tab5" role="tabpanel">
+                                <div class="customise-style" style="position: relative; height: 400px; width: 100%; padding: 10px;">
+                                    <div class="chart-container" style="position: relative; height: 100%; width: 100%; overflow-x: auto; overflow-y: hidden;">
+                                        <div style="min-width: 1000px; height: 100%;">
+                                            <canvas id="landTypeByOwnersChart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="tab6" role="tabpanel">
+                                <div class="customise-style" style="position: relative; height: 400px; width: 100%; padding: 10px;">
+                                    <div class="chart-container" style="position: relative; height: 100%; width: 100%; overflow-x: auto; overflow-y: hidden;">
+                                        <div style="min-width: 1000px; height: 100%;">
+                                          <canvas id="areaByLandTypeChart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Download Dropdowns -->
+            <div class="panel-header mt-2" onclick="togglePanel('datadownload')">
+                <span>Downloads</span><i class="bi bi-chevron-down"></i>
+            </div>
+            <div id="datadownload" class="panel-content" style="display: none;">
+                <div class="col-12">
+                    <div class="col">
+                        <div class="card h-100">
+                            <div class="card-body  bg-light-green text-center">
+                                <p>Comming Soon...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Reports Dropdown -->
+            <div class="panel-header mt-2" onclick="togglePanel('tamilnilamreports')">
+                <span>Reports</span><i class="bi bi-chevron-down"></i>
+            </div>
+            <div id="tamilnilamreports" class="panel-content" style="display: none;">
+                <div class="col-12">
+                    <div class="col">
+                        <div class="card h-100">
+                            <div class="card-body  bg-light-purple text-center">
+                                <p>Comming Soon...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- END of the Statistics Window Layout -->
+<!-- =================================== -->
+
     <div class="legend-div" title="Legend">
         <i class="bi bi-map" id="legend-icon"></i>
     </div>
@@ -479,23 +833,7 @@
     <div id="map" class="map"></div>
     <!-- Map Icons -->
     <div id="bottom-left-container">
-        <style>
-            #bottom-left-container{
-                display: flex;
-                flex-direction: row;
-                justify-content: space-between;
-                align-content: center;
-                padding: 5px 3rem;
-            }
-            #bottom-left-container a{
-                text-decoration: underline;
-                font-weight: 600;
-                color: rgb(255, 255, 255);
-            }
-            #bottom-left-container a:hover{
-                text-shadow: 2px 2px 5px white;
-            }
-        </style>
+        
         <div id="map-icons">
 
             <div class="map-footer">
@@ -625,6 +963,8 @@
                 </div>
             </div>
         </div>
+      <input type="text" id="permissionHandle" hidden>
+      <input type="text" id="loginUserName" hidden>
     </div>
     <!-- disclaimer -->
 
@@ -634,10 +974,1309 @@
         integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
         crossorigin="anonymous"></script>
     <script src="assets/js/toastr.min.js"></script>
+    <script src="assets/js/chart.js"></script>
     <script src="vendor/openlayer/dist/ol.js"></script>
     <script src="assets/js/config.js"></script>
+    <script src="assets/js/turf.min.js"></script>
     <script src="assets/js/scripts.js"></script>
 
+    <!-- --------Login Module---------- -->
+    
+    <!-- <script src="vendor/jquery/jquery.min.js"></script> -->
+    <script src="assets/js/isotope.min.js"></script>
+    <script src="assets/js/tabs.js"></script>
+    <script src="assets/js/custom.js"></script>
+    <script src="assets/js/owl.carousel.min.js"></script>
+    <script src="assets/js/jquery.fancybox.min.js"></script>
+    <!-- login -->
+    <script src="vendor/captcha/captcha.js"></script> 
+    <script src="vendor/encryption/aes.js"></script>
+    <!-- Crypto js -->
+    <script src="vendor/encryption/crypto-js.min.js"></script>
+    <!-- Encryption js -->
+    <script src="vendor/encryption/Encryption.js"></script>
+    <script src="vendor/jquery-validate/js/jquery.validate.min.js"></script>
+    <script src="assets/js/login.js"></script>
+    <script src="assets/js/main.js"></script>
+<script>
+function togglePanel(id) {
+      const content = document.getElementById(id);
+      const header = content.previousElementSibling;
+      const icon = header.querySelector('i');
+      if (content.style.display === 'none') {
+          content.style.display = 'block';
+          header.classList.add('active');
+          $(content).slideDown(300);
+      } else {
+          header.classList.remove('active');
+          $(content).slideUp(300, function() {
+              content.style.display = 'none';
+          });
+      }
+      if(id==='landOwnership'){
+        landOwnershipSummary();
+      }else if(id === 'pattaStatuslandOwnership'){
+        fetchLandPattaStats();
+      }else if(id === 'landTypeDistribution'){
+        createLandTypeChart();
+      }else if(id === 'landTypeOwnersDistribution'){
+        createLandTypeByOwners();
+      }
+}
+$(document).ready(function () {
+    let user = null;
+    let userName = '';
+    let userPermission = '';
+    let district = '';
+    function updateUserState() {
+        const cookieValue = getCookie('tngis_user_info');
+
+        if (cookieValue) {
+            try {
+                user = JSON.parse(cookieValue);
+                userName = user.name || '';
+                userPermission = user.permission || '';
+                district = user.district || '';
+                $('#userSpan').text(userName);
+                const userRole = parseInt(userPermission);
+                if(userName && userRole === 1){
+                    let userType = `${userName} <span class="usrtyp" style="font-size: 10px">(Public)</span>`;
+                    $('#userSpan').html(userType);
+                }
+                $('#permissionHandle').val(userPermission);
+            } catch (e) {
+                console.error('Invalid JSON in cookie:', e);
+            }
+        }
+    }
+    
+    updateUserState();
+    const modal = new bootstrap.Modal(document.getElementById('staticBackdrop'), {
+        backdrop: 'static',
+        keyboard: true,
+        focus: false
+    });
+        document.getElementById('loginModal').addEventListener('show.bs.modal', function () {
+               $(this).find('.modal-dialog').css({
+                   transform: 'translateY(-100px)',
+                   opacity: 0
+               });
+               setTimeout(() => {
+                   $(this).find('.modal-dialog').css({
+                       transform: 'translateY(0)',
+                       opacity: 1
+                   });
+               }, 50);
+        });
+       // Add event listeners for login modal
+       const loginModal = document.getElementById('loginModal');
+       loginModal.addEventListener('show.bs.modal', function () {
+            document.body.style.pointerEvents = 'none';
+            loginModal.style.pointerEvents = 'auto';
+            document.body.style.overflow = 'hidden';
+        });
+
+        loginModal.addEventListener('hidden.bs.modal', function () {
+            document.body.style.pointerEvents = 'auto';
+            document.body.style.overflow = 'auto';
+        });
+
+
+    document.getElementById('loginModal').addEventListener('show.bs.modal', function () {
+        document.body.style.overflow = 'hidden';
+        document.body.style.paddingRight = '17px'; // Compensate for scrollbar
+    });
+    document.getElementById('loginModal').addEventListener('hidden.bs.modal', function () {
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+    });
+$(document).on('click', '#userButton', function (e) {
+    e.preventDefault();
+    updateUserState();
+    const offcanvasMenu = document.getElementById('offcanvasScrolling');
+    const offcanvasRight = document.getElementById('offcanvasScrolling-right');
+    const offcanvasStatistics = document.getElementById('offcanvasScrolling_dashboard')
+
+    const userRole = parseInt(userPermission);
+    const userDistrict = parseInt(district);
+    const $selecteddistrictDropdown = $("#district-dropdown");
+    const $selectedvillageDropdown = $("#village-dropdown");
+    const $selectedtalukDropdown = $("#taluk-dropdown");
+    let $selecteddistrictvalue = $("#selecteddistrictvalue");
+    let $selectedtalukvalue = $("#selectedtalukvalue");
+    let $selectedvillagevalue = $("#selectedvillagevalue");
+    if(userDistrict){
+        $selecteddistrictvalue.text(userDistrict);
+    }else{
+        const selectedDistrictVal = $selecteddistrictDropdown.val();
+    const selectedTalukVal = $selectedtalukDropdown.val();
+    const selectedVillageVal = $selectedvillageDropdown.val();
+
+    const selectedDistrictText = selectedDistrictVal ? $selecteddistrictDropdown.find("option:selected").text() : "All";
+    const selectedTalukText = selectedTalukVal ? $selectedtalukDropdown.find("option:selected").text() : "All";
+    const selectedVillageText = selectedVillageVal ? $selectedvillageDropdown.find("option:selected").text() : "All";
+
+    $selecteddistrictvalue.text(selectedDistrictText);
+    $selectedtalukvalue.text(selectedTalukText);
+    $selectedvillagevalue.text(selectedVillageText);
+    }
+
+    // Officer login (permission === 3)
+    if (user && userName && userRole === 3) {
+        const targetId = user.id ? `offcanvasScrolling_${user.id}` : 'offcanvasScrolling_dashboard';
+        const offcanvasElement = document.getElementById(targetId);
+        if (offcanvasElement) {
+            if ((offcanvasMenu && offcanvasMenu.classList.contains('show'))|| (offcanvasRight && offcanvasRight.classList.contains('show'))) {
+                const bsOffcanvasRight = bootstrap.Offcanvas.getInstance(offcanvasRight);
+                const bsoffcanvasMenu = bootstrap.Offcanvas.getInstance(offcanvasMenu);
+                if (bsOffcanvasRight) bsOffcanvasRight.hide();
+                if (bsoffcanvasMenu) bsoffcanvasMenu.hide();
+            }
+
+            const bsOffcanvas = new bootstrap.Offcanvas(offcanvasElement);
+            bsOffcanvas.show();
+                
+            $(document).on('change', '#district-dropdown, #taluk-dropdown, #village-dropdown', function () {
+                    fetchLandPattaStats();
+                    landOwnershipSummary();
+                    
+            });
+        } else {
+            console.error(`Offcanvas element with ID ${targetId} not found.`);
+        }
+    }
+
+    // Registered user login (permission === 1)
+    else if (user && userName && userRole === 1) {
+       
+        const submenu = $('#submenu');
+        const currentDisplay = submenu.css('display');
+        submenu.css('display', (currentDisplay === 'none' || currentDisplay === '') ? 'block' : 'none');
+    }
+
+    // Guest or unauthenticated user
+    else {
+        const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
+
+        // Hide any visible offcanvas
+        if (offcanvasRight && offcanvasRight.classList.contains('show')) {
+            const bsOffcanvasRight = bootstrap.Offcanvas.getInstance(offcanvasRight);
+            if (bsOffcanvasRight) bsOffcanvasRight.hide();
+        }
+        if (offcanvasMenu && offcanvasMenu.classList.contains('show')) {
+            const bsOffcanvasMenu = bootstrap.Offcanvas.getInstance(offcanvasMenu);
+            if (bsOffcanvasMenu) bsOffcanvasMenu.hide();
+        }
+
+        loginModal.show();
+    }
+});
+$(document).on('click', '#confirmLogout', function(e) {
+    e.preventDefault();
+    document.cookie = 'tngis_user_info=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure';
+    window.location.href = 'index.html';
+});
+    $('#homeIcon').on('click', function(e){
+      e.preventDefault();
+      window.location.href = 'https://tngis.tn.gov.in/';
+    });
+
+    $('#submenuLink').on('click', function(e) {
+        e.preventDefault();
+        document.cookie = 'tngis_user_info=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure';
+        window.location.href = 'index.html';
+    });
+    $('#userButton').on('click', function(e) {
+        e.preventDefault();
+        $('#uname').val('');
+        $('#pass').val('');
+        $('#textBox').val('');
+        $('#output').text('');
+        $('#refresh').trigger('click');
+    });
+
+});
+$(document).ready(function() {
+    $('.expand-btn').on('click', function() {
+        const offcanvas = $(this).closest('.offcanvas');
+        const icon = $(this).find('i');
+        
+        if (offcanvas.hasClass('expanded')) {
+            offcanvas.removeClass('expanded');
+            icon.removeClass('bi-arrows-angle-contract').addClass('bi-arrows-angle-expand');
+            $(this).attr('title', 'Expand');
+    } else {
+      offcanvas.addClass('expanded');
+            icon.removeClass('bi-arrows-angle-expand').addClass('bi-arrows-angle-contract');
+            $(this).attr('title', 'Contract');
+        }
+        
+        $(this).toggleClass('active');
+    });
+});
+function resetAndInitializeCharts() {
+    Object.keys(chartInstances).forEach(key => {
+        if (chartInstances[key]) {
+            chartInstances[key].destroy();
+            chartInstances[key] = null;
+        }
+    });
+    $('#chartTabs1 button').removeClass('active');
+    $('#chartTabs2 button').removeClass('active');
+
+    $('#tab1-tab').addClass('active');
+    $('#tab5-tab').addClass('active');
+    createLandTypeChart();
+    createLandTypeByOwners();
+}
+
+// Add click handler for statistics button
+$(document).on('click', '#statistics-close', function() {
+    resetAndInitializeCharts();
+});
+
+
+function indFormat(number) {
+  return new Intl.NumberFormat('en-IN').format(number);
+}
+function landOwnershipSummary() {
+    const $districtDropdown = $("#district-dropdown");
+    const $villageDropdown = $("#village-dropdown");
+    const $talukDropdown = $("#taluk-dropdown");
+
+    const data = {
+        district_code: $districtDropdown.val() || 0,
+        village_code: $villageDropdown.val() || 0,
+        taluk_code: $talukDropdown.val() || 0,
+        case: 'grains_landcount'
+    };
+    clearTimeout(landOwnershipSummary.timer);
+    landOwnershipSummary.timer = setTimeout(() => {
+        $.ajax({
+            url: GI_VIEWER_API_URL + '/tamilnilam_statistics_details',
+            type: 'POST',
+            headers: {
+                'X-APP-NAME': 'NOC'
+            },
+            data: data,
+            cache: true,
+            success: function(response) {
+                let res = response;
+                if (typeof response === "string") {
+                    try {
+                        res = JSON.parse(response);
+                    } catch (e) {
+                        console.error("Failed to parse response JSON:", e);
+                        return;
+                    }
+                }
+
+                if (res.success && res.data && res.data.length > 0) {
+                    const stats = res.data[0];
+                    const totalGovt = parseFloat(stats.total_govt_land_count) || 0;
+                    const totalPrivate = parseFloat(stats.total_private_land_count) || 0;
+                    const totalOthers = parseFloat(stats.total_others_land_count) || 0;
+
+                    const total = totalGovt + totalPrivate + totalOthers;
+
+                    $('#total_land_count').text(indFormat(total));
+                    $('#total_govt_land_count').text(indFormat(totalGovt));
+                    $('#total_private_land_count').text(indFormat(totalPrivate));
+                    $('#total_others_land_count').text(indFormat(totalOthers));
+                  } else {
+                    console.error('Invalid or empty response data:', res);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error fetching land ownership statistics:', error);
+            }
+        });
+    }, 300);
+}
+
+// case: tamilnilam_pattalandcount -> with or without patta count
+function fetchLandPattaStats() {
+    const $districtDropdown = $("#district-dropdown");
+    const $villageDropdown = $("#village-dropdown");
+    const $talukDropdown = $("#taluk-dropdown");
+
+    const data = {
+        district_code: $districtDropdown.val() || 0,
+        village_code: $villageDropdown.val() || 0,
+        taluk_code: $talukDropdown.val() || 0,
+        case: 'tamilnilam_pattalandcount'
+    };
+    const statsElements = {
+        govt_with: $('#govt_land_with_patta_count'),
+        govt_without: $('#govt_land_without_patta_count'),
+        private_with: $('#private_land_with_patta_count'),
+        private_without: $('#private_land_without_patta_count'),
+        others_with: $('#others_land_with_patta_count'),
+        others_without: $('#others_land_without_patta_count')
+    };
+
+    clearTimeout(fetchLandPattaStats.timer);
+    fetchLandPattaStats.timer = setTimeout(() => {
+        $.ajax({
+            url: GI_VIEWER_API_URL +'/tamilnilam_statistics_details',
+            method: 'POST',
+            headers: { 'X-APP-NAME': 'NOC' },
+            data: data,
+            cache: true,
+            success: function(response) {
+                let res = response;
+                if (typeof response === 'string') {
+                    try {
+                        res = JSON.parse(response);
+                    } catch (err) {
+                        console.error("Response parsing failed:", err);
+                        return;
+                    }
+                }
+                if (res.success && res.data && res.data.length > 0) {
+                    const stats = res.data[0];
+
+                    const values = {
+                        govt_with: parseFloat(stats.govt_land_with_patta_count) || 0,
+                        govt_without: parseFloat(stats.govt_land_without_patta_count) || 0,
+                        private_with: parseFloat(stats.private_land_with_patta_count) || 0,
+                        private_without: parseFloat(stats.total_private_land_without_patta) || 0, 
+                        others_with: parseFloat(stats.private_land_without_patta_count) || 0,
+                        others_without: parseFloat(stats.others_land_without_patta_count) || 0
+                    };
+
+                    // Update each DOM element
+                    for (const key in statsElements) {
+                        statsElements[key].text(indFormat(values[key]));
+                    }
+                } else {
+                    console.warn("No data found in response:", res);
+                    // Set all to 0 on unexpected response
+                    for (const $element of Object.values(statsElements)) {
+                        $element.text('0');
+                    }
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX error:', error);
+                requestAnimationFrame(() => {
+                    for (const $element of Object.values(statsElements)) {
+                        $element.text('0');
+                    }
+                });
+            }
+        });
+    }, 250);
+}
+
+
+let chartInstances = {};
+
+function createLandTypeChart() {
+    const ctx = document.getElementById('landTypeChart');
+    
+    if (chartInstances.landTypeChart) {
+        chartInstances.landTypeChart.destroy();
+    }
+
+    const $districtDropdown = $("#district-dropdown");
+    const $villageDropdown = $("#village-dropdown");
+    const $talukDropdown = $("#taluk-dropdown");
+
+    $.ajax({
+        url: GI_VIEWER_API_URL + '/tamilnilam_statistics_details',
+        type: 'POST',
+        headers: {
+            'X-APP-NAME': 'NOC'
+        },
+        data: {
+            district_code: $districtDropdown.val() || 0,
+            village_code: $villageDropdown.val() || 0,
+            taluk_code: $talukDropdown.val() || 0,
+            case: 'grains_landtypecount'
+        },
+        success: function(response) {
+            if (response.success === 1 && response.data.length > 0) {
+                const labels = response.data.map(item => item.land_type_desc.trim());
+                const govtData = response.data.map(item => parseInt(item.total_govt_land_count || 0));
+                const privateData = response.data.map(item => parseInt(item.total_private_land_count || 0));
+                const othersData = response.data.map(item => parseInt(item.total_others_land_count || 0));
+                chartInstances.landTypeChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: { 
+                        labels: labels, 
+                        datasets: [{
+                            label: 'Government Land',
+                            data: govtData,
+                            backgroundColor: 'rgba(3, 144, 81, 0.7)',
+                            barPercentage: 0.8
+                        },
+                        {
+                            label: 'Private Land',
+                            data: privateData,
+                            backgroundColor: 'rgba(220, 170, 97, 0.819)',
+                            barPercentage: 0.8
+                        },
+                        {
+                            label: 'Others Land',
+                            data: othersData,
+                            backgroundColor: 'rgba(40, 40, 102, 0.784)',
+                            barPercentage: 0.8
+                        }] 
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                type: 'logarithmic',
+                                title: {
+                                    display: true,
+                                    text: 'Survey, Subdivision Count'
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        if (value === 0) return '0';
+                                        if (value === 1) return '1';
+                                        if (value === 10) return '10';
+                                        if (value === 100) return '100';
+                                        if (value === 1000) return '1K';
+                                        if (value === 10000) return '10K';
+                                        if (value === 100000) return '100K';
+                                        if (value === 1000000) return '1M';
+                                        return value;
+                                    }
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                }
+                            }
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Land Types Distribution in Tamil Nilam',
+                                color: '#2e7d32',
+                                font: { size: 16 }
+                            },
+                            legend: {
+                                position: 'top',
+                                // align: 'start',
+                                labels: {
+                                    usePointStyle: true,
+                                    padding: 4,
+                                    boxWidth: 6,  
+                                    boxHeight: 6,
+                                    pointStyle: 'circle',
+                                    font: {
+                                        size: 10 
+                                    }
+                                }
+                            },
+                        }
+                    }
+                });
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error fetching land type data:', error);
+        }
+    });
+}
+
+
+function createLandWithPattaChart() {
+      const ctx = document.getElementById('landWithPatta');
+    if (chartInstances.landWithPatta) {
+        chartInstances.landWithPatta.destroy();
+    }
+    const $districtDropdown = $("#district-dropdown");
+    const $villageDropdown = $("#village-dropdown");
+    const $talukDropdown = $("#taluk-dropdown");
+
+    const data = {
+        district_code: $districtDropdown.val() || 0,
+        village_code: $villageDropdown.val() || 0,
+        taluk_code: $talukDropdown.val() || 0,
+        case: 'tamilnilam_pattalandtypecount'
+    };
+    $.ajax({
+        url: GI_VIEWER_API_URL +'/tamilnilam_statistics_details',
+        method: 'POST',
+        headers: {
+            'X-APP-NAME': 'NOC'
+        },
+        data: data,
+        success: function(response) {
+            if (response.success === 1 && response.data.length > 0) {
+                const labels = response.data.map(item => item.land_type_desc.trim());
+                const govtData = response.data.map(item => parseInt(item.govt_land_with_patta_count || 0));
+                const privateData = response.data.map(item => parseInt(item.private_land_with_patta_count || 0));
+                const othersData = response.data.map(item => parseInt(item.others_land_with_patta_count || 0));
+
+                chartInstances.landWithPatta = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Government Land Patta Count',
+                            data: govtData,
+                            backgroundColor: 'rgba(3, 144, 81, 0.7)',
+                            barPercentage: 0.8
+                        }, {
+                            label: 'Private Land Patta Count',
+                            data: privateData,
+                            backgroundColor: 'rgba(220, 170, 97, 0.819)',
+                            barPercentage: 0.8
+                        }, {
+                            label: 'Others Land Patta Count',
+                            data: othersData,
+                            backgroundColor: 'rgba(40, 40, 102, 0.784)',
+                            barPercentage: 0.8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                type: 'logarithmic',
+                                title: {
+                                    display: true,
+                                    text: 'Survey, Subdivision Count'
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        if (value === 0) return '0';
+                                        if (value === 1) return '1';
+                                        if (value === 10) return '10';
+                                        if (value === 100) return '100';
+                                        if (value === 1000) return '1K';
+                                        if (value === 10000) return '10K';
+                                        if (value === 100000) return '100K';
+                                        if (value === 1000000) return '1M';
+                                        if (value === 10000000) return '10M';
+                                        return value;
+                                    }
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                }
+                            }
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Distribution of Land With Patta Counts by Land Type',
+                                color: '#2e7d32',
+                                font: {
+                                    size: 16
+                                }
+                            },
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    usePointStyle: true,
+                                    padding: 4,
+                                    boxWidth: 6,  
+                                    boxHeight: 6,
+                                    pointStyle: 'circle',
+                                    font: {
+                                        size: 10 
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error fetching land type data:', error);
+        }
+    });
+  }
+
+  function createLandWithoutPattaChart() {
+    const ctx = document.getElementById('landWithoutPatta');
+    if (chartInstances.landWithoutPatta) {
+        chartInstances.landWithoutPatta.destroy();
+    }
+    const $districtDropdown = $("#district-dropdown");
+    const $villageDropdown = $("#village-dropdown");
+    const $talukDropdown = $("#taluk-dropdown");
+
+    const data = {
+        district_code: $districtDropdown.val() || 0,
+        village_code: $villageDropdown.val() || 0,
+        taluk_code: $talukDropdown.val() || 0,
+        case: 'tamilnilam_pattalandtypecount'
+    };
+    $.ajax({
+        url: GI_VIEWER_API_URL +'/tamilnilam_statistics_details',
+        method: 'POST',
+        headers: {
+            'X-APP-NAME': 'NOC'
+        },
+        data: data,
+        success: function(response) {
+            if (response.success === 1 && response.data.length > 0) {
+                const labels = response.data.map(item => item.land_type_desc.trim());
+                const govtData = response.data.map(item => parseInt(item.govt_land_without_patta_count || 0));
+                const privateData = response.data.map(item => parseInt(item.private_land_without_patta_count || 0));
+                const othersData = response.data.map(item => parseInt(item.others_land_without_patta_count || 0));
+
+                chartInstances.landWithoutPatta = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Government Land without Patta Count',
+                            data: govtData,
+                            backgroundColor: 'rgba(3, 144, 81, 0.7)',
+                            barPercentage: 0.8
+                        }, {
+                            label: 'Private Land without Patta Count',
+                            data: privateData,
+                            backgroundColor: 'rgba(220, 170, 97, 0.819)',
+                            barPercentage: 0.8
+                        }, {
+                            label: 'Others Land without Patta Count',
+                            data: othersData,
+                            backgroundColor: 'rgba(40, 40, 102, 0.784)',
+                            barPercentage: 0.8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                type: 'logarithmic',
+                                title: {
+                                    display: true,
+                                    text: 'Survey, Subdivision Count'
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        if (value === 0) return '0';
+                                        if (value === 1) return '1';
+                                        if (value === 10) return '10';
+                                        if (value === 50) return '50';
+                                        if (value === 100) return '100';
+                                        if (value === 500) return '500';
+                                        if (value === 1000) return '1K';
+                                        if (value === 5000) return '5K';
+                                        return value;
+                                    }
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                }
+                            }
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Distribution of Land Without Patta by Land Type',
+                                color: '#2e7d32',
+                                font: {
+                                    size: 16
+                                }
+                            },
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    usePointStyle: true,
+                                    padding: 4,
+                                    boxWidth: 6,  
+                                    boxHeight: 6,
+                                    pointStyle: 'circle',
+                                    font: {
+                                        size: 10 
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error fetching land type data:', error);
+        }
+    });
+}
+
+function createLandOwnershipChart() {
+    const ctx = document.getElementById('landOwnershipChart');
+    if (chartInstances.landOwnershipChart) {
+        chartInstances.landOwnershipChart.destroy();
+    }
+    const $districtDropdown = $("#district-dropdown");
+    const $villageDropdown = $("#village-dropdown");
+    const $talukDropdown = $("#taluk-dropdown");
+
+    const data = {
+        district_code: $districtDropdown.val() || 0,
+        village_code: $villageDropdown.val() || 0,
+        taluk_code: $talukDropdown.val() || 0,
+        case: 'tamilnilam_landownercount'
+    };
+
+    $.ajax({
+        url: GI_VIEWER_API_URL + '/tamilnilam_statistics_details',
+        type: 'POST',
+        headers: { 'X-APP-NAME': 'NOC' },
+        data: data,
+        success: function(response) {
+            if (response.success && response.data.length > 0) {
+                const stats = response.data[0];
+                console.log('total count', stats);
+                const segments = [
+                    {
+                        label: 'Govt Land - Single Owner',
+                        value: parseInt(stats.govt_land_with_single_owner_count || 0),
+                        color: '#039051' 
+                    },
+                    {
+                        label: 'Govt Land - Joint Owner',
+                        value: parseInt(stats.govt_land_with_joint_owner_count || 0),
+                        color: '#51DB8B' 
+                    },
+                    {
+                        label: 'Govt Land - No Owner',
+                        value: parseInt(stats.govt_land_with_no_owner_count || 0),
+                        color: '#74FF8E' 
+                    },
+                    {
+                        label: 'Private Land - Single Owner',
+                        value: parseInt(stats.private_land_with_single_owner_count || 0),
+                        color: '#dcaa61d1'
+                    },
+                    {
+                        label: 'Private Land - Joint Owner',
+                        value: parseInt(stats.private_land_with_joint_owner_count || 0),
+                        color: '#EBE086'
+                    },
+                    {
+                        label: 'Private Land - No Owner',
+                        value: parseInt(stats.private_land_with_no_owner_count || 0),
+                        color: '#ffc107'
+                    },
+                    {
+                        label: 'Others - Single Owner',
+                        value: parseInt(stats.others_land_with_single_owner_count || 0),
+                        color: '#282866c8'
+                    },
+                    {
+                        label: 'Others - Joint Owner',
+                        value: parseInt(stats.others_land_with_joint_owner_count || 0),
+                        color: '#6464CA'
+                    },
+                    {
+                        label: 'Others - No Owner',
+                        value: parseInt(stats.others_land_with_no_owner_count || 0),
+                        color: '#B5B5F4'  // Dark Orange
+                    }
+                ];
+
+                const total = segments.reduce((sum, segment) => sum + segment.value, 0);
+                
+                segments.forEach(segment => {
+                    segment.percentage = ((segment.value / total) * 100).toFixed(2);
+                });
+
+                chartInstances.landOwnershipChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: segments.map(segment => segment.label),
+                    datasets: [{
+                        data: segments.map(segment => segment.percentage),
+                        backgroundColor: segments.map(segment => segment.color),
+                        borderWidth: 0,
+                        spacing: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: {
+                        padding: {
+                            top: 30,
+                            bottom: 10,
+                            left: 10,
+                            right: 10
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            align: 'center',
+                            display: true,
+                            labels: {
+                                usePointStyle: true,
+                                padding: 8,
+                                boxWidth: 4,
+                                boxHeight: 4,
+                                font: {
+                                    size: 10,
+                                },
+                                pointStyle: 'circle',
+                                useBorderRadius: true,
+                                borderRadius: 4,
+                                generateLabels: function(chart) {
+                                    return segments.map((segment, i) => ({
+                                        text: `${segment.label} (${segment.percentage}%)`,
+                                        fillStyle: segment.color,
+                                        strokeStyle: segment.color,
+                                        lineWidth: 0,
+                                        pointStyle: 'circle',
+                                        index: i
+                                    }));
+                                }
+                            }
+                        },
+                        title: {
+                                display: true,
+                                padding: {
+                                    bottom: 30
+                                },
+                                text: 'Land Distribution Ownership in Tamil Nilam',
+                                color: '#2e7d32',
+                                font: { size: 16 }
+                            },
+                        tooltip: {
+                            enabled: true,
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.label}: ${context.raw}%`;
+                                }
+                            }
+                        }
+                    }, 
+                    cutout: '55%',
+                    radius: '90%'
+                },
+                plugins: [{
+                    id: 'doughnutLabels',
+                    afterDraw: function(chart) {
+                        const {ctx, chartArea: {top, bottom, left, right, width, height}} = chart;
+                        ctx.save();
+                        
+                        const centerX = (left + right) / 2;
+                        const centerY = (top + bottom) / 2;
+                        const radius = Math.min(width, height) / 2;
+                        
+                        let currentAngle = -Math.PI / 2;
+                        segments.forEach(segment => {
+                            const percentage = parseFloat(segment.percentage);
+                            const angle = (percentage / 100) * Math.PI * 2;
+                            const midAngle = currentAngle + (angle / 2);
+                            
+                            if (percentage >= 0.01) {
+                                // Calculate line start point (on the doughnut)
+                                const startRadius = radius * 0.8;
+                                const startX = centerX + Math.cos(midAngle) * startRadius;
+                                const startY = centerY + Math.sin(midAngle) * startRadius;
+                                
+                                // Calculate line end point (outside the doughnut)
+                                const endRadius = radius * 1.1;
+                                const endX = centerX + Math.cos(midAngle) * endRadius;
+                                const endY = centerY + Math.sin(midAngle) * endRadius;
+                                
+                                // Draw connecting line
+                                ctx.beginPath();
+                                ctx.moveTo(startX, startY);
+                                ctx.lineTo(endX, endY);
+                                
+                                // Extend line horizontally
+                                const textPadding = 8;
+                                const horizontalLineLength = 20;
+                                const isRightSide = Math.cos(midAngle) > 0;
+                                const horizontalEndX = endX + (isRightSide ? horizontalLineLength : -horizontalLineLength);
+                                
+                                ctx.lineTo(horizontalEndX, endY);
+                                ctx.strokeStyle = segment.color;
+                                ctx.lineWidth = 1;
+                                ctx.stroke();
+                                
+                                // Add percentage text
+                                ctx.font = 'normal 12px Arial';
+                                ctx.fillStyle = '#000000';
+                                ctx.textAlign = isRightSide ? 'left' : 'right';
+                                ctx.textBaseline = 'middle';
+                                const textX = horizontalEndX + (isRightSide ? textPadding : -textPadding);
+                                ctx.fillText(`${percentage}%`, textX, endY);
+                            }
+                            
+                            currentAngle += angle;
+                        });
+                        
+                        // Draw center text
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.font = 'bold 12px Arial';
+                        ctx.fillStyle = '#000000';
+                        ctx.fillText('Total', centerX, centerY - 15);
+                        ctx.font = 'bold 14px Arial';
+                        ctx.fillText(total.toLocaleString(), centerX, centerY + 15);
+                        
+                        ctx.restore();
+                    }
+                }]
+            });
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error fetching ownership data:', error);
+            if (chartInstances.landOwnershipChart) {
+                chartInstances.landOwnershipChart.destroy();
+                chartInstances.landOwnershipChart = null;
+            }
+        }
+    });
+}
+
+
+
+
+function createLandTypeByOwners() {
+    const ctx = document.getElementById('landTypeByOwnersChart');
+    if (chartInstances.landTypeByOwnersChart) {
+        chartInstances.landTypeByOwnersChart.destroy();
+    }
+    const $districtDropdown = $("#district-dropdown");
+    const $villageDropdown = $("#village-dropdown");
+    const $talukDropdown = $("#taluk-dropdown");
+
+    const data = {
+        district_code: $districtDropdown.val() || 0,
+        village_code: $villageDropdown.val() || 0,
+        taluk_code: $talukDropdown.val() || 0,
+        case: 'tamilnilam_landtypewithownercount'
+    };
+    $.ajax({
+        url: GI_VIEWER_API_URL +'/tamilnilam_statistics_details',
+        method: 'POST',
+        headers: {
+            'X-APP-NAME': 'NOC'
+        },
+        data: data,
+        success: function(response) {
+            if (response.success === 1 && response.data.length > 0) {
+                const labels = response.data.map(item => item.land_type_desc.trim());
+                const datasets = [
+                    {
+                        label: 'Government Land Single Owner',
+                        data: response.data.map(item => parseInt(item.govt_land_with_single_owner_count) || 0),
+                        backgroundColor: '#039051',
+                        barPercentage: 0.8
+                    },
+                    {
+                        label: 'Private Land Single Owner',
+                        data: response.data.map(item => parseInt(item.private_land_with_single_owner_count) || 0),
+                        backgroundColor: '#dcaa61d1',
+                        barPercentage: 0.8
+                    },
+                    {
+                        label: 'Others Land Single Owner',
+                        data: response.data.map(item => parseInt(item.others_land_with_single_owner_count) || 0),
+                        backgroundColor: '#282866c8',
+                        barPercentage: 0.8
+                    },
+                    {
+                        label: 'Government Land Joint Owner',
+                        data: response.data.map(item => parseInt(item.govt_land_with_joint_owner_count) || 0),
+                        backgroundColor: '#51DB8B',
+                        barPercentage: 0.8
+                    },
+                    {
+                        label: 'Private Land Joint Owner',
+                        data: response.data.map(item => parseInt(item.private_land_with_joint_owner_count) || 0),
+                        backgroundColor: '#EBE086',
+                        barPercentage: 0.8
+                    },
+                    {
+                        label: 'Others Land Joint Owner',
+                        data: response.data.map(item => parseInt(item.others_land_with_joint_owner_count) || 0),
+                        backgroundColor: '#6464CA',
+                        barPercentage: 0.8
+                    },
+                    {
+                        label: 'Government Land No Owner',
+                        data: response.data.map(item => parseInt(item.govt_land_with_no_owner_count) || 0),
+                        backgroundColor: '#74FF8E',
+                        barPercentage: 0.8
+                    },
+                    {
+                        label: 'Private Land No Owner',
+                        data: response.data.map(item => parseInt(item.private_land_with_no_owner_count) || 0),
+                        backgroundColor: '#ffc107',
+                        barPercentage: 0.8
+                    },
+                    {
+                        label: 'Others Land No Owner',
+                        data: response.data.map(item => parseInt(item.others_land_with_no_owner_count) || 0),
+                        backgroundColor: '#B5B5F4',
+                        barPercentage: 0.8
+                    }
+                ];
+
+                chartInstances.landTypeByOwnersChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels, datasets },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        height: 500,
+                        scales: {
+                            y: {
+                                type: 'logarithmic',
+                                title: {
+                                    display: true,
+                                    text: 'Survey, Subdivision Count'
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        if (value === 0) return '0';
+                                        if (value === 1) return '1';
+                                        if (value === 10) return '10';
+                                        if (value === 100) return '100';
+                                        if (value === 1000) return '1K';
+                                        if (value === 10000) return '10K';
+                                        if (value === 100000) return '100K';
+                                        if (value === 1000000) return '1M';
+                                        if (value === 10000000) return '10M';
+                                        return value;
+                                    }
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                }
+                            }
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Distribution of Land Owners by Land Type',
+                                color: '#2e7d32',
+                                font: { size: 16 }
+                            },
+                            legend: {
+                                position: 'right',
+                                align: 'start',
+                                labels: {
+                                    usePointStyle: true,
+                                    padding: 10,
+                                    boxWidth: 4,
+                                    boxHeight: 4,
+                                    font: {
+                                        size: 10,
+                                    },
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error fetching land type data:', error);
+        }
+    });
+}
+
+function createAreaByLandType() {
+    const ctx = document.getElementById('areaByLandTypeChart');
+    if (chartInstances.areaByLandTypeChart) {
+        chartInstances.areaByLandTypeChart.destroy();
+    }
+    const $districtDropdown = $("#district-dropdown");
+    const $villageDropdown = $("#village-dropdown");
+    const $talukDropdown = $("#taluk-dropdown");
+
+    const data = {
+        district_code: $districtDropdown.val() || 0,
+        village_code: $villageDropdown.val() || 0,
+        taluk_code: $talukDropdown.val() || 0,
+        case: 'tamilnilam_landtypewithownercount'
+    };
+    $.ajax({
+        url: GI_VIEWER_API_URL +'/tamilnilam_statistics_details',
+        method: 'POST',
+        headers: {
+            'X-APP-NAME': 'NOC'
+        },
+        data: data,
+        success: function(response) {
+            if (response.success === 1 && response.data.length > 0) {
+                const labels = response.data.map(item => item.land_type_desc.trim());
+                const datasets = [
+                    {
+                        label: 'Government Land Single Owner',
+                        data: response.data.map(item => parseFloat(item.govt_land_with_single_owner_area) || 0),
+                        backgroundColor: '#039051',
+                        barPercentage: 0.8
+                    },
+                    {
+                        label: 'Private Land Single Owner',
+                        data: response.data.map(item => parseFloat(item.private_land_with_single_owner_area) || 0),
+                        backgroundColor: '#DCBF61',
+                        barPercentage: 0.8
+                    },
+                    {
+                        label: 'Others Land Single Owner',
+                        data: response.data.map(item => parseFloat(item.others_land_with_single_owner_area) || 0),
+                        backgroundColor: '#FFC107',
+                        barPercentage: 0.8
+                    },
+                    {
+                        label: 'Government Land Joint Owner',
+                        data: response.data.map(item => parseFloat(item.govt_land_with_joint_owner_area) || 0),
+                        backgroundColor: '#51DB8B',
+                        barPercentage: 0.8
+                    },
+                    {
+                        label: 'Private Land Joint Owner',
+                        data: response.data.map(item => parseFloat(item.private_land_with_joint_owner_area) || 0),
+                        backgroundColor: '#EBE086',
+                        barPercentage: 0.8
+                    },
+                    {
+                        label: 'Others Land Joint Owner',
+                        data: response.data.map(item => parseFloat(item.others_land_with_joint_owner_area) || 0),
+                        backgroundColor: '#6464CA',
+                        barPercentage: 0.8
+                    },
+                    {
+                        label: 'Government Land No Owner',
+                        data: response.data.map(item => parseFloat(item.govt_land_with_no_owner_area) || 0),
+                        backgroundColor: '#74FF8E',
+                        barPercentage: 0.8
+                    },
+                    {
+                        label: 'Private Land No Owner',
+                        data: response.data.map(item => parseFloat(item.private_land_with_no_owner_area) || 0),
+                        backgroundColor: '#ffc107',
+                        barPercentage: 0.8
+                    },
+                    {
+                        label: 'Others Land No Owner',
+                        data: response.data.map(item => parseFloat(item.others_land_with_no_owner_area) || 0),
+                        backgroundColor: '#B5B5F4',
+                        barPercentage: 0.8
+                    }
+                ];
+
+                chartInstances.areaByLandTypeChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels, datasets },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                type: 'logarithmic',
+                                title: {
+                                    display: true,
+                                    text: 'Survey, Subdivision Count'
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        if (value === 0.001) return '0.001';
+                                        if (value === 0.1) return '0.1';
+                                        if (value === 1) return '1';
+                                        if (value === 10) return '10';
+                                        if (value === 100) return '100';
+                                        if (value === 1000) return '1K';
+                                        if (value === 10000) return '10K';
+                                        if (value === 100000) return '100K';
+                                        return value;
+                                    }
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                }
+                            }
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Distribution of Land Area by Land Type & Ownership',
+                                color: '#2e7d32',
+                                font: { size: 16 }
+                            },
+                            legend: {
+                                position: 'right',
+                                align: 'start',
+                                labels: {
+                                    usePointStyle: true,
+                                    padding: 10,
+                                    boxWidth: 4,
+                                    boxHeight: 4,
+                                    font: {
+                                        size: 10,
+                                    },
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error fetching land type data:', error);
+        }
+    });
+}
+
+
+$('#chartTabs1 button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+   $('#chartTabs1 button').removeClass('active');
+    $(e.target).addClass('active');
+    const targetId = $(e.target).attr('id');
+    if (targetId === 'tab1-tab') {
+        createLandTypeChart();
+    } else if (targetId === 'tab2-tab') {
+        createLandWithPattaChart();
+    }else if (targetId === 'tab3-tab') {
+      createLandWithoutPattaChart();
+    }else if (targetId === 'tab4-tab') {
+      createLandOwnershipChart();
+    }else{
+        console.log('fucntion not call or id not mentioned')
+    }
+});
+$('#chartTabs2 button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+   $('#chartTabs2 button').removeClass('active');
+    $(e.target).addClass('active');
+    const targetId = $(e.target).attr('id');
+    if (targetId === 'tab5-tab') {
+      createLandTypeByOwners();
+    } else if (targetId === 'tab6-tab') {
+      createAreaByLandType();
+    }else{
+        console.log('function not call or id not mentioned')
+    }
+});
+
+    </script>
     <script>
         $(document).on({
             // ajaxStart: function () {
@@ -973,6 +2612,17 @@
                     $('#result_search').addClass('d-none');
                 }
             });
+        const cookieValue = getCookie('tngis_user_info');
+        if (cookieValue) {
+            try {
+                const user = JSON.parse(cookieValue);
+                if (user && user.name && user.permission==3) {
+                    $('#userSpan').text(user.name);
+                }
+            } catch (e) {
+                console.error('Invalid JSON in cookie:', e);
+            }
+        }
 
         });
         $('#latitude_div').on('click', function () {

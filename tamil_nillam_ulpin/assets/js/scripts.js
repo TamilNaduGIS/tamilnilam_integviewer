@@ -325,6 +325,7 @@ map.on('singleclick', function (evt) {
     closeAregPanel();
     closeFMBSketchPanel();
     const coordinates = ol.proj.toLonLat(evt.coordinate);
+    // checkIfInTamilNadu(coordinates);
     const lon = coordinates[0].toFixed(6);
     const lat = coordinates[1].toFixed(6);
 
@@ -381,8 +382,11 @@ function landDetailsShow(lat,lon){
     if (currentRequest != null) {
         currentRequest.abort();
     }
+    let userPermission = 0;
+    userPermission = $("#permissionHandle").val();
     allowRequest = true;
     currentRequest = $.ajax({
+        // url: `${GI_VIEWER_API_URL}/rate_limit_land_details`,
         url: `${BASE_URL}/v2/land_details`,
         method: 'POST',
         headers: {
@@ -391,6 +395,7 @@ function landDetailsShow(lat,lon){
         data: {
             latitude: lat,
             longitude: lon,
+            up: userPermission? userPermission : '',
         },
         beforeSend:function(){
             showSpinner();
@@ -731,33 +736,21 @@ $(document).ready(function () {
         if (navigator.permissions) {
           navigator.permissions.query({ name: 'geolocation' }).then(function (permissionStatus) {
             if (permissionStatus.state === 'granted' || permissionStatus.state === 'prompt') {
-                map.once('rendercomplete', function () {
-                    locationLayer.setZIndex(999); // Set above other layers
-                    initializeLocation();
-                });
+                initializeLocation();
             } else if (permissionStatus.state === 'denied') {
               alert("Location permission denied. Please enable it in browser settings.");
             }
       
             permissionStatus.onchange = function () {
               if (permissionStatus.state === 'granted') {
-                map.once('rendercomplete', function () {
-                    locationLayer.setZIndex(999); // Set above other layers
-                    initializeLocation();
-                });
+                initializeLocation();
               }
             };
           }).catch(() => {
-            map.once('rendercomplete', function () {
-                locationLayer.setZIndex(999); // Set above other layers
-                initializeLocation();
-            });
+            initializeLocation();
           });
         } else {
-            map.once('rendercomplete', function () {
-                locationLayer.setZIndex(999); // Set above other layers
-                initializeLocation();
-            });
+            initializeLocation();
         }
       });
       
@@ -769,7 +762,7 @@ $(document).ready(function () {
           }
         });
       }
-    
+      initializeLocation();
 });
 
 function initializeLocation() {
@@ -813,258 +806,161 @@ $(document).on('click', '.thematic-icon-card', function () {
     let currentController = null;
     let currentPopulationRequest = null;
 
-    $('.thematic-icon-card').removeClass('active'); // Remove from all
-    $(this).addClass('active'); 
-    // Remove old detail divs
+    const selectedLayerTitle = this.title;
+    const lat = $("#latitude").val();
+    const lon = $("#longitude").val();
+
+    const THEME_LAYERS = {
+        'Elevation': 'generic_viewer:elevation_raster',
+        'Slope': 'generic_viewer:tn_slope',
+        'Aspect': 'generic_viewer:tn_aspect'
+    };
+
+    const EXTERNAL_LAYERS = ['Population Theme', 'TN-Land Type', 'TN-Land Ownership','Geology','Geo morphology','Cattle Population','Landuse 2019','Soil Map'];
+
+    $('.thematic-icon-card').removeClass('active');
+    $(this).addClass('active');
     $('#thematic-info-container .detail').remove();
-    var selectedLayerTitle = this.title;
-    var lat = $("#latitude").val();
-    var lon = $("#longitude").val();
-    let geoserverUrl='',layerName='';
-    let grayIndexValue = '';
-    geoserverUrl = "https://tngis.tn.gov.in/tngismaps/wms";
-    if(selectedLayerTitle != 'Population Theme' && selectedLayerTitle != 'TN-Land Type' && selectedLayerTitle != 'TN-Land Ownership'){
-        if(selectedLayerTitle == 'Elevation'){
-            layerName = "generic_viewer:elevation_raster";
-        }else if(selectedLayerTitle == 'Slope'){
-            layerName = "generic_viewer:tn_slope";
-        }else if(selectedLayerTitle == 'Aspect'){
-            layerName = "generic_viewer:tn_aspect";
-        }else if(selectedLayerTitle == 'Contours'){
-            layerName = "generic_viewer:tn_contours";
-        }else if(selectedLayerTitle == 'Geology'){
-            layerName = "generic_viewer:geology";
-        }else if(selectedLayerTitle == 'Geo morphology'){
-            layerName = "generic_viewer:geomorphology";
-        }else if(selectedLayerTitle == 'Landuse 2006'){
-            layerName = "generic_viewer:landuse_2005_and_2006";
-        }else if(selectedLayerTitle == 'Landuse 2012'){
-            layerName = "generic_viewer:landuse_2011_and_2012";
-        }else if(selectedLayerTitle == 'Landuse 2016'){
-            layerName = "generic_viewer:landuse_2015_and _2016";
-        }else if(selectedLayerTitle == 'Landuse 2019'){
-            layerName = "generic_viewer:landuse _ sisdp";
-        }else if(selectedLayerTitle == 'Soil Map'){
-            layerName = "generic_viewer:soil";
-        }else if(selectedLayerTitle == 'Cattle Population'){
-            layerName = "generic_viewer:animal_population";
-        } 
-        
+
+    $("#selected-thematic").html(
+        `Thematic Information For <span style='font-size:10px'>(${selectedLayerTitle})</span>`
+    );
+
+    const showError = msg => {
+        $('#thematic-info-container .detail').remove();
+        $('#thematic-info-container').append(`
+            <div class="detail mt-2 p-2 border rounded" style="background:#a94442;color: #fff;">
+                <b>Error:</b> ${msg}
+            </div>
+        `);
+    };
+
+    const showResult = html => {
+        $('#thematic-info-container').append(`
+            <div class="detail mt-2 p-2 border rounded bgcolordiv" style="color:#212529;">
+                ${html}
+            </div>
+        `);
+    };
+
+    if (!EXTERNAL_LAYERS.includes(selectedLayerTitle)) {
+        const layerName = THEME_LAYERS[selectedLayerTitle];
+        if (!layerName) return showError('Layer not supported or not defined.');
+
         const coord = ol.proj.fromLonLat([lon, lat], 'EPSG:3857');
-        // BBOX around the point
-        const resolution = 10; // meters per pixel (adjust as needed)
-        const halfSize = 50 * resolution;
-        const minX = coord[0] - halfSize;
-        const minY = coord[1] - halfSize;
-        const maxX = coord[0] + halfSize;
-        const maxY = coord[1] + halfSize;
-    
-         // or slope/aspect
-    
-        const url = `${geoserverUrl}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo` +
-        `&FORMAT=image/png&TRANSPARENT=true` +
-        `&QUERY_LAYERS=${layerName}&LAYERS=${layerName}` +
-        `&INFO_FORMAT=application/json` +
-        `&I=50&J=50&WIDTH=101&HEIGHT=101` +
-        `&CRS=EPSG:3857&BBOX=${minX},${minY},${maxX},${maxY}`;
-    
-        if (currentController) {
-            currentController.abort(); // Abort previous request
-        }
-        $("#selected-thematic").html("Thematic Information For <span style='font-size:10px'>("+selectedLayerTitle+ ")</span");
-        currentController = new AbortController(); // Create new controller for this request
-        
+        const res = 10, halfSize = 50 * res;
+        const [minX, minY, maxX, maxY] = [
+            coord[0] - halfSize,
+            coord[1] - halfSize,
+            coord[0] + halfSize,
+            coord[1] + halfSize
+        ];
+
+        const url = `https://tngis.tn.gov.in/tngismaps/wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo` +
+            `&FORMAT=image/png&TRANSPARENT=true&QUERY_LAYERS=${layerName}&LAYERS=${layerName}` +
+            `&INFO_FORMAT=application/json&I=50&J=50&WIDTH=101&HEIGHT=101&CRS=EPSG:3857&BBOX=${minX},${minY},${maxX},${maxY}`;
+
+        if (currentController) currentController.abort();
+        currentController = new AbortController();
+
         fetch(url, { signal: currentController.signal })
             .then(res => {
-                if (!res.ok) {
-                    throw new Error(`Network response was not ok. Status: ${res.status}`);
-                }
+                if (!res.ok) throw new Error(`Status: ${res.status}`);
                 return res.json();
             })
             .then(data => {
-                let grayIndexValue = 'No Data';
-                let grayIndex = null;
-                let properties = null;
-        
-                if (data.features && data.features.length > 0 && data.features[0].properties) {
-                    const props = data.features[0].properties;
-                    if (typeof props.GRAY_INDEX !== 'undefined') {
-                        grayIndex = Math.floor(props.GRAY_INDEX);
-                        properties = props.GRAY_INDEX;
-                    }
-                } else {
-                    throw new Error("Invalid or missing 'features' or 'properties' in response.");
-                }
-        
-                if (selectedLayerTitle === 'Elevation' && grayIndex !== null) {
-                    grayIndexValue = grayIndex + ' M';
-                } else if (selectedLayerTitle === 'Contours' && data.features[0].properties.elevation !== undefined) {
-                    grayIndexValue = data.features[0].properties.elevation + ' M';
-                } else if (selectedLayerTitle === 'Slope' && grayIndex !== null) {
-                    grayIndexValue = grayIndex + ' °';
-                } else if (selectedLayerTitle === 'Aspect' && properties !== null) {
-                    if (properties <= -1) {
-                        grayIndexValue = grayIndex + ' Flat';
-                    } else if (properties > 0 && properties <= 22.5) {
-                        grayIndexValue = grayIndex + ' N';
-                    } else if (properties > 22.5 && properties <= 67.5) {
-                        grayIndexValue = grayIndex + ' NE';
-                    } else if (properties > 67.5 && properties <= 112.5) {
-                        grayIndexValue = grayIndex + ' E';
-                    } else if (properties > 112.5 && properties <= 157.5) {
-                        grayIndexValue = grayIndex + ' SE';
-                    } else if (properties > 157.5 && properties <= 202.5) {
-                        grayIndexValue = grayIndex + ' S';
-                    } else if (properties > 202.5 && properties <= 247.5) {
-                        grayIndexValue = grayIndex + ' SW';
-                    } else if (properties > 247.5 && properties <= 292.5) {
-                        grayIndexValue = grayIndex + ' W';
-                    } else if (properties > 292.5 && properties <= 337.5) {
-                        grayIndexValue = grayIndex + ' NW';
-                    } else if (properties > 337.5) {
-                        grayIndexValue = grayIndex + ' N';
-                    } else {
-                        grayIndexValue = 'Unknown Direction';
-                    }
-                } else {
-                    grayIndexValue = 'No valid data found for selected layer.';
-                }
-        
-                if (selectedLayerTitle === 'Geology' || selectedLayerTitle === 'Geo morphology' || selectedLayerTitle === 'Cattle Population') {
-                    const propertyDiv = $('<div class="detail mt-2 p-2 border rounded bgcolordiv" style="color:#212529;"></div>');
-                    const excludedKeys = new Set(['tngis_id', 'layer_id', 'object_id', 'lith_code', 'gu_code','district_code','taluk_code','lgd_village','village_name','district_name','taluk_name','village_code','lgd_district','lgd_taluk','ogc_fid']);
-                    let contentInfo = '';
-                    if(selectedLayerTitle === 'Cattle Population'){
-                        let villageName = data.features[0].properties.village_name ? data.features[0].properties.village_name : '-';
-                        contentInfo = `<div style="text-align:center;">Cattle Population statistics for 2024 - <strong style='color:red'>${villageName} (Village)</strong></div>`;
-                        propertyDiv.append(contentInfo); 
-                    }
-                    $.each(data.features[0].properties, function (key, value) {
-                        if (!excludedKeys.has(key)) {
-                            const displayValue = (value == null || value === '') ? '-' : value;
-                            const formattedKey = key.replace(/_/g, ' ').toUpperCase();
-                            if(selectedLayerTitle === 'Cattle Population'){
-                                propertyDiv.append(`<div><b>${formattedKey}</b>: ${displayValue}</div>`);
-                            }else{
-                                propertyDiv.append(`<div><b>${formattedKey}</b>: ${displayValue}</div>`);
-                            }
-                        }
-                    });
+                if (!data.features?.length) throw new Error("No features found.");
+                const props = data.features[0].properties;
+                let grayIndex = props.GRAY_INDEX ?? null;
+                let grayIndexValue = 'No valid data';
 
-                    $('#thematic-info-container .detail').remove();
-                    $('#thematic-info-container').append(propertyDiv);
-                } else if(selectedLayerTitle === 'Landuse 2006' || selectedLayerTitle === 'Landuse 2012' || selectedLayerTitle === 'Landuse 2016' || selectedLayerTitle === 'Landuse 2019' || selectedLayerTitle === 'Soil Map'){
-                    const propertyDiv = $('<div class="detail mt-2 p-2 border rounded bgcolordiv" style="color:#212529;"></div>');
-                    $.each(data.features[0].properties, function (key, value) {
-                        if (key !== 'tngis_id' && key !== 'layer_id' && key !== 'object_id' && key !== 'lith_code' && key != 'gu_code' && key != 'lu_webcode' && key !='lc_code' && key !='soil_id') {
-                            let displayValue = (value === null || value === undefined || value === '') ? '-' : value;
-                            propertyDiv.append('<div><b>' + key.replace(/_/g, ' ').toUpperCase() + '</b>: ' + displayValue + '</div>');
-                        }
-                    });
-                    
-                    $('#thematic-info-container .detail').remove();
-                    $('#thematic-info-container').append(propertyDiv);
-                }else {
-                    $('#thematic-info-container .detail').remove();
-                    const detailDiv = $('<div class="detail mt-2 p-2 border rounded bgcolordiv" style="color: #212529;">Selected <b>' + selectedLayerTitle + '</b> of the point: ' + grayIndexValue + '</div>');
-                    $('#thematic-info-container').append(detailDiv);
+                switch (selectedLayerTitle) {
+                    case 'Elevation':
+                        grayIndexValue = grayIndex !== null ? `${Math.floor(grayIndex)} M` : grayIndexValue;
+                        break;
+                    case 'Slope':
+                        grayIndexValue = grayIndex !== null ? `${Math.floor(grayIndex)} °` : grayIndexValue;
+                        break;
+                    case 'Aspect':
+                        grayIndex = Math.floor(grayIndex);
+                        const directions = [
+                            { min: 0, max: 22.5, label: 'N' },
+                            { min: 22.5, max: 67.5, label: 'NE' },
+                            { min: 67.5, max: 112.5, label: 'E' },
+                            { min: 112.5, max: 157.5, label: 'SE' },
+                            { min: 157.5, max: 202.5, label: 'S' },
+                            { min: 202.5, max: 247.5, label: 'SW' },
+                            { min: 247.5, max: 292.5, label: 'W' },
+                            { min: 292.5, max: 337.5, label: 'NW' },
+                            { min: 337.5, max: 360, label: 'N' }
+                        ];
+                        const aspectValue = directions.find(d => grayIndex > d.min && grayIndex <= d.max);
+                        grayIndexValue = grayIndex <= -1 ? `${grayIndex} Flat` :
+                            aspectValue ? `${grayIndex} ${aspectValue.label}` : 'Unknown Direction';
+                        break;
                 }
-        
+
+                showResult(`Selected <b>${selectedLayerTitle}</b> of the point: ${grayIndexValue}`);
             })
             .catch(err => {
-                if (err.name === 'AbortError') {
-                    console.warn('Previous request aborted');
-                    return;
-                }
-                $('#thematic-info-container .detail').remove();
-                const errorDiv = $('<div class="detail mt-2 p-2 border rounded" style="background:#a94442;color: #fff;"><b>Error:</b> No data found for selected ' + selectedLayerTitle + ' data.</div>');
-                $('#thematic-info-container').append(errorDiv);
+                if (err.name !== 'AbortError') showError(`No data found for selected ${selectedLayerTitle}.`);
             });
-        
-    }else{
-        let urbanParams = {};
-        let layerName = '';
-        let ApiURLS = '';
-        $('#thematic-info-container .detail').remove();
-        if(selectedLayerTitle == 'TN-Land Type'){
-            layerName = 'tamilnilam_land_tpe';
-            ApiURLS = IGR_URL;
-        }else if(selectedLayerTitle == 'TN-Land Ownership'){
-            layerName = 'tamilnilam_ownership';
-            ApiURLS = IGR_URL;
-        }else if(selectedLayerTitle == 'Population Theme'){
-            layerName = 'population';
-            ApiURLS = POPULATION_URL;
-        }
-        urbanParams = {
-            latitude:lat,
-            longitude:lon,
-            layer_name: layerName
-        }
-        // Abort the previous request if it's still in progress
+
+    } else {
+        let getfeatureDetailsUrl = GI_VIEWER_API_URL+ '/getFeatureInfo';
+        const apiConfig = {
+            'TN-Land Type': { layer: 'tamilnilam_land_tpe', url: IGR_URL },
+            'TN-Land Ownership': { layer: 'tamilnilam_ownership', url: IGR_URL },
+            'Population Theme': { layer: 'population', url: POPULATION_URL },
+            'Soil Map': { layer: 'soil_map', url: getfeatureDetailsUrl },
+            'Geology': { layer: 'geology', url: getfeatureDetailsUrl },
+            'Geo morpholog': { layer: 'geo_morphology', url: getfeatureDetailsUrl },
+        };
+
+        const { layer, url } = apiConfig[selectedLayerTitle];
+        const urbanParams = { latitude: lat, longitude: lon, layer_name: layer };
+
         if (currentPopulationRequest && currentPopulationRequest.readyState !== 4) {
             currentPopulationRequest.abort();
         }
-        $("#selected-thematic").html("Thematic Information For <span style='font-size:10px'>("+selectedLayerTitle+ ")</span");
+
         currentPopulationRequest = $.ajax({
-            url: `${ApiURLS}`,
+            url,
             method: 'POST',
             headers: { 'X-APP-ID': 'te$t' },
             data: urbanParams,
             success: function (response) {
-                if (response.success == 1) {
-                    var results = '';
-                    let cardContent = '';
+                if (response.success != 1) return showError(response.message || 'Unknown error');
 
-                    if (selectedLayerTitle === 'TN-Land Type') {
-                        results = response.data;
-                        cardContent = `
-                            <div><strong>Land Type:</strong> ${results.type_cate ? results.type_cate: '-'}</div>
-                        `;
-                    } else if (selectedLayerTitle === 'TN-Land Ownership') {
-                        results = response.data;
-                        cardContent = `
-                            <div><strong>Government Land Type:</strong> ${results.government_land_type ? results.government_land_type: '-'}</div>
-                            <div><strong>Classified Land Type:</strong> ${results.classified_land_type ? results.classified_land_type: '-'}</div>
-                        `;
-                    } else if (selectedLayerTitle === 'Population Theme') {
-                        results = response.data[0];
-                        cardContent = `
-                            <div class="text-center">
-                                <div>Population statistics for 2011 - <strong style='color:red'> ${results.vill_name} (${results.type})</strong></div>
-                            </div>
-                            <div><strong>Total Population:</strong> ${results.tot_p ? results.tot_p: '-'}</div>
-                            <div><strong>No. of Households:</strong> ${results.no_hh ? results.no_hh: '-'}</div>
-                            <div><strong>Male Population:</strong> ${results.tot_m ? results.tot_m : '-'}</div>
-                            <div><strong>Female Population:</strong> ${results.tot_f ? results.tot_f: '-'}</div>
-                        `;
-                    }
-
-                    if (cardContent !== '') {
-                        const card = $(`
-                            <div class="detail mt-2 p-2 border rounded bgcolordiv" style="color: #212529;">
-                                ${cardContent}
-                            </div>
-                        `);
-                        $('#thematic-info-container').append(card);
-                    }
-
-                } else {
-                    console.error(response.message);
-                    $(".error-message").empty().text(response.message).show();
+                let content = '';
+                const data = response.data;
+                if (selectedLayerTitle === 'TN-Land Type') {
+                    content = `<div><strong>Land Type:</strong> ${data.type_cate || '-'}</div>`;
+                } else if (selectedLayerTitle === 'TN-Land Ownership') {
+                    content = `
+                        <div><strong>Government Land Type:</strong> ${data.government_land_type || '-'}</div>
+                        <div><strong>Classified Land Type:</strong> ${data.classified_land_type || '-'}</div>`;
+                } else if (selectedLayerTitle === 'Population Theme') {
+                    const d = data[0];
+                    content = `
+                        <div class="text-center">Population statistics for 2011 - 
+                            <strong style='color:red'>${d.vill_name || '-'} (${d.type || '-'})</strong>
+                        </div>
+                        <div><strong>Total Population:</strong> ${d.tot_p || '-'}</div>
+                        <div><strong>No. of Households:</strong> ${d.no_hh || '-'}</div>
+                        <div><strong>Male Population:</strong> ${d.tot_m || '-'}</div>
+                        <div><strong>Female Population:</strong> ${d.tot_f || '-'}</div>`;
                 }
+
+                showResult(content);
             },
-            error: function (xhr, status, error) {
-                if (status !== 'abort') {
-                    console.error('Error in fetching AREG - ', error);
-                }
+            error: function (xhr, status) {
+                if (status !== 'abort') showError('Failed to retrieve thematic data.');
             }
         });
-
     }
-    
-
 });
+
 
 map.on('pointermove', function (e) {
     var lonlat = ol.proj.toLonLat(e.coordinate);
@@ -3342,11 +3238,19 @@ fetch(thematicJsonFilePath)
                 iconImg.setAttribute('data-category', category.category);
                 iconImg.setAttribute('title', layerInfo.title);
 
+                let isClickDisabled = true; // Set to true when you want to disable the click
+                if (isClickDisabled) {
+                    iconImg.classList.add('icon-disabled');
+                } else {
+                    iconImg.classList.remove('icon-disabled');
+                }
                 iconImg.addEventListener('click', (e) => {
+                    if (isClickDisabled) return; // Skip execution if disabled
+
                     const selectedId = e.target.getAttribute('data-layer-id');
                     let isSelectedLayerCurrentlyActive = false;
-                
-                    // First, check if the selected layer is currently active
+
+                    // Check if the selected layer is currently active
                     jsonData.forEach(cat => {
                         cat.layers.forEach(l => {
                             if (l.id === selectedId) {
@@ -3354,22 +3258,22 @@ fetch(thematicJsonFilePath)
                             }
                         });
                     });
-                
-                    // Now apply the toggle logic
+
+                    // Toggle layer visibility
                     jsonData.forEach(cat => {
                         cat.layers.forEach(l => {
                             const isSelected = l.id === selectedId;
                             const shouldBeVisible = isSelected ? !isSelectedLayerCurrentlyActive : false;
-                
+
                             layers[l.id].setVisible(shouldBeVisible);
-                
+
                             const iconElem = document.querySelector(`img[data-layer-id="${l.id}"]`);
                             if (iconElem) {
                                 iconElem.style.border = shouldBeVisible ? '2px solid #007bff' : '2px solid transparent';
                             }
                         });
                     });
-                
+
                     updateAllLegends(jsonData);
                 });
 
@@ -3487,38 +3391,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 
-
-
-// // Utility function to extract vertices from a GeoJSON geometry
-// function extractVertices(geojsonGeom) {
-//     const vertices = [];
-//     const coordinates = geojsonGeom.coordinates;
-
-//     if (geojsonGeom.type === 'Polygon' || geojsonGeom.type === 'MultiPolygon') {
-//         // Flatten coordinates for MultiPolygon
-//         const flattenedCoords = geojsonGeom.type === 'Polygon' ? [coordinates] : coordinates;
-
-//         // Loop through each ring of the polygon
-//         flattenedCoords.forEach((polygon) => {
-//             polygon.forEach((ring) => {
-//                 ring.forEach((coord) => {
-//                     vertices.push(coord); // Push each vertex
-//                 });
-//             });
-//         });
-//     } else if (geojsonGeom.type === 'LineString' || geojsonGeom.type === 'MultiLineString') {
-//         const lines = geojsonGeom.type === 'LineString' ? [coordinates] : coordinates;
-//         lines.forEach((line) => {
-//             line.forEach((coord) => {
-//                 vertices.push(coord);
-//             });
-//         });
-//     } else if (geojsonGeom.type === 'Point') {
-//         vertices.push(coordinates);
-//     }
-
-//     return vertices;
-// }
 
 
 // Populate District Dropdown
@@ -3764,7 +3636,6 @@ async function loadDistrict(districtCode, talukCode = null, villageCode = null, 
 
     } catch (error) {
         console.error('Async Error:', error);
-        // showToast('error', error);
     }
 }
 
@@ -4014,7 +3885,7 @@ async function loadRevenueVillage(district_code, taluk_code, area_type) {
                 valueKey: 'village_code',
                 textKey: 'village_english_name',
                 errorCallback: (message) =>console.log(message),
-                triggerChange: true
+                // triggerChange: true
             });
         } else {
             resetDropdown('village-dropdown', 'Select Village');
@@ -4049,7 +3920,7 @@ $('#village-dropdown').change(async function () {
                 valueKey: 'survey_number',
                 textKey: 'survey_number',
                 errorCallback: (message) =>console.log(message),
-                triggerChange: true
+                // triggerChange: true
             });
             // var villageCode = village_code.replace(/^0+/, '');
             fetchGeometry('revenue_village', district_code, taluk_code, village_code,null,null);
@@ -4121,7 +3992,7 @@ $('#survey-number-dropdown').change(async function () {
                 valueKey: 'subdiv_no',
                 textKey: 'subdiv_no',
                 errorCallback: (message) =>console.log(message),
-                triggerChange: true
+                // triggerChange: true
             });
             // var villageCode = village_code.replace(/^0+/, '');
             fetchGeometry('survey_number', district_code, taluk_code, village_code,survey_number,);
@@ -4352,7 +4223,6 @@ function masterPlanView() {
     $(".error-message").empty().hide();
     let currentController = null;
 
-    // Remove other info panels
     [
         'areg-tab-container', 'facility-info-container', 'vertex-info-container',
         'igr-info-container', 'JSB-info-container', 'fmb-sketch-info-panel',
@@ -4361,7 +4231,6 @@ function masterPlanView() {
 
     const iconSection = document.querySelector('.info-icons');
 
-    // Create info panel container
     const masterContainer = document.createElement('div');
     masterContainer.id = 'masterplan-info-container';
     masterContainer.className = 'mt-2 p-3 border rounded position-relative bg-white';
@@ -4372,10 +4241,17 @@ function masterPlanView() {
     masterContainer.style.marginBottom = '8px';
     iconSection.insertAdjacentElement('afterend', masterContainer);
 
-    // Add centered heading
+    // Source and close button
+    const sourceText = $('<div>').addClass('text-muted font12 mt-1').css('visibility', 'hidden');
+    const closeBtn = $('<button>').addClass('btn-close ms-2').attr('aria-label', 'Close').on('click', () => masterContainer.remove());
+    const headerRow = $('<div>').addClass('d-flex justify-content-between align-items-start mb-2');
+    headerRow.append(sourceText, closeBtn);
+    $(masterContainer).append(headerRow);
+
+    // Title
     const heading = $('<h5>')
-        .addClass('text-center mb-2 font12')
-        .text('Master Plan Information for selected point');
+        .addClass('text-center mb-2 font12 fw-bold')
+        .text('Master Plan Information for selected location');
     $(masterContainer).append(heading);
 
     const lat = parseFloat($("#latitude").val());
@@ -4399,21 +4275,6 @@ function masterPlanView() {
     if (currentController) currentController.abort();
     currentController = new AbortController();
 
-    const masterPlanFields = [
-        'landuse', 'lpa_name', 'planning_authority',
-        'type_of_master_plan', 'status', 'year', 'source'
-    ];
-
-    const labelMap = {
-        landuse: 'Land Use',
-        lpa_name: 'LPA Name',
-        planning_authority: 'Planning Authority',
-        type_of_master_plan: 'Type of Master Plan',
-        status: 'Status',
-        year: 'Year',
-        source: 'Source'
-    };
-
     const fetchLayer = (layer, onSuccess, onFailure) => {
         const url = `${geoserverUrl}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo` +
             `&FORMAT=image/png&TRANSPARENT=true` +
@@ -4435,80 +4296,81 @@ function masterPlanView() {
                 }
             })
             .catch(err => {
-                if (err.name === 'AbortError') {
-                    console.warn('Request aborted');
-                } else {
+                if (err.name !== 'AbortError') {
                     console.error(`Error fetching ${layer.name}:`, err);
                     onFailure();
                 }
             });
     };
 
-    // Step 1: Check if point is inside LPA Boundary
-    fetchLayer(layers[0],
-        () => {
-            // Proceed to fetch Proposed and Existing Master Plan
-            let dataFound = false;
-            let responsesReceived = 0;
+    fetchLayer(layers[0], (lpaProps) => {
+        const safe = (val) => (val !== null && val !== undefined && val !== '') ? val : '-';
+        const lpaName = safe(lpaProps.planning_authority || lpaProps.lpa_name || lpaProps.local_body);
+        const lpaSource = lpaProps.source;
 
-            [1, 2].forEach(i => {
-                fetchLayer(layers[i],
-                    (props) => {
-                        dataFound = true;
+        $('<div>')
+            .addClass('masterplan-item mb-1')
+            .html(`<span class="fw-bold">Local Planning Authority:</span> ${lpaName}`)
+            .appendTo(masterContainer);
 
-                        $('<div>')
-                            .addClass('fw-bold mt-2 mb-2 text-primary')
-                            .text(layers[i].label)
-                            .appendTo(masterContainer);
-
-                        masterPlanFields.forEach(key => {
-                            const value = props[key];
-                            let displayValue = '';
-
-                            if (value !== null && value !== undefined) {
-                                displayValue = typeof value === 'object'
-                                    ? (value.name || value.label || JSON.stringify(value))
-                                    : value;
-                            }
-
-                            const itemRow = $('<div>')
-                                .addClass('masterplan-item mb-1')
-                                .html(`<span class="fw-bold">${labelMap[key]}:</span> ${displayValue}`);
-
-                            $(masterContainer).append(itemRow);
-                        });
-
-                        responsesReceived++;
-                        if (responsesReceived === 2 && !dataFound) {
-                            const noDataMsg = $('<div>')
-                                .addClass('.alert-danger text-center p-3')
-                                .text('No data found for the selected point.');
-                            $(masterContainer).append(noDataMsg);
-                        }
-                    },
-                    () => {
-                        responsesReceived++;
-                        if (responsesReceived === 2 && !dataFound) {
-                            const noDataMsg = $('<div>')
-                                .addClass('alert-danger text-center p-3')
-                                .text('No data found for the selected point.');
-                            $(masterContainer).append(noDataMsg);
-                        }
-                    }
-                );
-            });
-        },
-        () => {
-            // Not inside LPA Boundary — don't fetch further
-            const noDataMsg = $('<div>')
-                .addClass('alert-danger text-center p-3')
-                .text('Not covered master plan for the selected point.');
-            $(masterContainer).append(noDataMsg);
+        if (lpaSource) {
+            sourceText.text(`Source: ${lpaSource}`).css('visibility', 'visible');
         }
-    );
+
+        let dataFound = false;
+        let responsesReceived = 0;
+
+        const orderedLayers = [layers[1], layers[2]]; // Proposed first, then Existing
+
+        orderedLayers.forEach(layer => {
+            fetchLayer(
+                layer,
+                (props) => {
+                    dataFound = true;
+
+                    const safe = (v) => (v !== null && v !== undefined && v !== '') ? v : '-';
+                    const landuse    = safe(props.landuse);
+                    const status     = safe(props.status);
+                    const year       = safe(props.year);
+                    const statusYear = (status !== '-' || year !== '-') ? `${status}/${year}` : '-';
+
+                    [
+                        { label: 'Land Use',      value: landuse    },
+                        { label: 'Stages/Year',   value: statusYear }
+                    ].forEach(({ label, value }) => {
+                        $('<div>')
+                            .addClass('masterplan-item mb-1')
+                            .html(`<span class="fw-bold">${label}:</span> ${value}`)
+                            .appendTo(masterContainer);
+                    });
+
+                    responsesReceived++;
+                    if (responsesReceived === 2 && !dataFound) {
+                        $('<div>')
+                            .addClass('alert-danger text-center p-3')
+                            .text('No data found for the selected location.')
+                            .appendTo(masterContainer);
+                    }
+                },
+                () => {
+                    responsesReceived++;
+                    if (responsesReceived === 2 && !dataFound) {
+                        $('<div>')
+                            .addClass('alert-danger text-center p-3')
+                            .text('No data found for the selected location.')
+                            .appendTo(masterContainer);
+                    }
+                }
+            );
+        });
+
+    }, () => {
+        $('<div>')
+            .addClass('alert-danger text-center p-3')
+            .text('The selected location is not covered by any local planning authority.')
+            .appendTo(masterContainer);
+    });
 }
-
-
 
 
 function addSpaceBeforeCaps(str) {
@@ -4924,3 +4786,4 @@ function getLocation() {
   
   }
   
+ 
