@@ -915,6 +915,8 @@ $(document).on('click', '.thematic-icon-card', function () {
             'Soil Map': { layer: 'soil_map', url: getfeatureDetailsUrl },
             'Geology': { layer: 'geology', url: getfeatureDetailsUrl },
             'Geo morpholog': { layer: 'geo_morphology', url: getfeatureDetailsUrl },
+            'Landuse 2019': { layer: 'landuse_2019', url: getfeatureDetailsUrl },
+            'Cattle Population': { layer: 'cattle_population', url: getfeatureDetailsUrl },
         };
 
         const { layer, url } = apiConfig[selectedLayerTitle];
